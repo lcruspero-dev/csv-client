@@ -1,5 +1,5 @@
 import alltickets from "@/assets/AllTickets.webp";
-import request from "@/assets/checklist.webp";
+import request from "@/assets/Checklist.webp";
 import gethelp from "@/assets/g10.webp";
 import ticket from "@/assets/Group.webp";
 import test from "@/assets/login.webp";
