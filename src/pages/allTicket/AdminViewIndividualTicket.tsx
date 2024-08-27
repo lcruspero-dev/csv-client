@@ -90,12 +90,6 @@ const AdminViewIndovidualTicket: React.FC = () => {
     return <Loading />; // Show loading component while data is being fetched
   }
 
-  function handleCloseTicket(
-    event: MouseEvent<HTMLButtonElement, MouseEvent>
-  ): void {
-    throw new Error("Function not implemented.");
-  }
-
   return (
     <div className="container">
       <div className="px-36 pt-5">

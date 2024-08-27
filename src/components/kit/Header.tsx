@@ -17,7 +17,7 @@ const Header: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const handleLogout = () => {
     localStorage.clear();
-    logout({ isAuthenticated: false, isAdmin: false });
+    logout();
 
     navigate("/sign-in");
   };
