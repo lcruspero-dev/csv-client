@@ -58,12 +58,11 @@ const Request = () => {
   };
 
   return (
-    <div className="container flex justify-center">
+    <div className="container flex justify-center p-3">
+      <BackButton />
       <form className="mt-5 w-1/2" onSubmit={handleSubmit}>
         <div className="text-center">
-          <div className="mb-3">
-            <BackButton />
-          </div>
+          <div className="mb-3"></div>
           <h1 className="text-5xl font-bold py-2 bg-clip-text text-transparent bg-gradient-to-r from-[#1638df] to-[#192fb4]">
             Create HR Request Ticket
           </h1>
@@ -125,7 +124,7 @@ const Request = () => {
           </SelectContent>
         </Select>
         <Label htmlFor="description" className="text-base font-bold">
-          Description of the issue
+          Description of the request
         </Label>
         <Textarea
           name="description"

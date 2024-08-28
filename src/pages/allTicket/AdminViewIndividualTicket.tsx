@@ -3,9 +3,17 @@ import { TicketAPi } from "@/API/endpoint";
 import { formattedDate } from "@/API/helper";
 import BackButton from "@/components/kit/BackButton";
 import { Button } from "@/components/ui/button";
- 
+
 import { Label } from "@/components/ui/label";
 import Loading from "@/components/ui/loading";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Sheet,
   SheetClose,
@@ -20,8 +28,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Ticket } from "./ViewAllTicket";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
- 
 
 const AdminViewIndovidualTicket: React.FC = () => {
   const [details, setDetails] = useState<Ticket>();
@@ -32,8 +38,9 @@ const AdminViewIndovidualTicket: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [assign, setAssign] = useState<any>();
   const [status, setStatus] = useState<any>();
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
- 
   const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(event.target.value);
   };
@@ -65,14 +72,14 @@ const AdminViewIndovidualTicket: React.FC = () => {
         });
     }
   }, [id]);
- console.log(assign)
- console.log(status)
- const handleAssignChange = (value: string) => {
-  setAssign({ ...assign, assign: value });
-};
-const handleStatusChange = (value: string) => {
-  setStatus({ ...status, status: value });
-};
+  console.log(assign);
+  console.log(status);
+  const handleAssignChange = (value: string) => {
+    setAssign({ ...assign, assign: value });
+  };
+  const handleStatusChange = (value: string) => {
+    setStatus({ ...status, status: value });
+  };
   const SubmitNote = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return; // Prevent multiple submissions
@@ -103,87 +110,97 @@ const handleStatusChange = (value: string) => {
   }
   const handleEditButton = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isUpdating) return; // Prevent multiple submissions
+
+    setIsUpdating(true);
     const body = {
       assignedTo: assign?.assign,
       status: status?.status,
-    }
+    };
     try {
       const response = await TicketAPi.updateTicket(id, body);
-      console.log("response.data",response.data);
+      console.log("response.data", response.data);
       getTicket(String(id));
-      
+      setIsSheetOpen(false);
     } catch (error) {
       console.error(error);
+    } finally {
+      setIsUpdating(false);
     }
-  }
+  };
   return (
     <div className="container">
       <div className="px-36 pt-5">
         {/* for admin only */}
-        <form className="flex justify-between px-10 items-center mt-5 " >
+        <div className="flex justify-between px-10 items-center mt-5 ">
           <BackButton />
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button className="font-bold py-2 px-4 rounded">Edit</Button>
-            </SheetTrigger>
-            <SheetContent>
-              <SheetHeader>
-                <SheetTitle>Edit Ticket Information</SheetTitle>
-                <SheetDescription>
-                  Make changes to the ticket here. Click Save Changes when
-                  you're done.
-                </SheetDescription>
-              </SheetHeader>
-              <div className="grid gap-4 py-4">
-                <div >
-                  <Label htmlFor="name" className="text-right   mb-10">
-                    Assign to
-                  </Label>
-                  <Select  onValueChange={handleAssignChange} required>
-                    <SelectTrigger className="mb-2 mt-2">
-                      <SelectValue placeholder="Please Select " />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectItem value="IT1">
-                          Arvin B.
-                        </SelectItem>
-                        <SelectItem value="IT2">John G.</SelectItem>
-                        <SelectItem value="IT3">Joriz C.</SelectItem>
-                        <SelectItem value="HR1">HR 1.</SelectItem>
-                        <SelectItem value="HR2"> HR 2.</SelectItem>
-                        <SelectItem value="HR3">HR 3.</SelectItem>
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
+          <form>
+            <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+              <SheetTrigger asChild>
+                <Button className="font-bold py-2 px-4 rounded">Edit</Button>
+              </SheetTrigger>
+              <SheetContent>
+                <SheetHeader>
+                  <SheetTitle>Edit Ticket Information</SheetTitle>
+                  <SheetDescription>
+                    Make changes to the ticket here. Click Save Changes when
+                    you're done.
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="grid gap-4 py-4">
+                  <div>
+                    <Label htmlFor="name" className="text-right   mb-10">
+                      Assign to
+                    </Label>
+                    <Select onValueChange={handleAssignChange} required>
+                      <SelectTrigger className="mb-2 mt-2">
+                        <SelectValue placeholder={details?.assignedTo} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem value="IT1">Arvin B.</SelectItem>
+                          <SelectItem value="IT2">John G.</SelectItem>
+                          <SelectItem value="IT3">Joriz C.</SelectItem>
+                          <SelectItem value="HR1">HR 1.</SelectItem>
+                          <SelectItem value="HR2"> HR 2.</SelectItem>
+                          <SelectItem value="HR3">HR 3.</SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="username" className="text-right">
+                      Status
+                    </Label>
+                    <Select onValueChange={handleStatusChange} required>
+                      <SelectTrigger className="mb-2 mt-2">
+                        <SelectValue placeholder={details?.status} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem value="open"> Open </SelectItem>
+                          <SelectItem value="ongoing">Ongoing</SelectItem>
+                          <SelectItem value="closed">Closed</SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <div >
-                  <Label htmlFor="username" className="text-right">
-                    Status
-                  </Label>
-                  <Select onValueChange={handleStatusChange}  required>
-                    <SelectTrigger className="mb-2 mt-2">
-                      <SelectValue placeholder="Please Select Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectItem value="open"> Open </SelectItem>
-                        <SelectItem value="ongoing">Ongoing</SelectItem>
-                        <SelectItem value="closed">Closed</SelectItem>
-                         
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <SheetFooter>
-                <SheetClose asChild>
-                  <Button type="submit" onClick={handleEditButton}>Save changes</Button>
-                </SheetClose>
-              </SheetFooter>
-            </SheetContent>
-          </Sheet>
-        </form>
+                <SheetFooter>
+                  <SheetClose asChild>
+                    <Button
+                      type="submit"
+                      onClick={handleEditButton}
+                      disabled={isUpdating}
+                    >
+                      {isUpdating ? "Saving..." : "Save changes"}
+                    </Button>
+                  </SheetClose>
+                </SheetFooter>
+              </SheetContent>
+            </Sheet>
+          </form>
+        </div>
 
         <div className="flex justify-between px-10 items-center mt-5 ">
           <div>
@@ -191,19 +208,22 @@ const handleStatusChange = (value: string) => {
             <p>Date Submitted: {formattedDate(details?.createdAt || "")}</p>
             <p>Category: {details?.category}</p>
             <p>Created By: {details?.name}</p>
-            <p>Assigned To: {details?.assignedTo === "IT1" 
-    ? "Arvin B." 
-    : details?.assignedTo === "IT2" 
-    ? "John G." 
-    : details?.assignedTo === "IT3" 
-    ? "Joriz C." 
-    : details?.assignedTo === "HR1" 
-    ? "HR 1." 
-    : details?.assignedTo === "HR2" 
-    ? "HR 2." 
-    : details?.assignedTo === "HR3" 
-    ? "HR 3." 
-    : "Not Assigned"}</p>
+            <p>
+              Assigned To:{" "}
+              {details?.assignedTo === "IT1"
+                ? "Arvin B."
+                : details?.assignedTo === "IT2"
+                ? "John G."
+                : details?.assignedTo === "IT3"
+                ? "Joriz C."
+                : details?.assignedTo === "HR1"
+                ? "HR 1."
+                : details?.assignedTo === "HR2"
+                ? "HR 2."
+                : details?.assignedTo === "HR3"
+                ? "HR 3."
+                : "Not Assigned"}
+            </p>
           </div>
           <div>
             <p>

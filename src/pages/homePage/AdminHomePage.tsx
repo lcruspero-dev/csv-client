@@ -52,7 +52,7 @@ const AdminHome = () => {
         </Card>
         <Card>
           <img src={test} alt="test" />
-          <p className="py-3 font-bold">Under Construction</p>
+          <p className="py-3 font-bold">View Statistic</p>
         </Card>
       </div>
     </>
