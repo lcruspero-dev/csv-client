@@ -3,7 +3,7 @@ import { TicketAPi } from "@/API/endpoint";
 import { formattedDate } from "@/API/helper";
 import BackButton from "@/components/kit/BackButton";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+ 
 import { Label } from "@/components/ui/label";
 import Loading from "@/components/ui/loading";
 import {
@@ -20,6 +20,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Ticket } from "./ViewAllTicket";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+ 
 
 const AdminViewIndovidualTicket: React.FC = () => {
   const [details, setDetails] = useState<Ticket>();
@@ -28,7 +30,10 @@ const AdminViewIndovidualTicket: React.FC = () => {
   const [notes, setNotes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [assign, setAssign] = useState<any>();
+  const [status, setStatus] = useState<any>();
 
+ 
   const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(event.target.value);
   };
@@ -60,7 +65,14 @@ const AdminViewIndovidualTicket: React.FC = () => {
         });
     }
   }, [id]);
-
+ console.log(assign)
+ console.log(status)
+ const handleAssignChange = (value: string) => {
+  setAssign({ ...assign, assign: value });
+};
+const handleStatusChange = (value: string) => {
+  setStatus({ ...status, status: value });
+};
   const SubmitNote = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return; // Prevent multiple submissions
@@ -89,12 +101,26 @@ const AdminViewIndovidualTicket: React.FC = () => {
   if (isLoading) {
     return <Loading />; // Show loading component while data is being fetched
   }
-
+  const handleEditButton = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const body = {
+      assignedTo: assign?.assign,
+      status: status?.status,
+    }
+    try {
+      const response = await TicketAPi.updateTicket(id, body);
+      console.log("response.data",response.data);
+      getTicket(String(id));
+      
+    } catch (error) {
+      console.error(error);
+    }
+  }
   return (
     <div className="container">
       <div className="px-36 pt-5">
         {/* for admin only */}
-        <div className="flex justify-between px-10 items-center mt-5 ">
+        <form className="flex justify-between px-10 items-center mt-5 " >
           <BackButton />
           <Sheet>
             <SheetTrigger asChild>
@@ -109,35 +135,55 @@ const AdminViewIndovidualTicket: React.FC = () => {
                 </SheetDescription>
               </SheetHeader>
               <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="name" className="text-right">
-                    Name
+                <div >
+                  <Label htmlFor="name" className="text-right   mb-10">
+                    Assign to
                   </Label>
-                  <Input
-                    id="name"
-                    value="Pedro Duarte"
-                    className="col-span-3"
-                  />
+                  <Select  onValueChange={handleAssignChange} required>
+                    <SelectTrigger className="mb-2 mt-2">
+                      <SelectValue placeholder="Please Select " />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectItem value="IT1">
+                          Arvin B.
+                        </SelectItem>
+                        <SelectItem value="IT2">John G.</SelectItem>
+                        <SelectItem value="IT3">Joriz C.</SelectItem>
+                        <SelectItem value="HR1">HR 1.</SelectItem>
+                        <SelectItem value="HR2"> HR 2.</SelectItem>
+                        <SelectItem value="HR3">HR 3.</SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
+                <div >
                   <Label htmlFor="username" className="text-right">
-                    Username
+                    Status
                   </Label>
-                  <Input
-                    id="username"
-                    value="@peduarte"
-                    className="col-span-3"
-                  />
+                  <Select onValueChange={handleStatusChange}  required>
+                    <SelectTrigger className="mb-2 mt-2">
+                      <SelectValue placeholder="Please Select Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectItem value="open"> Open </SelectItem>
+                        <SelectItem value="ongoing">Ongoing</SelectItem>
+                        <SelectItem value="closed">Closed</SelectItem>
+                         
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <SheetFooter>
                 <SheetClose asChild>
-                  <Button type="submit">Save changes</Button>
+                  <Button type="submit" onClick={handleEditButton}>Save changes</Button>
                 </SheetClose>
               </SheetFooter>
             </SheetContent>
           </Sheet>
-        </div>
+        </form>
 
         <div className="flex justify-between px-10 items-center mt-5 ">
           <div>
@@ -145,7 +191,19 @@ const AdminViewIndovidualTicket: React.FC = () => {
             <p>Date Submitted: {formattedDate(details?.createdAt || "")}</p>
             <p>Category: {details?.category}</p>
             <p>Created By: {details?.name}</p>
-            <p>Assigned To: {details?.assignedTo}</p>
+            <p>Assigned To: {details?.assignedTo === "IT1" 
+    ? "Arvin B." 
+    : details?.assignedTo === "IT2" 
+    ? "John G." 
+    : details?.assignedTo === "IT3" 
+    ? "Joriz C." 
+    : details?.assignedTo === "HR1" 
+    ? "HR 1." 
+    : details?.assignedTo === "HR2" 
+    ? "HR 2." 
+    : details?.assignedTo === "HR3" 
+    ? "HR 3." 
+    : "Not Assigned"}</p>
           </div>
           <div>
             <p>
