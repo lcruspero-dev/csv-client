@@ -41,7 +41,7 @@ const AdminHome = () => {
 
         <Card
           className="hover:scale-105 ease-in-out duration-200 cursor-pointer hover:border-1 hover:border-[#5a95ff] "
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/all-memo")}
         >
           <img src={alltickets} alt="alltickets" />
           <p className="py-3 font-bold">Memo</p>
