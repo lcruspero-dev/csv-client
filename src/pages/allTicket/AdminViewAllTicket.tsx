@@ -38,13 +38,17 @@ const ViewAllRaisedTickets: React.FC = () => {
   const getAllRaisedTickets = async () => {
     try {
       const response = await TicketAPi.getAllRaisedTickets();
-      setAllRaisedTickets(response.data);
-      const uniqueAssignedTo = [
-        "all",
-        ...new Set(response.data.map((ticket: Ticket) => ticket.assignedTo)),
-      ];
-      setAssignedToOptions(uniqueAssignedTo);
-      filterTickets(response.data, statusFilter, "all");
+      if (Array.isArray(response.data)) {
+        setAllRaisedTickets(response.data as Ticket[]);
+        const uniqueAssignedTo = [
+          "all",
+          ...new Set(response.data.map((ticket: Ticket) => ticket.assignedTo)),
+        ];
+        setAssignedToOptions(uniqueAssignedTo);
+        filterTickets(response.data as Ticket[], statusFilter, "all");
+      } else {
+        console.error("Unexpected response data format");
+      }
     } catch (error) {
       console.error(error);
     } finally {
