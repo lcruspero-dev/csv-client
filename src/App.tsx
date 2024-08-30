@@ -6,7 +6,7 @@ import "./index.css";
 import Layout from "./pages/authentication/Layout";
 import Login from "./pages/authentication/Login";
 import Registration from "./pages/authentication/Registration";
-import AdminViewMemo from "./pages/memo/AdminViewMemo";
+import ViewMemo from "./pages/memo/ViewMemo";
 
 import ViewAllRaisedTickets from "./pages/allTicket/AdminViewAllTicket";
 import ViewAllTicket from "./pages/allTicket/ViewAllTicket";
@@ -37,7 +37,7 @@ function App() {
             <Route path="/request-something" element={<Request />} />
             <Route path="/ticket/:id" element={<ViewIndividualTicket />} />
             <Route path="/all-tickets" element={<ViewAllRaisedTickets />} />
-            <Route path="/all-memo" element={<AdminViewMemo />} />
+            <Route path="/all-memo" element={<ViewMemo />} />
 
             {/* Admin Routes */}
             {/* <Route element={<ProtectedRoute requiresAdmin={true} />}>

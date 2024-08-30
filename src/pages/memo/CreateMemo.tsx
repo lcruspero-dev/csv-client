@@ -10,13 +10,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "../ui/textarea";
+import { Textarea } from "../../components/ui/textarea";
 
 const CreateMemo = () => {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline">Compose</Button>
+        <Button>Compose</Button>
       </DialogTrigger>
       <DialogContent className="w-[600px] h-[600px] max-w-none bg-[#eef4ff]">
         <DialogHeader>
