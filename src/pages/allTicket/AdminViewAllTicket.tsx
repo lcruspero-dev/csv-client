@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export interface Ticket {
@@ -27,39 +27,111 @@ export interface Ticket {
 }
 
 const ViewAllRaisedTickets: React.FC = () => {
-  const [AllRaisedTickets, setAllRaisedTickets] = useState<Ticket[]>([]);
-  const [loading, setLoading] = useState<boolean>(true); // Loading state
+  const [allRaisedTickets, setAllRaisedTickets] = useState<Ticket[]>([]);
+  const [filteredTickets, setFilteredTickets] = useState<Ticket[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [statusFilter, setStatusFilter] = useState<string>("open");
+  const [assignedToFilter, setAssignedToFilter] = useState<string>("all");
+  const [assignedToOptions, setAssignedToOptions] = useState<string[]>([]);
   const navigate = useNavigate();
 
   const getAllRaisedTickets = async () => {
     try {
       const response = await TicketAPi.getAllRaisedTickets();
       setAllRaisedTickets(response.data);
+      const uniqueAssignedTo = [
+        "all",
+        ...new Set(response.data.map((ticket: Ticket) => ticket.assignedTo)),
+      ];
+      setAssignedToOptions(uniqueAssignedTo);
+      filterTickets(response.data, statusFilter, "all");
     } catch (error) {
       console.error(error);
     } finally {
-      setLoading(false); // Stop loading after the request is done
+      setLoading(false);
     }
+  };
+
+  const filterTickets = (
+    tickets: Ticket[],
+    status: string,
+    assignedTo: string
+  ) => {
+    let filtered = tickets;
+
+    if (status !== "all") {
+      filtered = filtered.filter((ticket) => ticket.status === status);
+    }
+
+    if (assignedTo !== "all") {
+      filtered = filtered.filter((ticket) => ticket.assignedTo === assignedTo);
+    }
+
+    setFilteredTickets(filtered);
   };
 
   useEffect(() => {
     getAllRaisedTickets();
   }, []);
 
+  useEffect(() => {
+    filterTickets(allRaisedTickets, statusFilter, assignedToFilter);
+  }, [statusFilter, assignedToFilter, allRaisedTickets]);
+
   if (loading) {
-    return <LoadingComponent />; // Render loading component while fetching data
+    return <LoadingComponent />;
   }
 
   return (
     <div className="container mx-auto">
       <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="absolute left-0 top-12">
+        <div className="absolute left-0 top-3">
           <BackButton />
         </div>
-        <h1 className="text-5xl font-bold text-center py-7">Tickets</h1>
+        <h1 className="text-5xl font-bold text-center pt-7">Tickets</h1>
+      </div>
+      <div className="mb-4 flex justify-between items-center">
+        <div className="flex space-x-4">
+          <div>
+            <label htmlFor="statusFilter" className="mr-2">
+              Filter by status:
+            </label>
+            <select
+              id="statusFilter"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="border p-2 rounded"
+            >
+              <option value="open">Open</option>
+              <option value="ongoing">In-Progress</option>
+              <option value="closed">Closed</option>
+              <option value="all">All</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="assignedToFilter" className="mr-2">
+              Filter by assigned to:
+            </label>
+            <select
+              id="assignedToFilter"
+              value={assignedToFilter}
+              onChange={(e) => setAssignedToFilter(e.target.value)}
+              className="border p-2 rounded"
+            >
+              {assignedToOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div className="text-lg font-semibold">
+          Total Tickets: {filteredTickets.length}
+        </div>
       </div>
       <Table>
-        <TableHeader className="bg-slate-200 ">
+        <TableHeader className="bg-slate-200">
           <TableRow>
             <TableHead className="text-center font-bold text-black w-48">
               Date
@@ -85,7 +157,7 @@ const ViewAllRaisedTickets: React.FC = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {AllRaisedTickets.map((ticket, index) => (
+          {filteredTickets.map((ticket, index) => (
             <TableRow
               key={ticket._id}
               className={index % 2 === 0 ? "bg-gray-100" : "bg-white"}
