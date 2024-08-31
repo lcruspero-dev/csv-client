@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { AuthAPI } from "@/API/authEndPoint";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/context/useAuth";
 
 import { ChangeEvent, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
@@ -28,7 +28,7 @@ const Registration = () => {
     setForm({ ...form, [e.target.name]: e.target.value });
     console.log(form);
   };
-
+  const { login } = useAuth();
   const handleSubmit = async (e: any) => {
     e.preventDefault();
     if (form.password !== form.confirm_password) {
@@ -43,11 +43,16 @@ const Registration = () => {
         title: "Account created successfully",
         description: "We've created your account for you.",
       });
+
+      // Store user data in localStorage
       localStorage.setItem("user", JSON.stringify(response.data));
+
+      // Update the authentication context
+      login({ isAuthenticated: true, isAdmin: response.data.isAdmin });
 
       navigate("/");
     } catch (error) {
-      toast({ title: "User Already Exist" });
+      toast({ title: "User Already Exists" });
       console.error(error);
     }
   };
