@@ -162,7 +162,7 @@ const AdminViewIndovidualTicket: React.FC = () => {
                           <SelectItem value="IT2">John G.</SelectItem>
                           <SelectItem value="IT3">Joriz C.</SelectItem>
                           <SelectItem value="HR1">HR 1.</SelectItem>
-                          <SelectItem value="HR2"> HR 2.</SelectItem>
+                          <SelectItem value="HR2">HR 2.</SelectItem>
                           <SelectItem value="HR3">HR 3.</SelectItem>
                         </SelectGroup>
                       </SelectContent>
@@ -244,8 +244,10 @@ const AdminViewIndovidualTicket: React.FC = () => {
         </div>
         <hr className="w-full border-t border-gray-300 my-4" />
         <div className="bg-slate-200 p-4 rounded-sm border-2 border-gray-300">
-          <p className="font-semibold ">Description</p>
-          <p>{details?.description}</p>
+          <p className="font-semibold mb-2">Description</p>
+          <pre className="whitespace-pre-wrap font-sans p-3 rounded-sm overflow-x-auto">
+            {details?.description}
+          </pre>
         </div>
         <div className="mt-4">
           <p className="font-semibold">Notes</p>

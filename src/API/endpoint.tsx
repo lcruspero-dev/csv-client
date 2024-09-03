@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from "axios";
+ 
 
 export const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -40,4 +41,10 @@ export const TicketAPi = {
     apiHelper(`/api/tickets/${id}`, "PUT", body),
   deleteTicket: (id: any, body: object) =>
     apiHelper(`/api/tickets/${id}`, "DELETE", body),
+
+  // MEMO
+  createMemo : (body: object) => apiHelper("/api/memos/create", "POST", body),
+  getAllMemo : () => apiHelper("/api/memos/", "GET"),
+  getIndividualMemo : (id: any) => apiHelper(`/api/memos/${id}`, "GET"),
 };
+

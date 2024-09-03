@@ -107,9 +107,11 @@ const UserViewIndovidualTicket: React.FC = () => {
           </div>
         </div>
         <hr className="w-full border-t border-gray-300 my-4" />
-        <div className="bg-slate-200 p-4 rounded-sm border-2 border-gray-300">
-          <p className="font-semibold ">Description</p>
-          <p>{details?.description}</p>
+        <div className="bg-slate-200 p-4 max-h-96 rounded-sm border-2 border-gray-300 overflow-y-scroll">
+          <p className="font-semibold mb-2">Description</p>
+          <pre className="whitespace-pre-wrap font-sans p-3 rounded-sm overflow-x-auto">
+            {details?.description}
+          </pre>
         </div>
         <div className="mt-4">
           <p className="font-semibold">Notes</p>

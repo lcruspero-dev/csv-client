@@ -15,6 +15,7 @@ import CreateTicket from "./pages/getHelp/CreateTicket";
 import Homepage from "./pages/homePage/Homepage";
 import { ProtectedRoute } from "./pages/ProtectedRoute";
 import Request from "./pages/requestSomething/Request";
+import ViewIndividualMemo from "./pages/memo/ViewIndividualMemo";
 
 function App() {
   return (
@@ -38,6 +39,7 @@ function App() {
             <Route path="/ticket/:id" element={<ViewIndividualTicket />} />
             <Route path="/all-tickets" element={<ViewAllRaisedTickets />} />
             <Route path="/all-memo" element={<ViewMemo />} />
+            <Route path="/memo/:id" element={<ViewIndividualMemo />} />
 
             {/* Admin Routes */}
             {/* <Route element={<ProtectedRoute requiresAdmin={true} />}>
