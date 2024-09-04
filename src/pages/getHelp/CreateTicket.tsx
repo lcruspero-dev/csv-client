@@ -80,7 +80,7 @@ const CreateTicket = () => {
           required
           className="!mb-2"
           value={form.name}
-          disabled
+          readOnly
         />
         <Label htmlFor="email" className="text-base font-bold">
           Email
@@ -92,7 +92,7 @@ const CreateTicket = () => {
           required
           className="!mb-2"
           value={form.email}
-          disabled
+          readOnly
         />
         <Label htmlFor="category" className="text-base font-bold">
           Category
@@ -127,6 +127,7 @@ const CreateTicket = () => {
           Description of the issue
         </Label>
         <Textarea
+          className="h-36"
           name="description"
           placeholder="Description"
           required

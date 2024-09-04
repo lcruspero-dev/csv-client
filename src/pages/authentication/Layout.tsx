@@ -13,7 +13,7 @@ const Layout = () => {
           <Outlet />
         </div>
         <div>
-          <img src={loginImage} alt="Login" width={1000} height={1000} />
+          <img src={loginImage} alt="Login" width={500} height={500} />
         </div>
       </div>
     </div>

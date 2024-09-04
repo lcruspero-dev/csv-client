@@ -13,15 +13,15 @@ import ViewAllTicket from "./pages/allTicket/ViewAllTicket";
 import ViewIndividualTicket from "./pages/allTicket/ViewIndividualTicket";
 import CreateTicket from "./pages/getHelp/CreateTicket";
 import Homepage from "./pages/homePage/Homepage";
+import ViewIndividualMemo from "./pages/memo/ViewIndividualMemo";
 import { ProtectedRoute } from "./pages/ProtectedRoute";
 import Request from "./pages/requestSomething/Request";
-import ViewIndividualMemo from "./pages/memo/ViewIndividualMemo";
 
 function App() {
   return (
     <>
       <Header />
-      <div className="bg-[#eef4ff] min-h-screen">
+      <div className="bg-gradient-to-b from-[#eef4ff] to-white">
         <Routes>
           {/* Public Routes */}
 
