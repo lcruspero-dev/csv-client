@@ -41,12 +41,14 @@ const ViewIndividualMemo = () => {
         <BackButton />
         <div className="flex justify-between items-center mt-5 ">
           <div>
-            <p className="font-bold text-xl">Re: {memos?.subject}</p>
-            <p>Date: {formattedDate(memos?.createdAt || "")}</p>
-            <p>File Attachment: {memos?.file}</p>
+            <p className="font-bold text-base">Re: {memos?.subject}</p>
+            <p className="text-sm">
+              Date: {formattedDate(memos?.createdAt || "")}
+            </p>
+            <p className="text-sm">File Attachment: {memos?.file}</p>
           </div>
           <div>
-            <p>
+            <p className="text-sm">
               <input type="checkbox" className="w-4 h-4" /> I hereby acknowledge
               receipt of this memo
             </p>
@@ -55,7 +57,7 @@ const ViewIndividualMemo = () => {
         </div>
         <hr className="w-full border-t border-gray-300 my-4" />
         <div className="bg-slate-200 p-4 rounded-sm border-2 border-gray-300">
-          <pre className="whitespace-pre-wrap font-sans p-3 rounded-sm overflow-x-auto">
+          <pre className="whitespace-pre-wrap font-sans p-3 rounded-sm overflow-x-auto text-sm">
             {memos?.description}
           </pre>
         </div>

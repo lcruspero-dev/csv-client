@@ -158,12 +158,12 @@ const AdminViewIndovidualTicket: React.FC = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectGroup>
-                          <SelectItem value="IT1">Arvin B.</SelectItem>
-                          <SelectItem value="IT2">John G.</SelectItem>
-                          <SelectItem value="IT3">Joriz C.</SelectItem>
-                          <SelectItem value="HR1">HR 1.</SelectItem>
-                          <SelectItem value="HR2">HR 2.</SelectItem>
-                          <SelectItem value="HR3">HR 3.</SelectItem>
+                          <SelectItem value="IT1">IT1</SelectItem>
+                          <SelectItem value="IT2">IT2</SelectItem>
+                          <SelectItem value="IT3">IT3</SelectItem>
+                          <SelectItem value="HR1">HR1</SelectItem>
+                          <SelectItem value="HR2">HR2</SelectItem>
+                          <SelectItem value="HR3">HR3</SelectItem>
                         </SelectGroup>
                       </SelectContent>
                     </Select>
@@ -179,7 +179,9 @@ const AdminViewIndovidualTicket: React.FC = () => {
                       <SelectContent>
                         <SelectGroup>
                           <SelectItem value="open"> Open </SelectItem>
-                          <SelectItem value="ongoing">Ongoing</SelectItem>
+                          <SelectItem value="In Progress">
+                            In Progress
+                          </SelectItem>
                           <SelectItem value="closed">Closed</SelectItem>
                         </SelectGroup>
                       </SelectContent>
@@ -205,25 +207,12 @@ const AdminViewIndovidualTicket: React.FC = () => {
         <div className="flex justify-between px-10 items-center mt-5 ">
           <div>
             <h1 className="font-bold text-xl">Ticket ID: {details?._id}</h1>
-            <p>Date Submitted: {formattedDate(details?.createdAt || "")}</p>
-            <p>Category: {details?.category}</p>
-            <p>Created By: {details?.name}</p>
-            <p>
-              Assigned To:{" "}
-              {details?.assignedTo === "IT1"
-                ? "Arvin B."
-                : details?.assignedTo === "IT2"
-                ? "John G."
-                : details?.assignedTo === "IT3"
-                ? "Joriz C."
-                : details?.assignedTo === "HR1"
-                ? "HR 1."
-                : details?.assignedTo === "HR2"
-                ? "HR 2."
-                : details?.assignedTo === "HR3"
-                ? "HR 3."
-                : "Not Assigned"}
+            <p className="text-sm">
+              Date Submitted: {formattedDate(details?.createdAt || "")}
             </p>
+            <p className="text-sm">Category: {details?.category}</p>
+            <p className="text-sm">Created By: {details?.name}</p>
+            <p className="text-sm">Assigned To:{details?.assignedTo}</p>
           </div>
           <div>
             <p>
@@ -279,10 +268,10 @@ const AdminViewIndovidualTicket: React.FC = () => {
               >
                 <div className="flex flex-col sm:flex-row justify-between">
                   <div className="flex-1 min-w-0 mr-4">
-                    <p className="font-semibold break-words">
+                    <p className="font-semibold break-words text-sm">
                       Note From {note.name}
                     </p>
-                    <p className="break-words">{note.text}</p>
+                    <p className="break-words text-sm">{note.text}</p>
                   </div>
                   <div className="flex-shrink-0 mt-2 sm:mt-0">
                     <p className="text-xs whitespace-nowrap">

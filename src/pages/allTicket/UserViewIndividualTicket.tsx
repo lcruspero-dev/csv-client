@@ -85,9 +85,11 @@ const UserViewIndovidualTicket: React.FC = () => {
         <div className="flex justify-between px-10 items-center mt-5 ">
           <div>
             <h1 className="font-bold text-xl">Ticket ID: {details?._id}</h1>
-            <p>Date Submitted: {formattedDate(details?.createdAt || "")}</p>
-            <p>Category: {details?.category}</p>
-            <p>Assigned To: {details?.assignedTo}</p>
+            <p className="text-sm">
+              Date Submitted: {formattedDate(details?.createdAt || "")}
+            </p>
+            <p className="text-sm">Category: {details?.category}</p>
+            <p className="text-sm">Assigned To: {details?.assignedTo}</p>
           </div>
           <div>
             <p>
@@ -143,10 +145,10 @@ const UserViewIndovidualTicket: React.FC = () => {
               >
                 <div className="flex flex-col sm:flex-row justify-between">
                   <div className="flex-1 min-w-0 mr-4">
-                    <p className="font-semibold break-words">
+                    <p className="font-semibold break-words text-sm">
                       Note From {note.name}
                     </p>
-                    <p className="break-words">{note.text}</p>
+                    <p className="break-words text-sm">{note.text}</p>
                   </div>
                   <div className="flex-shrink-0 mt-2 sm:mt-0">
                     <p className="text-xs whitespace-nowrap">

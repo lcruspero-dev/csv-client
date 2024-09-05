@@ -32,7 +32,7 @@ const ViewAllRaisedTickets: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [statusFilter, setStatusFilter] = useState<string>("open");
   const [assignedToFilter, setAssignedToFilter] = useState<string>("all");
-  const [assignedToOptions, setAssignedToOptions] = useState<string[]>([]);
+  const [, setAssignedToOptions] = useState<string[]>([]);
   const navigate = useNavigate();
 
   const getAllRaisedTickets = async () => {
@@ -64,7 +64,14 @@ const ViewAllRaisedTickets: React.FC = () => {
     let filtered = tickets;
 
     if (status !== "all") {
-      filtered = filtered.filter((ticket) => ticket.status === status);
+      if (status === "open") {
+        filtered = filtered.filter(
+          (ticket) =>
+            ticket.status === "open" || ticket.status === "In Progress"
+        );
+      } else {
+        filtered = filtered.filter((ticket) => ticket.status === status);
+      }
     }
 
     if (assignedTo !== "all") {
@@ -92,7 +99,9 @@ const ViewAllRaisedTickets: React.FC = () => {
         <div className="absolute left-0 top-3">
           <BackButton />
         </div>
-        <h1 className="text-5xl font-bold text-center pt-7">Tickets</h1>
+        <h1 className="text-5xl font-bold text-center pt-7 pb-2">
+          All Tickets
+        </h1>
       </div>
       <div className="mb-4 flex justify-between items-center">
         <div className="flex space-x-4">
@@ -107,7 +116,7 @@ const ViewAllRaisedTickets: React.FC = () => {
               className="border p-2 rounded"
             >
               <option value="open">Open</option>
-              <option value="ongoing">In-Progress</option>
+              <option value="In Progress">In Progress</option>
               <option value="closed">Closed</option>
               <option value="all">All</option>
             </select>
@@ -122,11 +131,20 @@ const ViewAllRaisedTickets: React.FC = () => {
               onChange={(e) => setAssignedToFilter(e.target.value)}
               className="border p-2 rounded"
             >
-              {assignedToOptions.map((option) => (
+              <option value="all">All</option>
+              <option value="IT1">IT1</option>
+              <option value="IT2">IT2</option>
+              <option value="IT3">IT3</option>
+              <option value="HR1">HR1</option>
+              <option value="HR2">HR2</option>
+              <option value="HR3">HR3</option>
+              <option value="Not Assigned">Not Assigned</option>
+
+              {/* {assignedToOptions.map((option) => (
                 <option key={option} value={option}>
                   {option}
                 </option>
-              ))}
+              ))} */}
             </select>
           </div>
         </div>
@@ -149,11 +167,11 @@ const ViewAllRaisedTickets: React.FC = () => {
             <TableHead className="font-bold text-black text-center w-80">
               Description
             </TableHead>
-            <TableHead className="text-center font-bold text-black w-24">
+            <TableHead className="text-center font-bold text-black w-26">
               Status
             </TableHead>
             <TableHead className="text-center font-bold text-black w-36">
-              Assign
+              Assigned
             </TableHead>
             <TableHead className="font-bold text-black text-center w-24">
               Action
@@ -164,21 +182,23 @@ const ViewAllRaisedTickets: React.FC = () => {
           {filteredTickets.map((ticket, index) => (
             <TableRow
               key={ticket._id}
-              className={index % 2 === 0 ? "bg-gray-100" : "bg-white"}
+              className={`${
+                index % 2 === 0 ? "bg-gray-100" : "bg-white"
+              } text-sm`}
             >
-              <TableCell className="font-medium text-center">
+              <TableCell className="font-medium text-center text-xs">
                 {formattedDate(ticket.createdAt)}
               </TableCell>
               <TableCell className="text-center">{ticket.category}</TableCell>
               <TableCell className="text-center">{ticket.name}</TableCell>
-              <TableCell className="text-center max-w-xs truncate">
+              <TableCell className="text-center max-w-xs truncate ">
                 {ticket.description.length > 45
                   ? `${ticket.description.substring(0, 45)}...`
                   : ticket.description}
               </TableCell>
               <TableCell>
                 <p
-                  className={`p-1 rounded-md text-center text-primary-foreground font-semibold ${
+                  className={`py-1 mx-4 rounded-sm text-center text-primary-foreground font-semibold text-xs ${
                     ticket.status === "new" || ticket.status === "open"
                       ? "bg-green-600"
                       : ticket.status === "closed"

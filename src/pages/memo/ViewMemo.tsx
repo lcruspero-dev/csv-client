@@ -70,19 +70,16 @@ function ViewMemo() {
         <Table>
           <TableHeader className="bg-slate-200 ">
             <TableRow>
-              <TableHead className="text-center font-bold text-black w-48">
+              <TableHead className="text-center font-bold text-black w-40">
                 Date
               </TableHead>
-              <TableHead className="text-center font-bold text-black w-60">
+              <TableHead className="text-center font-bold text-black w-96">
                 Subject
               </TableHead>
-              <TableHead className="font-bold text-black text-center w-80">
-                Description
-              </TableHead>
-              <TableHead className="text-center font-bold text-black w-24">
+              <TableHead className="text-center font-bold text-black w-16">
                 Acknowledge
               </TableHead>
-              <TableHead className="text-center font-bold text-black w-36">
+              <TableHead className="text-center font-bold text-black w-16">
                 Action
               </TableHead>
             </TableRow>
@@ -96,13 +93,12 @@ function ViewMemo() {
                 <TableCell className="font-medium text-center">
                   {formattedDate(ticket.createdAt)}
                 </TableCell>
-                <TableCell className="text-center"> {ticket.subject}</TableCell>
-                <TableCell className="text-center max-w-xs truncate">
-                  {ticket.description.length > 45
-                    ? `${ticket.description.substring(0, 45)}...`
-                    : ticket.description}
+                <TableCell className=" max-w-xs truncate">
+                  {ticket.subject.length > 60
+                    ? `${ticket.subject.substring(0, 60)}...`
+                    : ticket.subject}
                 </TableCell>
-                <TableCell>
+                <TableCell className="text-center">
                   {ticket.acknowledgedby.length > 0 &&
                   ticket.acknowledgedby.includes(user?.email)
                     ? "Admin"
