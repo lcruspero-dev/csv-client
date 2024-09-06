@@ -62,7 +62,7 @@ const ViewIndividualMemo = () => {
           </pre>
         </div>
         <div>
-          <ScrollArea className="h-24 bg-red-600 rounded-md border p-4 mt-10">
+          <ScrollArea className="h-24  rounded-md border p-4 mt-10">
             {memos?.acknowledgedby && memos.acknowledgedby.length > 0 ? (
               memos.acknowledgedby.map((user, index) => (
                 <p key={index}>{user.name}</p>

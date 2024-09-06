@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import CreateMemo from "@/pages/memo/CreateMemo";
+import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
 
 import { Button } from "@/components/ui/button";
 import LoadingComponent from "@/components/ui/loading";
@@ -23,7 +24,11 @@ export interface Memo {
   description: string;
   createdAt: string;
   updatedAt: string;
-  acknowledgedby: { name: string }[];
+  acknowledgedby: {
+    userId: string | undefined;
+    _id: string;
+    name: string;
+  }[];
 }
 interface User {
   _id: string;
@@ -85,30 +90,32 @@ function ViewMemo() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {memos.map((ticket, index) => (
+            {memos.map((memo, index) => (
               <TableRow
-                key={ticket._id}
+                key={memo._id}
                 className={index % 2 === 0 ? "bg-gray-100" : "bg-white"}
               >
                 <TableCell className="font-medium text-center">
-                  {formattedDate(ticket.createdAt)}
+                  {formattedDate(memo.createdAt)}
                 </TableCell>
-                <TableCell className=" max-w-xs truncate">
-                  {ticket.subject.length > 60
-                    ? `${ticket.subject.substring(0, 60)}...`
-                    : ticket.subject}
+                <TableCell className="text-center max-w-xs truncate">
+                  {memo.subject.length > 100
+                    ? `${memo.subject.substring(0, 100)}...`
+                    : memo.subject}
                 </TableCell>
                 <TableCell className="text-center">
-                  {ticket.acknowledgedby.length > 0 &&
-                  ticket.acknowledgedby.includes(user?.email)
-                    ? "Admin"
-                    : "No Acknowledgement"}
+                  {memo.acknowledgedby.some(
+                    (ack) => ack.userId === user?._id
+                  ) ? (
+                    <CheckCircleRoundedIcon className="text-green-500" />
+                  ) : (
+                    <CheckCircleRoundedIcon className="text-gray-400" />
+                  )}
                 </TableCell>
-                {/* <TableCell className="text-center">{ticket.assignedTo}</TableCell> */}
                 <TableCell className="text-center">
                   <Button
                     onClick={() => {
-                      navigate(`/memo/${ticket._id}`);
+                      navigate(`/memo/${memo._id}`);
                     }}
                   >
                     View
