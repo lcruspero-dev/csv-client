@@ -67,9 +67,11 @@ function ViewMemo() {
           <div className="absolute left-36 top-12">
             <BackButton />
           </div>
-          <div className="absolute right-36 top-12">
-            <CreateMemo />
-          </div>
+          {user?.isAdmin && (
+            <div className="absolute right-36 top-12">
+              <CreateMemo />
+            </div>
+          )}
           <h1 className="text-5xl font-bold text-center py-7">Memo List</h1>
         </div>
         <Table>

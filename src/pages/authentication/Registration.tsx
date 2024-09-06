@@ -63,13 +63,13 @@ const Registration = () => {
     return <Navigate to="/" replace />;
   }
   return (
-    <div className="flex w-full justify-end mb-40">
+    <div className="flex w-full justify-end mb-40 mt-10">
       <form className=" w-1/2 space-y-4" onSubmit={handleSubmit}>
         <h1 className="text-4xl drop-shadow-lg p-2 font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#1638df] to-[#192fb4]">
           Create Account
         </h1>
         <Input
-          placeholder="Name"
+          placeholder="Full Name"
           name="name"
           type="text"
           className="w-full"
@@ -77,7 +77,7 @@ const Registration = () => {
           required
         />
         <Input
-          placeholder="Email"
+          placeholder="Company Email"
           name="email"
           type="email"
           className="w-full"

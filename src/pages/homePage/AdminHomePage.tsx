@@ -19,32 +19,32 @@ const AdminHome = () => {
       <div className=" container grid grid-cols-3 gap-5 mt-5 text-center p-5 drop-shadow-lg w-6/12">
         <Card
           className="hover:scale-105 ease-in-out duration-200 cursor-pointer hover:border-1 hover:border-[#5a95ff]  "
-          onClick={() => navigate("/create-ticket")}
+          onClick={() => navigate("/all-memo")}
         >
-          <img src={gethelp} alt="test" />
-          <p className="py-3 font-bold">IT Department</p>
+          <img src={alltickets} alt="alltickets" />
+          <p className="py-3 font-bold">Memo</p>
         </Card>
         <Card
           className="hover:scale-105 ease-in-out duration-200 cursor-pointer hover:border-1 hover:border-[#5a95ff] "
           onClick={() => navigate("/request-something")}
         >
           <img src={request} alt="test" />
-          <p className="py-3 font-bold">HR Department</p>
+          <p className="py-3 font-bold">HR Support Request</p>
         </Card>
+        <Card
+          className="hover:scale-105 ease-in-out duration-200 cursor-pointer hover:border-1 hover:border-[#5a95ff] "
+          onClick={() => navigate("/create-ticket")}
+        >
+          <img src={gethelp} alt="test" />
+          <p className="py-3 font-bold">IT Support Request</p>
+        </Card>
+
         <Card
           className="hover:scale-105 ease-in-out duration-200 cursor-pointer hover:border-1 hover:border-[#5a95ff] "
           onClick={() => navigate("/all-tickets")}
         >
           <img src={ticket} alt="test" />
           <p className="py-3 font-bold">View All Tickets</p>
-        </Card>
-
-        <Card
-          className="hover:scale-105 ease-in-out duration-200 cursor-pointer hover:border-1 hover:border-[#5a95ff] "
-          onClick={() => navigate("/all-memo")}
-        >
-          <img src={alltickets} alt="alltickets" />
-          <p className="py-3 font-bold">Memo</p>
         </Card>
         <Card>
           <img src={test} alt="test" />
