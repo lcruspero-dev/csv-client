@@ -118,12 +118,8 @@ const Request = () => {
               <SelectItem value="Employee Benefits">
                 Employee Benefits
               </SelectItem>
-              <SelectItem value="Payroll">
-              Payroll
-              </SelectItem>
-              <SelectItem value="Loan Request">
-              Loan Request
-              </SelectItem>
+              <SelectItem value="Payroll">Payroll</SelectItem>
+              <SelectItem value="Loan Request">Loan Request</SelectItem>
               <SelectItem value="Leave Request">Leave Request</SelectItem>
               <SelectItem value="Other">Other</SelectItem>
             </SelectGroup>

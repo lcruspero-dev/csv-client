@@ -40,7 +40,7 @@ const AdminViewIndovidualTicket: React.FC = () => {
   const [status, setStatus] = useState<any>();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
- 
+
   const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(event.target.value);
   };
@@ -128,7 +128,7 @@ const AdminViewIndovidualTicket: React.FC = () => {
       setIsUpdating(false);
     }
   };
- 
+
   return (
     <div className="container">
       <div className="px-36 pt-5">
@@ -159,10 +159,18 @@ const AdminViewIndovidualTicket: React.FC = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectGroup>
-                          <SelectItem value="IT-Joriz Cabrera">IT Joriz Cabrera</SelectItem>
-                          <SelectItem value="IT-Arvin Bautista">IT Arvin Bautista</SelectItem>
-                          <SelectItem value="IT-John Louie Gastardo">IT John Louie Gastardo</SelectItem>
-                          <SelectItem value="HR-Cindy Tabudlong">HR Cindy Tabudlong</SelectItem>
+                          <SelectItem value="IT-Joriz Cabrera">
+                            IT Joriz Cabrera
+                          </SelectItem>
+                          <SelectItem value="IT-Arvin Bautista">
+                            IT Arvin Bautista
+                          </SelectItem>
+                          <SelectItem value="IT-John Louie Gastardo">
+                            IT John Louie Gastardo
+                          </SelectItem>
+                          <SelectItem value="HR-Cindy Tabudlong">
+                            HR Cindy Tabudlong
+                          </SelectItem>
                           <SelectItem value="HR2">HR2</SelectItem>
                           <SelectItem value="HR3">HR3</SelectItem>
                         </SelectGroup>
@@ -213,7 +221,7 @@ const AdminViewIndovidualTicket: React.FC = () => {
             </p>
             <p className="text-sm">Category: {details?.category}</p>
             <p className="text-sm">Created By: {details?.name}</p>
-            <p className="text-sm">Assigned To: {details?.assignedTo }</p>
+            <p className="text-sm">Assigned To: {details?.assignedTo}</p>
           </div>
           <div>
             <p>
@@ -234,8 +242,8 @@ const AdminViewIndovidualTicket: React.FC = () => {
         </div>
         <hr className="w-full border-t border-gray-300 my-4" />
         <div className="bg-slate-200 p-4 rounded-sm border-2 border-gray-300">
-          <p className="font-semibold mb-2">Description</p>
-          <pre className="whitespace-pre-wrap font-sans p-3 rounded-sm overflow-x-auto">
+          <p className="font-semibold mb-2 text-sm">Description</p>
+          <pre className="whitespace-pre-wrap font-sans p-3 rounded-sm overflow-x-auto text-sm">
             {details?.description}
           </pre>
         </div>
@@ -270,7 +278,7 @@ const AdminViewIndovidualTicket: React.FC = () => {
                 <div className="flex flex-col sm:flex-row justify-between">
                   <div className="flex-1 min-w-0 mr-4">
                     <p className="font-semibold break-words text-sm">
-                      Note From {note.name}
+                      From {note.name}
                     </p>
                     <p className="break-words text-sm">{note.text}</p>
                   </div>

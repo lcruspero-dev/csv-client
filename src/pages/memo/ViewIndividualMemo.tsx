@@ -4,10 +4,10 @@ import BackButton from "@/components/kit/BackButton";
 import { Button } from "@/components/ui/button";
 import Loading from "@/components/ui/loading"; // Ensure this path is correct
 
+import { useToast } from "@/components/ui/use-toast";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Memo, User } from "./ViewMemo";
-import { useToast } from "@/components/ui/use-toast";
 
 const ViewIndividualMemo = () => {
   const [memos, setMemos] = useState<Memo>();
@@ -32,12 +32,15 @@ const ViewIndividualMemo = () => {
     }
   };
 
-  const handleAcknowldged = async( id: string) => {
+  const handleAcknowldged = async (id: string) => {
     try {
       const response = await TicketAPi.acknowledgement(id);
-      console.log("acknowledged",response.data);
-      getIndividualMemo(id)
-      toast({ title: "Your acknowledgement of the memo has  been recorded. Thank you !" });
+      console.log("acknowledged", response.data);
+      getIndividualMemo(id);
+      toast({
+        title:
+          "Your acknowledgement of the memo has  been recorded. Thank you !",
+      });
     } catch (error) {
       console.error(error);
     }
@@ -46,7 +49,6 @@ const ViewIndividualMemo = () => {
     if (id) {
       setIsLoading(true); // Set loading to true before fetching data
       getIndividualMemo(id);
-       
     }
   }, [id]);
 
@@ -67,24 +69,30 @@ const ViewIndividualMemo = () => {
             <p className="text-sm">File Attachment: {memos?.file}</p>
           </div>
 
-          {memos?.acknowledgedby.some(
-                    (ack) => ack.userId === user?._id
-                  ) ? (
-                   <div></div>
-                  ) : (
-                    <>
-                      <div>
-                          <p className="text-sm">
-                            <input type="checkbox" className="w-4 h-4"  onChange={handleCheckboxChange}
-          checked={isChecked} /> I hereby acknowledge
-                            receipt of this memo
-                          </p>
-                          <Button className="text-xs ml-5 mt-2 " onClick={()=> handleAcknowldged(id as string)}   disabled={!isChecked}>Confirm</Button>
-                      </div> 
-                     </>
-                  )}
-
-           
+          {memos?.acknowledgedby.some((ack) => ack.userId === user?._id) ? (
+            <div></div>
+          ) : (
+            <>
+              <div>
+                <p className="text-sm">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4"
+                    onChange={handleCheckboxChange}
+                    checked={isChecked}
+                  />{" "}
+                  I hereby acknowledge receipt of this memo
+                </p>
+                <Button
+                  className="text-xs ml-5 mt-2 "
+                  onClick={() => handleAcknowldged(id as string)}
+                  disabled={!isChecked}
+                >
+                  Confirm
+                </Button>
+              </div>
+            </>
+          )}
         </div>
         <hr className="w-full border-t border-gray-300 my-4" />
         <div className="bg-slate-200 p-4 rounded-sm border-2 border-gray-300">
@@ -93,18 +101,20 @@ const ViewIndividualMemo = () => {
           </pre>
         </div>
         <div>
-          <div className="mt-10">
-            <h1>Acknowledged By:</h1>
-            {memos?.acknowledgedby && memos.acknowledgedby.length > 0 ? (
-              memos.acknowledgedby.map((user, index) => (
-               <div className=" flex gap-2 flex-wrap text-xs p-4 ">
+          {user?.isAdmin && (
+            <div className="mt-10">
+              <h1>Acknowledged By:</h1>
+              {memos?.acknowledgedby && memos.acknowledgedby.length > 0 ? (
+                <div className="flex gap-2 flex-wrap text-xs p-4">
+                  {memos.acknowledgedby.map((user, index) => (
                     <p key={index}>{user.name},</p>
-                    </div>
-              ))
-            ) : (
-              <p>N/A</p>
-            )}
-          </div>
+                  ))}
+                </div>
+              ) : (
+                <p>N/A</p>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
