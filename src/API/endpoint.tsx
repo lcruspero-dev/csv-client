@@ -46,5 +46,6 @@ export const TicketAPi = {
   createMemo : (body: object) => apiHelper("/api/memos/create", "POST", body),
   getAllMemo : () => apiHelper("/api/memos/", "GET"),
   getIndividualMemo : (id: any) => apiHelper(`/api/memos/${id}`, "GET"),
+  acknowledgement : (id: any) => apiHelper(`/api/memos/${id}/acknowledged`, "PUT"),
 };
 

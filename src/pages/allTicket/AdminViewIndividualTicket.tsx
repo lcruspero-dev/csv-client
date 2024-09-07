@@ -40,7 +40,7 @@ const AdminViewIndovidualTicket: React.FC = () => {
   const [status, setStatus] = useState<any>();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-
+ 
   const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(event.target.value);
   };
@@ -128,6 +128,7 @@ const AdminViewIndovidualTicket: React.FC = () => {
       setIsUpdating(false);
     }
   };
+ 
   return (
     <div className="container">
       <div className="px-36 pt-5">
@@ -158,10 +159,10 @@ const AdminViewIndovidualTicket: React.FC = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectGroup>
-                          <SelectItem value="IT1">IT1</SelectItem>
-                          <SelectItem value="IT2">IT2</SelectItem>
-                          <SelectItem value="IT3">IT3</SelectItem>
-                          <SelectItem value="HR1">HR1</SelectItem>
+                          <SelectItem value="IT-Joriz Cabrera">IT Joriz Cabrera</SelectItem>
+                          <SelectItem value="IT-Arvin Bautista">IT Arvin Bautista</SelectItem>
+                          <SelectItem value="IT-John Louie Gastardo">IT John Louie Gastardo</SelectItem>
+                          <SelectItem value="HR-Cindy Tabudlong">HR Cindy Tabudlong</SelectItem>
                           <SelectItem value="HR2">HR2</SelectItem>
                           <SelectItem value="HR3">HR3</SelectItem>
                         </SelectGroup>
@@ -212,7 +213,7 @@ const AdminViewIndovidualTicket: React.FC = () => {
             </p>
             <p className="text-sm">Category: {details?.category}</p>
             <p className="text-sm">Created By: {details?.name}</p>
-            <p className="text-sm">Assigned To:{details?.assignedTo}</p>
+            <p className="text-sm">Assigned To: {details?.assignedTo }</p>
           </div>
           <div>
             <p>

@@ -132,10 +132,10 @@ const ViewAllRaisedTickets: React.FC = () => {
               className="border p-2 rounded"
             >
               <option value="all">All</option>
-              <option value="IT1">IT1</option>
-              <option value="IT2">IT2</option>
-              <option value="IT3">IT3</option>
-              <option value="HR1">HR1</option>
+              <option value="IT-Joriz Cabrera">Joriz</option>
+              <option value="IT-Arvin Bautista">Arvin</option>
+              <option value="IT-John Louie Gastardo">John Louie</option>
+              <option value="HR-Cindy Tabudlong">Cindy</option>
               <option value="HR2">HR2</option>
               <option value="HR3">HR3</option>
               <option value="Not Assigned">Not Assigned</option>

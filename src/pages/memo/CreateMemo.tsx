@@ -17,14 +17,30 @@ import { useToast } from "@/components/ui/use-toast";
 import "quill/dist/quill.core.css";
 import { useState } from "react";
 import { Textarea } from "../../components/ui/textarea";
-const CreateMemo = () => {
+import { Memo } from "./ViewMemo";
+interface CreateMemoProps {
+  setMemos: React.Dispatch<React.SetStateAction<Memo[]>>;
+  setLoading: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
+const CreateMemo : React.FC<CreateMemoProps> = ({ setMemos,setLoading }) => {
   const [subject, setSubject] = useState("");
   const [description, setDescription] = useState("");
   const [filename, setFilename] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
-
+  const getMemos = async () => {
+    try {
+      const response = await TicketAPi.getAllMemo();
+      console.log(response.data);
+      setMemos(response.data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false); // Stop loading after the request is done
+    }
+  };
   const handleDescriptionChange = (
     e: React.ChangeEvent<HTMLTextAreaElement>
   ) => {
@@ -46,6 +62,7 @@ const CreateMemo = () => {
       console.log(body);
       const response = await TicketAPi.createMemo(body);
       console.log(response.data);
+      getMemos()
       toast({ title: "Memo created " });
       setSubject("");
       setDescription("");
@@ -95,7 +112,7 @@ const CreateMemo = () => {
       <DialogTrigger asChild>
         <Button>Compose</Button>
       </DialogTrigger>
-      <DialogContent className="w-[600px] h-[600px] max-w-none bg-[#eef4ff]">
+      <DialogContent className="w-[900px] h-[600px] max-w-none bg-[#eef4ff]">
         <DialogHeader>
           <DialogTitle className="text-2xl drop-shadow-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#1638df] to-[#192fb4]">
             Create Memo
@@ -104,7 +121,7 @@ const CreateMemo = () => {
             Input details here. Click save when you're done.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 h-full max-w-lg pl-4">
+        <div className="grid gap-4 h-full   pl-4">
           <Label htmlFor="subject" className="text-base font-bold">
             <p>Subject</p>
           </Label>

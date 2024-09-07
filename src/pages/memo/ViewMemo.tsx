@@ -30,12 +30,13 @@ export interface Memo {
     name: string;
   }[];
 }
-interface User {
+export interface User {
   _id: string;
   name: string;
   isAdmin: boolean;
   email: string;
 }
+
 function ViewMemo() {
   const [memos, setMemos] = useState<Memo[]>([]);
   const [loading, setLoading] = useState<boolean>(true); // Loading state
@@ -69,7 +70,7 @@ function ViewMemo() {
           </div>
           {user?.isAdmin && (
             <div className="absolute right-36 top-12">
-              <CreateMemo />
+              <CreateMemo  setMemos={setMemos} setLoading={setLoading}/>
             </div>
           )}
           <h1 className="text-5xl font-bold text-center py-7">Memo List</h1>
@@ -84,7 +85,7 @@ function ViewMemo() {
                 Subject
               </TableHead>
               <TableHead className="text-center font-bold text-black w-16">
-                Acknowledge
+                Acknowledgement
               </TableHead>
               <TableHead className="text-center font-bold text-black w-16">
                 Action
