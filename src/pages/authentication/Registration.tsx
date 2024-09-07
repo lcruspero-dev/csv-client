@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { AuthAPI } from "@/API/authEndPoint";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,12 +6,14 @@ import { useAuth } from "@/context/useAuth";
 
 import { ChangeEvent, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
+
 interface Form {
   name: string;
   email: string;
   password: string;
   confirm_password: string;
 }
+
 const Registration = () => {
   const [form, setForm] = useState<Form>({
     name: "",
@@ -28,11 +28,23 @@ const Registration = () => {
     setForm({ ...form, [e.target.name]: e.target.value });
     console.log(form);
   };
+
   const { login } = useAuth();
-  const handleSubmit = async (e: any) => {
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (form.password !== form.confirm_password) {
       toast({ title: "Passwords do not match" });
+      return;
+    }
+
+    // Email validation
+    if (!form.email.endsWith("@csvnow.com")) {
+      toast({
+        title: "Invalid email domain",
+        description: "Please use an email address ending with @csvnow.com",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -52,19 +64,25 @@ const Registration = () => {
 
       navigate("/");
     } catch (error) {
-      toast({ title: "User Already Exists" });
+      toast({
+        title: "Error creating account",
+        description: "User Already Exists",
+        variant: "destructive",
+      });
       console.error(error);
     }
   };
+
   const isAuthenticated = localStorage.getItem("user");
 
   // If the user is authenticated, redirect them to the homepage
   if (isAuthenticated) {
     return <Navigate to="/" replace />;
   }
+
   return (
     <div className="flex w-full justify-end mb-40 mt-10">
-      <form className=" w-1/2 space-y-4" onSubmit={handleSubmit}>
+      <form className="w-1/2 space-y-4" onSubmit={handleSubmit}>
         <h1 className="text-4xl drop-shadow-lg p-2 font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#1638df] to-[#192fb4]">
           Create Account
         </h1>
@@ -98,8 +116,11 @@ const Registration = () => {
           type="password"
           className="w-full"
           onChange={handleChange}
+          required
         />
-        <Button className="w-full">SignUp</Button>
+        <Button className="w-full" type="submit">
+          SignUp
+        </Button>
       </form>
     </div>
   );

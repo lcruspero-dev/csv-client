@@ -41,14 +41,17 @@ const AdminHome = () => {
 
         <Card
           className="hover:scale-105 ease-in-out duration-200 cursor-pointer hover:border-1 hover:border-[#5a95ff] "
+          onClick={() => navigate("/view-ticket")}
+        >
+          <img src={ticket} alt="my tickets" />
+          <p className="py-3 font-bold">View My Tickets</p>
+        </Card>
+        <Card
+          className="hover:scale-105 ease-in-out duration-200 cursor-pointer hover:border-1 hover:border-[#5a95ff] "
           onClick={() => navigate("/all-tickets")}
         >
-          <img src={ticket} alt="test" />
-          <p className="py-3 font-bold">View All Tickets</p>
-        </Card>
-        <Card>
-          <img src={test} alt="test" />
-          <p className="py-3 font-bold">Manage Users</p>
+          <img src={ticket} alt="manage tickets" />
+          <p className="py-3 font-bold">Manage Tickets</p>
         </Card>
         <Card>
           <img src={test} alt="test" />

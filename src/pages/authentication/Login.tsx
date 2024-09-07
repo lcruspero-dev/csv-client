@@ -7,6 +7,7 @@ import { ChangeEvent, useState } from "react";
 
 import { AuthAPI } from "@/API/authEndPoint";
 import { useAuth } from "@/context/useAuth";
+
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 
 const Login = () => {
@@ -35,13 +36,28 @@ const Login = () => {
     try {
       const response = await AuthAPI.login(form);
       console.log(response.data);
-      toast({ title: "Login successfully" });
+      toast({
+        title: "Success",
+        description: " Login successfully",
+        variant: "default",
+      });
       localStorage.setItem("user", JSON.stringify(response.data));
       login({ isAuthenticated: true, isAdmin: response.data.isAdmin });
       navigate(from, { replace: true });
-    } catch (error) {
-      toast({ title: "Invalid Account", variant: "destructive" });
-      console.error(error);
+    } catch (response: any) {
+      if (response.message === "Invalid credentials") {
+        toast({
+          title: "Invalid Account",
+          description: "Your email or password is incorrect.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "An error occurred during login. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
 

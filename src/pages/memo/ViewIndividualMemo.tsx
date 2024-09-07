@@ -38,8 +38,9 @@ const ViewIndividualMemo = () => {
       console.log("acknowledged", response.data);
       getIndividualMemo(id);
       toast({
-        title:
-          "Your acknowledgement of the memo has  been recorded. Thank you !",
+        title: "Successfully acknowledged",
+        description:
+          "Your acknowledgement of this memo has  been recorded. Thank you !",
       });
     } catch (error) {
       console.error(error);

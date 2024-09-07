@@ -25,6 +25,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "@/components/ui/use-toast";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Ticket } from "./ViewAllTicket";
@@ -122,8 +123,18 @@ const AdminViewIndovidualTicket: React.FC = () => {
       console.log("response.data", response.data);
       getTicket(String(id));
       setIsSheetOpen(false);
+      toast({
+        title: "Ticket Updated",
+        description: "The ticket has been updated successfully",
+        variant: "default",
+      });
     } catch (error) {
       console.error(error);
+      toast({
+        title: "Error",
+        description: "An error occurred while updating the ticket",
+        variant: "destructive",
+      });
     } finally {
       setIsUpdating(false);
     }

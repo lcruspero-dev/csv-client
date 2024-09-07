@@ -56,7 +56,7 @@ const ViewAllTicket: React.FC = () => {
         <div className="absolute left-0 top-12">
           <BackButton />
         </div>
-        <h1 className="text-5xl font-bold text-center py-7">Tickets</h1>
+        <h1 className="text-5xl font-bold text-center py-7">My Tickets</h1>
       </div>
       <Table>
         <TableHeader className="bg-slate-200 ">

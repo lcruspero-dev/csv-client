@@ -23,7 +23,7 @@ interface CreateMemoProps {
   setLoading: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const CreateMemo : React.FC<CreateMemoProps> = ({ setMemos,setLoading }) => {
+const CreateMemo: React.FC<CreateMemoProps> = ({ setMemos, setLoading }) => {
   const [subject, setSubject] = useState("");
   const [description, setDescription] = useState("");
   const [filename, setFilename] = useState("");
@@ -62,15 +62,20 @@ const CreateMemo : React.FC<CreateMemoProps> = ({ setMemos,setLoading }) => {
       console.log(body);
       const response = await TicketAPi.createMemo(body);
       console.log(response.data);
-      getMemos()
-      toast({ title: "Memo created " });
+      getMemos();
+      toast({
+        title: "Success",
+        description: "Memo created successfully",
+        variant: "default",
+      });
       setSubject("");
       setDescription("");
       setFilename("");
       setIsDialogOpen(false);
     } catch (error) {
       toast({
-        title: "Please add all required fields",
+        title: "Error creating memo",
+        description: "Please add all required fields",
         variant: "destructive",
       });
       console.error(error);

@@ -47,7 +47,11 @@ const CreateTicket = () => {
     try {
       const response = await TicketAPi.createTicket(form);
       console.log(response.data);
-      toast({ title: "Ticket created successfully" });
+      toast({
+        title: "Success",
+        description: "Ticket created successfully",
+        variant: "default",
+      });
       navigate("/view-ticket");
     } catch (error) {
       toast({ title: "Failed to create ticket" });
