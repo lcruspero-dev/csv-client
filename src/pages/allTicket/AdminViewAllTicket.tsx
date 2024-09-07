@@ -33,7 +33,30 @@ const ViewAllRaisedTickets: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>("open");
   const [assignedToFilter, setAssignedToFilter] = useState<string>("all");
   const [, setAssignedToOptions] = useState<string[]>([]);
+  const [userRole, setUserRole] = useState<string>("");
   const navigate = useNavigate();
+
+  const IT_CATEGORIES = [
+    "General IT Support",
+    "Hardware Issue",
+    "Software Issue",
+    "Network & Connectivity",
+    "Account & Access Management",
+    "Email & Communication",
+    "Project & Change Management",
+  ];
+
+  const HR_CATEGORIES = [
+    "Request for Documents",
+    "Request for Meeting",
+    "Certificate of Employment",
+    "Onboarding Request",
+    "Employee Benefits",
+    "Leave Request",
+    "Payroll",
+    "Loan Request",
+    "Other",
+  ];
 
   const getAllRaisedTickets = async () => {
     try {
@@ -45,7 +68,7 @@ const ViewAllRaisedTickets: React.FC = () => {
           ...new Set(response.data.map((ticket: Ticket) => ticket.assignedTo)),
         ];
         setAssignedToOptions(uniqueAssignedTo);
-        filterTickets(response.data as Ticket[], statusFilter, "all");
+        filterTickets(response.data as Ticket[], statusFilter, "all", userRole);
       } else {
         console.error("Unexpected response data format");
       }
@@ -59,10 +82,36 @@ const ViewAllRaisedTickets: React.FC = () => {
   const filterTickets = (
     tickets: Ticket[],
     status: string,
-    assignedTo: string
+    assignedTo: string,
+    role: string
   ) => {
     let filtered = tickets;
 
+    // Role-based filtering
+    if (role === "IT") {
+      filtered = filtered.filter((ticket) =>
+        IT_CATEGORIES.includes(ticket.category)
+      );
+    } else if (role === "HR") {
+      filtered = filtered.filter((ticket) =>
+        HR_CATEGORIES.includes(ticket.category)
+      );
+    }
+
+    // AssignedTo filtering
+    if (assignedTo === "ALL IT") {
+      filtered = filtered.filter((ticket) =>
+        IT_CATEGORIES.includes(ticket.category)
+      );
+    } else if (assignedTo === "ALL HR") {
+      filtered = filtered.filter((ticket) =>
+        HR_CATEGORIES.includes(ticket.category)
+      );
+    } else if (assignedTo !== "all") {
+      filtered = filtered.filter((ticket) => ticket.assignedTo === assignedTo);
+    }
+
+    // Status filtering
     if (status !== "all") {
       if (status === "open") {
         filtered = filtered.filter(
@@ -74,20 +123,38 @@ const ViewAllRaisedTickets: React.FC = () => {
       }
     }
 
-    if (assignedTo !== "all") {
-      filtered = filtered.filter((ticket) => ticket.assignedTo === assignedTo);
-    }
-
     setFilteredTickets(filtered);
   };
 
   useEffect(() => {
-    getAllRaisedTickets();
+    const getUserRole = () => {
+      const userString = localStorage.getItem("user");
+      if (userString) {
+        try {
+          const user = JSON.parse(userString);
+          setUserRole(user.role);
+        } catch (error) {
+          console.error("Error parsing user data from localStorage:", error);
+          setUserRole(""); // Set a default role or handle the error as needed
+        }
+      } else {
+        console.error("User data not found in localStorage");
+        setUserRole(""); // Set a default role or handle the error as needed
+      }
+    };
+
+    getUserRole();
   }, []);
 
   useEffect(() => {
-    filterTickets(allRaisedTickets, statusFilter, assignedToFilter);
-  }, [statusFilter, assignedToFilter, allRaisedTickets]);
+    if (userRole) {
+      getAllRaisedTickets();
+    }
+  }, [userRole]);
+
+  useEffect(() => {
+    filterTickets(allRaisedTickets, statusFilter, assignedToFilter, userRole);
+  }, [statusFilter, assignedToFilter, allRaisedTickets, userRole]);
 
   if (loading) {
     return <LoadingComponent />;
@@ -131,7 +198,13 @@ const ViewAllRaisedTickets: React.FC = () => {
               onChange={(e) => setAssignedToFilter(e.target.value)}
               className="border p-2 rounded"
             >
-              <option value="all">All</option>
+              <option value="all">All Tickets</option>
+              {userRole === "SUPERADMIN" && (
+                <>
+                  <option value="ALL IT">All IT Tickets</option>
+                  <option value="ALL HR">All HR Tickets</option>
+                </>
+              )}
               <option value="IT-Joriz Cabrera">Joriz</option>
               <option value="IT-Arvin Bautista">Arvin</option>
               <option value="IT-John Louie Gastardo">John Louie</option>
@@ -139,12 +212,6 @@ const ViewAllRaisedTickets: React.FC = () => {
               <option value="HR2">HR2</option>
               <option value="HR3">HR3</option>
               <option value="Not Assigned">Not Assigned</option>
-
-              {/* {assignedToOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))} */}
             </select>
           </div>
         </div>
