@@ -97,7 +97,7 @@ const CreateMemo: React.FC<CreateMemoProps> = ({ setMemos, setLoading }) => {
 
     try {
       const response = await axios.post(
-        "http://120.28.169.95:4000/upload",
+        `${import.meta.env.VITE_UPLOADFILES_URL}/upload`,
         formData,
         {
           headers: {
