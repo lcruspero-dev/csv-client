@@ -17,6 +17,7 @@ import LoadingComponent from "@/components/ui/loading";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { formattedDate } from "../../API/helper";
+ 
 export interface Memo {
   _id: string;
   subject: string;
@@ -55,12 +56,16 @@ function ViewMemo() {
       setLoading(false); // Stop loading after the request is done
     }
   };
+
+  
   useEffect(() => {
     getMemos();
   }, []);
   if (loading) {
     return <LoadingComponent />; // Render loading component while fetching data
   }
+
+  console.log("memos",memos)
   return (
     <>
       <div className="container mx-auto">
