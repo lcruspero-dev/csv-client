@@ -3,7 +3,7 @@ import request from "@/assets/Checklist.webp";
 import gethelp from "@/assets/g10.webp";
 import ticket from "@/assets/Group.webp";
 import test from "@/assets/login.webp";
-import manageticket from "@/assets/ManageTicket.webp";
+import manageticket from "@/assets/Manageticket.webp";
 import { Card } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 
