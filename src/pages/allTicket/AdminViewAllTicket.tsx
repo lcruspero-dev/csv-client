@@ -24,6 +24,7 @@ export interface Ticket {
   status: string;
   user: string;
   name: string;
+  priority: string;
 }
 
 const ViewAllRaisedTickets: React.FC = () => {
@@ -205,10 +206,12 @@ const ViewAllRaisedTickets: React.FC = () => {
                   <option value="ALL HR">All HR Tickets</option>
                 </>
               )}
-              <option value="IT-Joriz Cabrera">Joriz</option>
-              <option value="IT-Arvin Bautista">Arvin</option>
-              <option value="IT-John Louie Gastardo">John Louie</option>
-              <option value="HR-Cindy Tabudlong">Cindy</option>
+              <option value="IT-Joriz Cabrera">Joriz Cabrera</option>
+              <option value="IT-Arvin Bautista">Arvin Bautista</option>
+              <option value="IT-John Louie Gastardo">
+                John Louie Gastardo
+              </option>
+              <option value="HR-Cindy Tabudlong">Cindy Tabudlong</option>
               <option value="HR2">HR2</option>
               <option value="HR3">HR3</option>
               <option value="Not Assigned">Not Assigned</option>
@@ -225,20 +228,23 @@ const ViewAllRaisedTickets: React.FC = () => {
             <TableHead className="text-center font-bold text-black w-48">
               Date
             </TableHead>
-            <TableHead className="text-center font-bold text-black w-60">
+            <TableHead className="text-center font-bold text-black w-40">
               Category
             </TableHead>
-            <TableHead className="font-bold text-black text-center w-52">
+            <TableHead className="font-bold text-black text-center w-40">
               Name
             </TableHead>
             <TableHead className="font-bold text-black text-center w-80">
               Description
             </TableHead>
+            <TableHead className="font-bold text-black text-center w-26">
+              Priority
+            </TableHead>
             <TableHead className="text-center font-bold text-black w-26">
               Status
             </TableHead>
             <TableHead className="text-center font-bold text-black w-36">
-              Assigned
+              Assigned to
             </TableHead>
             <TableHead className="font-bold text-black text-center w-24">
               Action
@@ -263,6 +269,7 @@ const ViewAllRaisedTickets: React.FC = () => {
                   ? `${ticket.description.substring(0, 45)}...`
                   : ticket.description}
               </TableCell>
+              <TableCell className="text-center">{ticket.priority}</TableCell>
               <TableCell>
                 <p
                   className={`py-1 mx-4 rounded-sm text-center text-primary-foreground font-semibold text-xs ${

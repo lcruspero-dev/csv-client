@@ -92,10 +92,11 @@ const UserViewIndovidualTicket: React.FC = () => {
             <p className="text-sm">Assigned To: {details?.assignedTo}</p>
           </div>
           <div>
-            <p>
+            <p className="text-sm mb-2">Priority: {details?.priority}</p>
+            <p className="text-sm">
               Status:
               <span
-                className={`py-1 px-2 ml-2 rounded-md text-center text-primary-foreground font-semibold ${
+                className={`py-1 px-2 ml-2 rounded-md text-center text-primary-foreground font-semibold text-xs ${
                   details?.status === "new" || details?.status === "open"
                     ? "bg-green-600"
                     : details?.status === "closed"

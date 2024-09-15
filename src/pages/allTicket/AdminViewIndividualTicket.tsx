@@ -39,6 +39,7 @@ const AdminViewIndovidualTicket: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [assign, setAssign] = useState<any>();
   const [status, setStatus] = useState<any>();
+  const [priority, setPriority] = useState<any>();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -81,6 +82,10 @@ const AdminViewIndovidualTicket: React.FC = () => {
   const handleStatusChange = (value: string) => {
     setStatus({ ...status, status: value });
   };
+
+  const handlePriorityChange = (value: string) => {
+    setPriority({ ...priority, priority: value });
+  };
   const SubmitNote = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return; // Prevent multiple submissions
@@ -117,6 +122,7 @@ const AdminViewIndovidualTicket: React.FC = () => {
     const body = {
       assignedTo: assign?.assign,
       status: status?.status,
+      priority: priority?.priority,
     };
     try {
       const response = await TicketAPi.updateTicket(id, body);
@@ -207,6 +213,23 @@ const AdminViewIndovidualTicket: React.FC = () => {
                       </SelectContent>
                     </Select>
                   </div>
+                  <div>
+                    <Label htmlFor="priority" className="text-right">
+                      Priority
+                    </Label>
+                    <Select onValueChange={handlePriorityChange} required>
+                      <SelectTrigger className="mb-2 mt-2">
+                        <SelectValue placeholder={details?.priority} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem value="1-Critical">1-Critical</SelectItem>
+                          <SelectItem value="2-High">2-High</SelectItem>
+                          <SelectItem value="3-Moderate">3-Moderate</SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <SheetFooter>
                   <SheetClose asChild>
@@ -235,10 +258,11 @@ const AdminViewIndovidualTicket: React.FC = () => {
             <p className="text-sm">Assigned To: {details?.assignedTo}</p>
           </div>
           <div>
-            <p>
+            <p className="text-sm mb-2">Priority: {details?.priority}</p>
+            <p className="text-sm">
               Status:
               <span
-                className={`py-1 px-2 ml-2 rounded-md text-center text-primary-foreground font-semibold ${
+                className={`py-1 px-2 ml-2 rounded-md text-center text-primary-foreground font-semibold text-xs ${
                   details?.status === "new" || details?.status === "open"
                     ? "bg-green-600"
                     : details?.status === "closed"

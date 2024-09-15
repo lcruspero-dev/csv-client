@@ -67,10 +67,10 @@ const Request = () => {
       <form className="mt-5 w-1/2" onSubmit={handleSubmit}>
         <div className="text-center">
           <div className="mb-3"></div>
-          <h1 className="text-5xl font-bold py-2 bg-clip-text text-transparent bg-gradient-to-r from-[#1638df] to-[#192fb4]">
+          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold py-1 sm:py-2 md:py-3 bg-clip-text text-transparent bg-gradient-to-r from-[#1638df] to-[#192fb4]">
             Create HR Request Ticket
           </h1>
-          <p className="text-4xl font-bold text-black">
+          <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-black">
             Please fill out the form below
           </p>
         </div>

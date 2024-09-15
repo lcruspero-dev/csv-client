@@ -24,6 +24,7 @@ export interface Ticket {
   status: string;
   user: string;
   name: string;
+  priority: string;
 }
 
 const ViewAllTicket: React.FC = () => {
@@ -74,7 +75,7 @@ const ViewAllTicket: React.FC = () => {
               Status
             </TableHead>
             <TableHead className="text-center font-bold text-black w-36">
-              Assign
+              Assigned to
             </TableHead>
             <TableHead className="font-bold text-black text-center w-24">
               Action
@@ -98,7 +99,7 @@ const ViewAllTicket: React.FC = () => {
               </TableCell>
               <TableCell>
                 <p
-                  className={`p-1 rounded-md text-center text-primary-foreground font-semibold ${
+                  className={`p-1 rounded-md text-center text-primary-foreground font-semibold text-xs ${
                     ticket.status === "new" || ticket.status === "open"
                       ? "bg-green-600"
                       : ticket.status === "closed"
