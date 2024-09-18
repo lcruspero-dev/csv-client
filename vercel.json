@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "static": {
+    "maxAge": 31536000,
+    "public": true
+  }
+}
