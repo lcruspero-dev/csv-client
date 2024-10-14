@@ -1,0 +1,11 @@
+1.monthly submission of scan screenshot antivirus. status
+
+check if auto scan is active weekly.
+
+2. windows update screenshot.
+
+3. backup monthly files in google drive.
+
+back up server should label that is critical and store in place that is isolated 
+
+
