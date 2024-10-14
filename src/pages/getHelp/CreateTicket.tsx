@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { TicketAPi } from "@/API/endpoint";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +12,8 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
-import { useState } from "react";
+import { Paperclip } from "lucide-react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BackButton from "../../components/kit/BackButton";
 
@@ -25,14 +24,22 @@ const CreateTicket = () => {
     email: `${userLogin.email}`,
     category: "",
     description: "",
+    attachment: null,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setForm({ ...form, attachment: e.target.files[0] });
+    }
   };
 
   const handleCategoryChange = (value: string) => {
@@ -41,11 +48,18 @@ const CreateTicket = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (isSubmitting) return; // Prevent multiple submissions
+    if (isSubmitting) return;
 
     setIsSubmitting(true);
     try {
-      const response = await TicketAPi.createTicket(form);
+      const formData = new FormData();
+      for (const key in form) {
+        if (form[key] !== null) {
+          formData.append(key, form[key]);
+        }
+      }
+
+      const response = await TicketAPi.createTicket(formData);
       console.log(response.data);
       toast({
         title: "Success",
@@ -74,6 +88,20 @@ const CreateTicket = () => {
             Please fill out the form below
           </p>
         </div>
+        <Label
+          htmlFor="attachment"
+          className="text-base font-bold flex items-center mt-2"
+        >
+          <Paperclip className="mr-2" size={20} />
+          Attach File (Optional)
+        </Label>
+        <Input
+          id="attachment"
+          name="attachment"
+          type="file"
+          onChange={handleFileChange}
+          className="mt-1"
+        />
         <Label htmlFor="name" className="text-base font-bold">
           <p>Name</p>
         </Label>
@@ -128,7 +156,7 @@ const CreateTicket = () => {
           </SelectContent>
         </Select>
         <Label htmlFor="description" className="text-base font-bold">
-          Description of the issue
+          Description of the issue / request
         </Label>
         <Textarea
           className="h-36"
@@ -138,7 +166,8 @@ const CreateTicket = () => {
           onChange={handleChange}
           disabled={isSubmitting}
         />
-        <Button className="w-full mt-2" type="submit" disabled={isSubmitting}>
+
+        <Button className="w-full mt-4" type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Creating Ticket..." : "Create Ticket"}
         </Button>
       </form>
