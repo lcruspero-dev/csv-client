@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
+import axios from "axios";
+import { Paperclip } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BackButton from "../../components/kit/BackButton";
@@ -25,6 +27,7 @@ const Request = () => {
     email: `${userLogin.email}`,
     category: "",
     description: "",
+    file: null,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
@@ -33,6 +36,35 @@ const Request = () => {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const fileInput = event.target;
+    const file = fileInput.files && fileInput.files[0];
+
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_UPLOADFILES_URL}/upload`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      console.log("Upload response:", response.data);
+      const newFilename = response.data.filename;
+      setForm((prevForm) => ({ ...prevForm, file: newFilename })); // Update form state
+    } catch (error) {
+      console.error("Error uploading file:", error);
+    }
   };
 
   const handleCategoryChange = (value: string) => {
@@ -67,13 +99,27 @@ const Request = () => {
       <form className="mt-5 w-1/2" onSubmit={handleSubmit}>
         <div className="text-center">
           <div className="mb-3"></div>
-          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold py-1 sm:py-2 md:py-3 bg-clip-text text-transparent bg-gradient-to-r from-[#1638df] to-[#192fb4]">
+          <h1 className="text-xl sm:text-xl md:text-2xl lg:text-3xl font-bold py-1 sm:py-1 md:py-2 bg-clip-text text-transparent bg-gradient-to-r from-[#1638df] to-[#192fb4]">
             Create HR Request Ticket
           </h1>
-          <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-black">
+          <p className="text-lg sm:text-xl md:text-xl lg:text-2xl font-bold text-black">
             Please fill out the form below
           </p>
         </div>
+        <Label
+          htmlFor="attachment"
+          className="text-base font-bold flex items-center mt-2"
+        >
+          <Paperclip className="mr-2" size={20} />
+          Attach File (Optional)
+        </Label>
+        <Input
+          id="attachment"
+          name="attachment"
+          type="file"
+          onChange={handleFileUpload}
+          className="mt-1"
+        />
         <Label htmlFor="name" className="text-base font-bold">
           <p>Name</p>
         </Label>

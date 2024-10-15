@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
+import axios from "axios";
 import { Paperclip } from "lucide-react";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -24,7 +25,7 @@ const CreateTicket = () => {
     email: `${userLogin.email}`,
     category: "",
     description: "",
-    attachment: null,
+    file: null,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
@@ -36,9 +37,32 @@ const CreateTicket = () => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setForm({ ...form, attachment: e.target.files[0] });
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const fileInput = event.target;
+    const file = fileInput.files && fileInput.files[0];
+
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_UPLOADFILES_URL}/upload`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      console.log("Upload response:", response.data);
+      const newFilename = response.data.filename;
+      setForm((prevForm) => ({ ...prevForm, file: newFilename })); // Update form state
+    } catch (error) {
+      console.error("Error uploading file:", error);
     }
   };
 
@@ -48,18 +72,11 @@ const CreateTicket = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (isSubmitting) return;
+    if (isSubmitting) return; // Prevent multiple submissions
 
     setIsSubmitting(true);
     try {
-      const formData = new FormData();
-      for (const key in form) {
-        if (form[key] !== null) {
-          formData.append(key, form[key]);
-        }
-      }
-
-      const response = await TicketAPi.createTicket(formData);
+      const response = await TicketAPi.createTicket(form);
       console.log(response.data);
       toast({
         title: "Success",
@@ -81,10 +98,10 @@ const CreateTicket = () => {
       <form className="mt-5 w-1/2" onSubmit={handleSubmit}>
         <div className="text-center">
           <div className="mb-3"></div>
-          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold py-1 sm:py-2 md:py-3 bg-clip-text text-transparent bg-gradient-to-r from-[#1638df] to-[#192fb4]">
+          <h1 className="text-xl sm:text-xl md:text-2xl lg:text-3xl font-bold py-1 sm:py-1 md:py-2 bg-clip-text text-transparent bg-gradient-to-r from-[#1638df] to-[#192fb4]">
             Create IT Support Ticket
           </h1>
-          <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-black">
+          <p className="text-lg sm:text-xl md:text-1xl lg:text-2xl font-bold text-black">
             Please fill out the form below
           </p>
         </div>
@@ -99,7 +116,7 @@ const CreateTicket = () => {
           id="attachment"
           name="attachment"
           type="file"
-          onChange={handleFileChange}
+          onChange={handleFileUpload}
           className="mt-1"
         />
         <Label htmlFor="name" className="text-base font-bold">

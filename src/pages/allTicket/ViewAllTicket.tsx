@@ -25,6 +25,7 @@ export interface Ticket {
   user: string;
   name: string;
   priority: string;
+  file: string;
 }
 
 const ViewAllTicket: React.FC = () => {

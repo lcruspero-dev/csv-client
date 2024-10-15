@@ -145,6 +145,12 @@ const AdminViewIndovidualTicket: React.FC = () => {
       setIsUpdating(false);
     }
   };
+  const handleFileDownload = (file: string) => {
+    window.open(
+      `${import.meta.env.VITE_UPLOADFILES_URL}/files/${file}`,
+      "_blank"
+    );
+  };
 
   return (
     <div className="container">
@@ -256,6 +262,15 @@ const AdminViewIndovidualTicket: React.FC = () => {
             <p className="text-sm">Category: {details?.category}</p>
             <p className="text-sm">Created By: {details?.name}</p>
             <p className="text-sm">Assigned To: {details?.assignedTo}</p>
+            <p className="text-sm">
+              File Attachment:{" "}
+              <span
+                className="text-blue-700 cursor-pointer hover:underline hover:decoration-solid"
+                onClick={() => handleFileDownload(details?.file as string)}
+              >
+                {details?.file}
+              </span>{" "}
+            </p>
           </div>
           <div>
             <p className="text-sm mb-2">Priority: {details?.priority}</p>
