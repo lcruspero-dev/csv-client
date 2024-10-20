@@ -1,4 +1,5 @@
-import { TicketAPi } from "@/API/endpoint";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { Category, TicketAPi } from "@/API/endpoint";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,10 +15,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import axios from "axios";
 import { Paperclip } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BackButton from "../../components/kit/BackButton";
-
+ 
 const CreateTicket = () => {
   const userLogin = JSON.parse(localStorage.getItem("user")!);
   const [form, setForm] = useState({
@@ -26,7 +27,9 @@ const CreateTicket = () => {
     category: "",
     description: "",
     file: null,
+     department:"IT"
   });
+  const [categories, setCatergories] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -92,6 +95,19 @@ const CreateTicket = () => {
     }
   };
 
+  const getCategory = async () => {
+    try {
+      const response = await Category.getItCategories();
+      setCatergories(response.data.categories);
+    } catch (error) {
+      console.error(error);
+    }  
+  };
+
+  useEffect(() => {
+    getCategory();
+  }, []);
+
   return (
     <div className="container flex justify-center p-3">
       <BackButton />
@@ -151,24 +167,12 @@ const CreateTicket = () => {
             <SelectValue placeholder="Category" />
           </SelectTrigger>
           <SelectContent>
-            <SelectGroup>
-              <SelectItem value="General IT Support">
-                General IT Support
-              </SelectItem>
-              <SelectItem value="Hardware Issue">Hardware Issue</SelectItem>
-              <SelectItem value="Software Issue">Software Issue</SelectItem>
-              <SelectItem value="Network & Connectivity">
-                Network & Connectivity
-              </SelectItem>
-              <SelectItem value="Account & Access Management">
-                Account & Access Management
-              </SelectItem>
-              <SelectItem value="Email & Communication">
-                Email & Communication
-              </SelectItem>
-              <SelectItem value="Project & Change Management">
-                Project & Change Management
-              </SelectItem>
+          <SelectGroup> 
+              {categories.map((category: any) => (
+                <SelectItem key={category.category} value={category.category}>
+                  {category.category}
+                </SelectItem>
+              ))} 
             </SelectGroup>
           </SelectContent>
         </Select>

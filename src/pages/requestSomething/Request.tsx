@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { TicketAPi } from "@/API/endpoint";
+import { Category, TicketAPi } from "@/API/endpoint";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import axios from "axios";
 import { Paperclip } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BackButton from "../../components/kit/BackButton";
 
@@ -28,10 +28,14 @@ const Request = () => {
     category: "",
     description: "",
     file: null,
+    department:"HR"
   });
+  const [categories, setCatergories] = useState([]);
+ 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -93,6 +97,20 @@ const Request = () => {
     }
   };
 
+  const getCategory = async () => {
+    try {
+      const response = await Category.getHrCategories();
+      setCatergories(response.data.categories);
+    } catch (error) {
+      console.error(error);
+    }  
+  };
+
+  useEffect(() => {
+    getCategory();
+  }, []);
+
+  console.log("categories",categories)
   return (
     <div className="container flex justify-center p-3">
       <BackButton />
@@ -152,26 +170,12 @@ const Request = () => {
             <SelectValue placeholder="Category" />
           </SelectTrigger>
           <SelectContent>
-            <SelectGroup>
-              <SelectItem value="Request for Documents">
-                Request for Documents
-              </SelectItem>
-              <SelectItem value="Request for Meeting">
-                Request for Meeting
-              </SelectItem>
-              <SelectItem value="Certificate of Employment">
-                Certificate of Employment
-              </SelectItem>
-              <SelectItem value="Onboarding Request">
-                Onboarding Request
-              </SelectItem>
-              <SelectItem value="Employee Benefits">
-                Employee Benefits
-              </SelectItem>
-              <SelectItem value="Payroll">Payroll</SelectItem>
-              <SelectItem value="Loan Request">Loan Request</SelectItem>
-              <SelectItem value="Leave Request">Leave Request</SelectItem>
-              <SelectItem value="Other">Other</SelectItem>
+            <SelectGroup> 
+              {categories.map((category: any) => (
+                <SelectItem key={category.category} value={category.category}>
+                  {category.category}
+                </SelectItem>
+              ))} 
             </SelectGroup>
           </SelectContent>
         </Select>

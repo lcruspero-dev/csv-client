@@ -52,6 +52,8 @@ export const TicketAPi = {
 export const Category = {
   CreateCategory: (body: object) => apiHelper("/api/categories/", "POST", body),
   getCategory: () => apiHelper("/api/categories/", "GET"),
+  getHrCategories: () => apiHelper("/api/categories/role/HR", "GET"),
+  getItCategories: () => apiHelper("/api/categories/role/IT", "GET"),
   updateCategory: (id: any, body: object) =>
     apiHelper(`/api/categories/${id}`, "PUT", body),
   DeleteCatergory: (id: any) =>

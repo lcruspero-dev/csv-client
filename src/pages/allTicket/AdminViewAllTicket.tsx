@@ -1,4 +1,4 @@
-import { TicketAPi } from "@/API/endpoint";
+import { Category, TicketAPi } from "@/API/endpoint";
 import { formattedDate } from "@/API/helper";
 import BackButton from "@/components/kit/BackButton";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,10 @@ export interface Ticket {
   name: string;
   priority: string;
 }
-
+interface Category {
+  category: string;
+ 
+}
 const ViewAllRaisedTickets: React.FC = () => {
   const [allRaisedTickets, setAllRaisedTickets] = useState<Ticket[]>([]);
   const [filteredTickets, setFilteredTickets] = useState<Ticket[]>([]);
@@ -35,29 +38,58 @@ const ViewAllRaisedTickets: React.FC = () => {
   const [assignedToFilter, setAssignedToFilter] = useState<string>("all");
   const [, setAssignedToOptions] = useState<string[]>([]);
   const [userRole, setUserRole] = useState<string>("");
+  const [itCategories, setItCategories] = useState<string[]>([]);
+  const [hrCategories, setHrCatergories] = useState<string[]>([]);
   const navigate = useNavigate();
+  const getHrCategory = async () => {
+    try {
+      const response = await Category.getHrCategories();
+      const categories:Category[] = response.data.categories;  
+      const categoryNames = categories.map((category: Category) => category.category); 
+      setHrCatergories(categoryNames);
+    } catch (error) {
+      console.error(error);
+    }  
+  };
 
-  const IT_CATEGORIES = [
-    "General IT Support",
-    "Hardware Issue",
-    "Software Issue",
-    "Network & Connectivity",
-    "Account & Access Management",
-    "Email & Communication",
-    "Project & Change Management",
-  ];
+  const getItCategory = async () => {
+    try {
+      const response = await Category.getItCategories();
+      const categories:Category[] = response.data.categories;  
+      const categoryNames = categories.map((category: Category) => category.category); 
+      setItCategories(categoryNames);
+    } catch (error) {
+      console.error(error);
+    }  
+  };
+  useEffect(() => {
+    getHrCategory();
+    getItCategory();
+  }, []);
 
-  const HR_CATEGORIES = [
-    "Request for Documents",
-    "Request for Meeting",
-    "Certificate of Employment",
-    "Onboarding Request",
-    "Employee Benefits",
-    "Leave Request",
-    "Payroll",
-    "Loan Request",
-    "Other",
-  ];
+  console.log("hrCategories", hrCategories)
+  console.log("itCategories",itCategories)
+  // const IT_CATEGORIES = [
+  //   "General IT Support",
+  //   "Hardware Issue",
+  //   "Software Issue",
+  //   "Network & Connectivity",
+  //   "Account & Access Management",
+  //   "Email & Communication",
+  //   "Project & Change Management",
+  // ];
+
+  // const HR_CATEGORIES = [
+  //   "Request for Documents",
+  //   "Request for Meeting",
+  //   "Certificate of Employment",
+  //   "Onboarding Request",
+  //   "Employee Benefits",
+  //   "Leave Request",
+  //   "Payroll",
+  //   "Loan Request",
+  //   "Other",
+  // ];
 
   const getAllRaisedTickets = async () => {
     try {
@@ -91,22 +123,22 @@ const ViewAllRaisedTickets: React.FC = () => {
     // Role-based filtering
     if (role === "IT") {
       filtered = filtered.filter((ticket) =>
-        IT_CATEGORIES.includes(ticket.category)
+        itCategories.includes(ticket.category)
       );
     } else if (role === "HR") {
       filtered = filtered.filter((ticket) =>
-        HR_CATEGORIES.includes(ticket.category)
+        hrCategories.includes(ticket.category)
       );
     }
 
     // AssignedTo filtering
     if (assignedTo === "ALL IT") {
       filtered = filtered.filter((ticket) =>
-        IT_CATEGORIES.includes(ticket.category)
+        itCategories.includes(ticket.category)
       );
     } else if (assignedTo === "ALL HR") {
       filtered = filtered.filter((ticket) =>
-        HR_CATEGORIES.includes(ticket.category)
+        hrCategories.includes(ticket.category)
       );
     } else if (assignedTo !== "all") {
       filtered = filtered.filter((ticket) => ticket.assignedTo === assignedTo);
@@ -123,7 +155,7 @@ const ViewAllRaisedTickets: React.FC = () => {
         filtered = filtered.filter((ticket) => ticket.status === status);
       }
     }
-
+    
     setFilteredTickets(filtered);
   };
 
