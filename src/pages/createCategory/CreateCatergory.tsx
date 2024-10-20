@@ -1,17 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 import { Category } from "@/API/endpoint";
 import BackButton from "@/components/kit/BackButton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import LoadingComponent from "@/components/ui/loading";
- 
+
 import AddCategory from "./AddCategory";
 import { Edit, Trash2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,8 +19,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
- 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 export interface Categorys {
   _id: string;
   category: string;
@@ -55,7 +56,6 @@ function CreateCategory() {
 
   const userString = localStorage.getItem("user");
   const user: User | null = userString ? JSON.parse(userString) : null;
- 
 
   const getCategory = async () => {
     try {
@@ -184,9 +184,7 @@ function CreateCategory() {
             <DialogTitle className="text-2xl drop-shadow-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#1638df] to-[#192fb4]">
               Edit Category
             </DialogTitle>
-            <DialogDescription>
-              Edit the details here. Click save when you're done.
-            </DialogDescription>
+            <DialogDescription>Edit the details here. Click save when you're done.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 h-full pl-4">
             <Label htmlFor="categoryName" className="text-base font-bold">
@@ -217,11 +215,7 @@ function CreateCategory() {
             </Select>
           </div>
           <DialogFooter>
-            <Button
-              type="submit"
-              className="mr-10 px-10"
-              onClick={handleSaveEdit}
-            >
+            <Button type="submit" className="mr-10 px-10" onClick={handleSaveEdit}>
               Save Changes
             </Button>
           </DialogFooter>
