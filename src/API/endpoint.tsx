@@ -49,3 +49,11 @@ export const TicketAPi = {
   acknowledgement : (id: any) => apiHelper(`/api/memos/${id}/acknowledged`, "PUT"),
 };
 
+export const Category = {
+  CreateCategory: (body: object) => apiHelper("/api/categories/", "POST", body),
+  getCategory: () => apiHelper("/api/categories/", "GET"),
+  updateCategory: (id: any, body: object) =>
+    apiHelper(`/api/categories/${id}`, "PUT", body),
+  DeleteCatergory: (id: any) =>
+    apiHelper(`/api/categories/${id}`, "DELETE")
+}
