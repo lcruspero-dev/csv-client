@@ -17,6 +17,7 @@ import ViewIndividualMemo from "./pages/memo/ViewIndividualMemo";
 import { ProtectedRoute } from "./pages/ProtectedRoute";
 import Request from "./pages/requestSomething/Request";
 import CreateCategory from "./pages/createCategory/CreateCatergory";
+import CreateAssign from "./pages/assigns/CreateAssigns";
 
 function App() {
   return (
@@ -42,6 +43,7 @@ function App() {
             <Route path="/all-memo" element={<ViewMemo />} />
             <Route path="/memo/:id" element={<ViewIndividualMemo />} />
             <Route path="/addcategory" element={<CreateCategory />} />
+            <Route path="/addassign" element={<CreateAssign />} />
 
             {/* Admin Routes */}
             {/* <Route element={<ProtectedRoute requiresAdmin={true} />}>

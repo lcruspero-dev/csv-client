@@ -57,3 +57,12 @@ export const Category = {
   DeleteCatergory: (id: any) =>
     apiHelper(`/api/categories/${id}`, "DELETE")
 }
+
+export const Assigns = {
+  CreateAssign: (body: object) => apiHelper("/api/assigns/", "POST", body),
+  getAssign: () => apiHelper("/api/assigns/", "GET"),
+  updateAssign: (id: any, body: object) =>
+    apiHelper(`/api/assigns/${id}`, "PUT", body),
+  DeleteAssign: (id: any) =>
+    apiHelper(`/api/assigns/${id}`, "DELETE")
+}
