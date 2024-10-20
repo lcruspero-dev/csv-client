@@ -78,7 +78,7 @@ function ViewMemo() {
               <CreateMemo  setMemos={setMemos} setLoading={setLoading}/>
             </div>
           )}
-          <h1 className="text-5xl font-bold text-center py-7">Memo List</h1>
+          <h1 className="text-4xl font-bold text-center py-7">Memo List</h1>
         </div>
         <Table>
           <TableHeader className="bg-slate-200 ">

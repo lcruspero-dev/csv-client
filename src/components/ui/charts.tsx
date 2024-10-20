@@ -112,14 +112,14 @@ const chartData = [
 
 const chartConfig = {
   views: {
-    label: "Page Views",
+    label: "Ticket Closed",
   },
   desktop: {
-    label: "Desktop",
-    color: "hsl(var(--chart-1))",
+    label: "IT Department",
+    color: "#659cfb",
   },
   mobile: {
-    label: "Mobile",
+    label: "HR Department",
     color: "hsl(var(--chart-2))",
   },
 } satisfies ChartConfig
@@ -140,9 +140,9 @@ export default function Chart() {
     <Card>
       <CardHeader className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row">
         <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-6">
-          <CardTitle>Bar Chart - Interactive</CardTitle>
+          <CardTitle>Bar Chart - All Closed Ticket</CardTitle>
           <CardDescription>
-            Showing total visitors for the last 3 months
+            Showing total Tickets for the last 3 months
           </CardDescription>
         </div>
         <div className="flex">

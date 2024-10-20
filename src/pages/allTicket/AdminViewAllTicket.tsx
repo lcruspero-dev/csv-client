@@ -8,14 +8,14 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableFooter,
+  
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
 import { useNavigate } from "react-router-dom";
 import { Assigned } from "../assigns/CreateAssigns";
-import { ArrowBigLeft, ChevronsLeftIcon, ChevronsLeftRight, ChevronsRightIcon } from "lucide-react";
+import {   ChevronsLeftIcon, ChevronsRightIcon } from "lucide-react";
 
 export interface Ticket {
   _id: string;
@@ -223,7 +223,7 @@ const ViewAllRaisedTickets: React.FC = () => {
         <div className="absolute left-0 top-3">
           <BackButton />
         </div>
-        <h1 className="text-5xl font-bold text-center pt-7 pb-2">
+        <h1 className="text-4xl font-bold text-center pt-7 pb-2">
           All Tickets
         </h1>
       </div>

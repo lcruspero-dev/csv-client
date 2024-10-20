@@ -148,7 +148,7 @@ function CreateCategory() {
               <AddCategory setCategory={setCategory} setLoading={setLoading} />
             </div>
           )}
-          <h1 className="text-5xl font-bold text-center py-7">Category List</h1>
+          <h1 className="text-4xl font-bold text-center py-7">Category List</h1>
         </div>
         <Table>
           <TableHeader className="bg-slate-200 ">

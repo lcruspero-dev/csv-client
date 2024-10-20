@@ -27,7 +27,7 @@ const AdminHome = () => {
             <h2 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#1638df] to-[#192fb4]">
               Welcome to Admin Dashboard
             </h2>
-            <p className="text-2xl font-bold mt-2 text-gray-700">Please choose from an option below</p>
+            <p className="text-2xl font-bold mt-2 text-gray-700">Please choose from an option </p>
           </section>
 
           <div className="">
