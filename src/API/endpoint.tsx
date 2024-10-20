@@ -62,5 +62,5 @@ export const Assigns = {
 };
 
 export const ExportDatas = {
-  getAllTicket: () => apiHelper("/api/tickets/", "GET"),
+  getAllTicket: () => apiHelper("/api/tickets/viewAll", "GET"),
 };
