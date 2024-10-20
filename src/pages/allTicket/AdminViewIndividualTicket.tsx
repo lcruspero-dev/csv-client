@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { TicketAPi } from "@/API/endpoint";
+import { Assigns, TicketAPi } from "@/API/endpoint";
 import { formattedDate } from "@/API/helper";
 import BackButton from "@/components/kit/BackButton";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ import { toast } from "@/components/ui/use-toast";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Ticket } from "./ViewAllTicket";
+ 
 
 const AdminViewIndovidualTicket: React.FC = () => {
   const [details, setDetails] = useState<Ticket>();
@@ -41,8 +42,8 @@ const AdminViewIndovidualTicket: React.FC = () => {
   const [status, setStatus] = useState<any>();
   const [priority, setPriority] = useState<any>();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
-
+  const [isUpdating, setIsUpdating] = useState(false); 
+  const[listAssigns, setListAssigns] = useState<any[]>([]);
   const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(event.target.value);
   };
@@ -63,7 +64,17 @@ const AdminViewIndovidualTicket: React.FC = () => {
       console.error(error);
     }
   };
+  const getAssigns = async () => {
+    try {
+      const response = await Assigns.getAssign();
+      console.log(response.data);
+      setListAssigns(response.data.assigns);
+    } catch (error) {
+      console.error(error);
+    } 
+  };
   useEffect(() => {
+    getAssigns()
     if (id) {
       setIsLoading(true); // Set loading to true before fetching data
       Promise.all([getTicket(id), getAllNotes(id)])
@@ -181,22 +192,13 @@ const AdminViewIndovidualTicket: React.FC = () => {
                         <SelectValue placeholder={details?.assignedTo} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectGroup>
-                          <SelectItem value="IT-Joriz Cabrera">
-                            IT Joriz Cabrera
-                          </SelectItem>
-                          <SelectItem value="IT-Arvin Bautista">
-                            IT Arvin Bautista
-                          </SelectItem>
-                          <SelectItem value="IT-John Louie Gastardo">
-                            IT John Louie Gastardo
-                          </SelectItem>
-                          <SelectItem value="HR-Cindy Tabudlong">
-                            HR Cindy Tabudlong
-                          </SelectItem>
-                          <SelectItem value="HR2">HR2</SelectItem>
-                          <SelectItem value="HR3">HR3</SelectItem>
-                        </SelectGroup>
+                      <SelectGroup> 
+              {listAssigns.map((assign: any) => (
+                <SelectItem key={assign.name} value={assign.name}>
+                  {assign.name}
+                </SelectItem>
+              ))} 
+            </SelectGroup>
                       </SelectContent>
                     </Select>
                   </div>
@@ -232,6 +234,7 @@ const AdminViewIndovidualTicket: React.FC = () => {
                           <SelectItem value="1-Critical">1-Critical</SelectItem>
                           <SelectItem value="2-High">2-High</SelectItem>
                           <SelectItem value="3-Moderate">3-Moderate</SelectItem>
+                          <SelectItem value="4-Low">4-Low</SelectItem>
                         </SelectGroup>
                       </SelectContent>
                     </Select>

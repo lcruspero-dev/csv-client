@@ -1,4 +1,5 @@
-import { Category, TicketAPi } from "@/API/endpoint";
+import React, { useEffect, useState } from "react";
+import { Assigns, Category, TicketAPi } from "@/API/endpoint";
 import { formattedDate } from "@/API/helper";
 import BackButton from "@/components/kit/BackButton";
 import { Button } from "@/components/ui/button";
@@ -12,8 +13,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Assigned } from "../assigns/CreateAssigns";
+import { ArrowBigLeft, ChevronsLeftIcon, ChevronsLeftRight, ChevronsRightIcon } from "lucide-react";
 
 export interface Ticket {
   _id: string;
@@ -26,10 +28,13 @@ export interface Ticket {
   name: string;
   priority: string;
 }
+
 interface Category {
   category: string;
- 
 }
+
+const ITEMS_PER_PAGE = 10;
+
 const ViewAllRaisedTickets: React.FC = () => {
   const [allRaisedTickets, setAllRaisedTickets] = useState<Ticket[]>([]);
   const [filteredTickets, setFilteredTickets] = useState<Ticket[]>([]);
@@ -40,11 +45,17 @@ const ViewAllRaisedTickets: React.FC = () => {
   const [userRole, setUserRole] = useState<string>("");
   const [itCategories, setItCategories] = useState<string[]>([]);
   const [hrCategories, setHrCatergories] = useState<string[]>([]);
+  const [assign, setAssign] = useState<Assigned[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const logInUser = JSON.parse(localStorage.getItem("user")!);
+  const loginUserRole = logInUser.role;
   const navigate = useNavigate();
+
   const getHrCategory = async () => {
     try {
       const response = await Category.getHrCategories();
-      const categories:Category[] = response.data.categories;  
+      const categories: Category[] = response.data.categories;  
       const categoryNames = categories.map((category: Category) => category.category); 
       setHrCatergories(categoryNames);
     } catch (error) {
@@ -55,41 +66,18 @@ const ViewAllRaisedTickets: React.FC = () => {
   const getItCategory = async () => {
     try {
       const response = await Category.getItCategories();
-      const categories:Category[] = response.data.categories;  
+      const categories: Category[] = response.data.categories;  
       const categoryNames = categories.map((category: Category) => category.category); 
       setItCategories(categoryNames);
     } catch (error) {
       console.error(error);
     }  
   };
+
   useEffect(() => {
     getHrCategory();
     getItCategory();
   }, []);
-
-  console.log("hrCategories", hrCategories)
-  console.log("itCategories",itCategories)
-  // const IT_CATEGORIES = [
-  //   "General IT Support",
-  //   "Hardware Issue",
-  //   "Software Issue",
-  //   "Network & Connectivity",
-  //   "Account & Access Management",
-  //   "Email & Communication",
-  //   "Project & Change Management",
-  // ];
-
-  // const HR_CATEGORIES = [
-  //   "Request for Documents",
-  //   "Request for Meeting",
-  //   "Certificate of Employment",
-  //   "Onboarding Request",
-  //   "Employee Benefits",
-  //   "Leave Request",
-  //   "Payroll",
-  //   "Loan Request",
-  //   "Other",
-  // ];
 
   const getAllRaisedTickets = async () => {
     try {
@@ -157,6 +145,7 @@ const ViewAllRaisedTickets: React.FC = () => {
     }
     
     setFilteredTickets(filtered);
+    setCurrentPage(1); // Reset to first page when filters change
   };
 
   useEffect(() => {
@@ -185,13 +174,48 @@ const ViewAllRaisedTickets: React.FC = () => {
     }
   }, [userRole]);
 
+  const getAssigns = async () => {
+    try {
+      const response = await Assigns.getAssign();
+      setAssign(response.data.assigns);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
+    getAssigns()
     filterTickets(allRaisedTickets, statusFilter, assignedToFilter, userRole);
   }, [statusFilter, assignedToFilter, allRaisedTickets, userRole]);
+  
+  const getFilteredAssign = (assign: Assigned[], loginUserRole: string): Assigned[] => { 
+    if (loginUserRole === "SUPERADMIN") {
+      return assign;
+    }
+    return assign.filter((item) => item.role === loginUserRole);
+  };
+
+  const filteredAssign = getFilteredAssign(assign, loginUserRole);
 
   if (loading) {
     return <LoadingComponent />;
   }
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredTickets.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const currentTickets = filteredTickets.slice(startIndex, endIndex);
+
+  const goToNextPage = () => {
+    setCurrentPage((page) => Math.min(page + 1, totalPages));
+  };
+
+  const goToPreviousPage = () => {
+    setCurrentPage((page) => Math.max(page - 1, 1));
+  };
 
   return (
     <div className="container mx-auto">
@@ -238,14 +262,11 @@ const ViewAllRaisedTickets: React.FC = () => {
                   <option value="ALL HR">All HR Tickets</option>
                 </>
               )}
-              <option value="IT-Joriz Cabrera">Joriz Cabrera</option>
-              <option value="IT-Arvin Bautista">Arvin Bautista</option>
-              <option value="IT-John Louie Gastardo">
-                John Louie Gastardo
-              </option>
-              <option value="HR-Cindy Tabudlong">Cindy Tabudlong</option>
-              <option value="HR2">HR2</option>
-              <option value="HR3">HR3</option>
+              {filteredAssign.map((assign) => (
+                <option key={assign._id} value={assign.name}>
+                  {assign.name}
+                </option>
+              ))}
               <option value="Not Assigned">Not Assigned</option>
             </select>
           </div>
@@ -257,46 +278,28 @@ const ViewAllRaisedTickets: React.FC = () => {
       <Table>
         <TableHeader className="bg-slate-200">
           <TableRow>
-            <TableHead className="text-center font-bold text-black w-48">
-              Date
-            </TableHead>
-            <TableHead className="text-center font-bold text-black w-40">
-              Category
-            </TableHead>
-            <TableHead className="font-bold text-black text-center w-40">
-              Name
-            </TableHead>
-            <TableHead className="font-bold text-black text-center w-80">
-              Description
-            </TableHead>
-            <TableHead className="font-bold text-black text-center w-26">
-              Priority
-            </TableHead>
-            <TableHead className="text-center font-bold text-black w-26">
-              Status
-            </TableHead>
-            <TableHead className="text-center font-bold text-black w-36">
-              Assigned to
-            </TableHead>
-            <TableHead className="font-bold text-black text-center w-24">
-              Action
-            </TableHead>
+            <TableHead className="text-center font-bold text-black w-48">Date</TableHead>
+            <TableHead className="text-center font-bold text-black w-40">Category</TableHead>
+            <TableHead className="font-bold text-black text-center w-40">Name</TableHead>
+            <TableHead className="font-bold text-black text-center w-80">Description</TableHead>
+            <TableHead className="font-bold text-black text-center w-26">Priority</TableHead>
+            <TableHead className="text-center font-bold text-black w-26">Status</TableHead>
+            <TableHead className="text-center font-bold text-black w-36">Assigned to</TableHead>
+            <TableHead className="font-bold text-black text-center w-24">Action</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filteredTickets.map((ticket, index) => (
+          {currentTickets.map((ticket, index) => (
             <TableRow
               key={ticket._id}
-              className={`${
-                index % 2 === 0 ? "bg-gray-100" : "bg-white"
-              } text-sm`}
+              className={`${index % 2 === 0 ? "bg-gray-100" : "bg-white"} text-sm`}
             >
               <TableCell className="font-medium text-center text-xs">
                 {formattedDate(ticket.createdAt)}
               </TableCell>
               <TableCell className="text-center">{ticket.category}</TableCell>
               <TableCell className="text-center">{ticket.name}</TableCell>
-              <TableCell className="text-center max-w-xs truncate ">
+              <TableCell className="text-center max-w-xs truncate">
                 {ticket.description.length > 45
                   ? `${ticket.description.substring(0, 45)}...`
                   : ticket.description}
@@ -317,21 +320,28 @@ const ViewAllRaisedTickets: React.FC = () => {
               </TableCell>
               <TableCell className="text-center">{ticket.assignedTo}</TableCell>
               <TableCell className="text-center">
-                <Button
-                  onClick={() => {
-                    navigate(`/ticket/${ticket._id}`);
-                  }}
-                >
+                <Button onClick={() => navigate(`/ticket/${ticket._id}`)}>
                   View
                 </Button>
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
-        <TableFooter>
-          <TableRow>{/* Additional footer content can go here */}</TableRow>
-        </TableFooter>
+       
       </Table>
+      <div className="flex  items-center justify-end gap-4 border-t-2   mb-16 ">
+        <div className="mt-4 flex items-center  gap-4">
+        <button onClick={goToPreviousPage} disabled={currentPage === 1} >
+          <ChevronsLeftIcon className="text-blue-950 hover:scale-150 hover:text-green-600" />
+        </button>
+        <span>
+          Page {currentPage} of {totalPages}
+        </span>
+        <button onClick={goToNextPage} disabled={currentPage === totalPages}>
+          <ChevronsRightIcon className="text-blue-950 hover:scale-150 hover:text-green-600" />
+          </button>
+          </div>
+      </div>
     </div>
   );
 };
