@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
- 
 
-import { Assigns    } from "@/API/endpoint";
+import { Assigns } from "@/API/endpoint";
 import {
   Dialog,
   DialogContent,
@@ -16,24 +15,18 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import "quill/dist/quill.core.css";
 import { useState } from "react";
- 
 
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Assigned } from "./CreateAssigns";
- 
- 
- 
- 
- 
- 
+
 interface CreateMemoProps {
-    setAssign: React.Dispatch<React.SetStateAction<Assigned[]>>;
+  setAssign: React.Dispatch<React.SetStateAction<Assigned[]>>;
   setLoading: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const AddAssign: React.FC<CreateMemoProps> = ({ setAssign, setLoading }) => {
   const [assignName, setAssignName] = useState("");
-  const [role, setRole] = useState(""); 
+  const [role, setRole] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
@@ -48,7 +41,7 @@ const AddAssign: React.FC<CreateMemoProps> = ({ setAssign, setLoading }) => {
       setLoading(false); // Stop loading after the request is done
     }
   };
-  
+
   const handleCategoryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setAssignName(e.target.value);
   };
@@ -60,7 +53,6 @@ const AddAssign: React.FC<CreateMemoProps> = ({ setAssign, setLoading }) => {
       const body = {
         name: assignName,
         role: role,
-        
       };
       console.log(body);
       const response = await Assigns.CreateAssign(body);
@@ -72,7 +64,7 @@ const AddAssign: React.FC<CreateMemoProps> = ({ setAssign, setLoading }) => {
         variant: "default",
       });
       setAssignName("");
-      setRole('') 
+      setRole("");
       setIsDialogOpen(false);
     } catch (error) {
       toast({
@@ -99,9 +91,7 @@ const AddAssign: React.FC<CreateMemoProps> = ({ setAssign, setLoading }) => {
           <DialogTitle className="text-2xl drop-shadow-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#1638df] to-[#192fb4]">
             Add Assignee
           </DialogTitle>
-          <DialogDescription>
-            Input details here. Click save when you're done.
-          </DialogDescription>
+          <DialogDescription>Input details here. Click save when you're done.</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 h-full   pl-4">
           <Label htmlFor="assignName" className="text-base font-bold">
@@ -109,38 +99,30 @@ const AddAssign: React.FC<CreateMemoProps> = ({ setAssign, setLoading }) => {
           </Label>
           <Input
             name="assignName"
-            placeholder="Assignee Name"
+            placeholder="Assignee"
             type="text"
             required
             className="!mb-2"
             value={assignName}
             onChange={handleCategoryChange}
           />
-           <Label htmlFor="role" className="text-base font-bold">
-          Department
-        </Label>
-        <Select onValueChange={handleRoleChange} required>
-          <SelectTrigger className="mb-2">
-            <SelectValue placeholder="role" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectItem value="IT">
-               IT Department
-              </SelectItem>
-              <SelectItem value="HR">HR Department</SelectItem>
-               
-            </SelectGroup>
-          </SelectContent>
-        </Select>
+          <Label htmlFor="role" className="text-base font-bold">
+            Department
+          </Label>
+          <Select onValueChange={handleRoleChange} required>
+            <SelectTrigger className="mb-2">
+              <SelectValue placeholder="role" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="IT">IT Department</SelectItem>
+                <SelectItem value="HR">HR Department</SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
         <DialogFooter>
-          <Button
-            type="submit"
-            className="mr-10 px-10"
-            onClick={handleSave}
-            disabled={isSaving}
-          >
+          <Button type="submit" className="mr-10 px-10" onClick={handleSave} disabled={isSaving}>
             {isSaving ? "Saving..." : "Save"}
           </Button>
         </DialogFooter>

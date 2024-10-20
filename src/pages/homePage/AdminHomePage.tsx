@@ -1,16 +1,26 @@
-
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Sidebar from "@/components/ui/Sidebar";
 import Chart from "@/components/ui/charts";
- 
- 
-const AdminHome = () => {
-//   const navigate = useNavigate();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+import { ExportDatas } from "@/API/endpoint";
 
+const AdminHome = () => {
+  //   const navigate = useNavigate();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [tickets, setTickets] = useState([]);
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
-  
+  useEffect(() => {
+    const fetchTickets = async () => {
+      try {
+        const response = await ExportDatas.getAllTicket();
+        setTickets(response.data);
+      } catch (error) {
+        console.error("Error fetching tickets:", error);
+      }
+    };
+
+    fetchTickets();
+  }, []);
 
   return (
     <div className="flex min-h-screen bg-gradient-to-b from-[#eef4ff] to-white">
@@ -18,9 +28,7 @@ const AdminHome = () => {
 
       {/* Main content */}
       <div className="flex-1 transition-all duration-300 ease-in-out">
-        <header className="bg-white shadow-sm">
-          
-        </header>
+        <header className="bg-white shadow-sm"></header>
 
         <main className="container mx-auto px-4 py-8">
           <section className="text-center mb-8">
@@ -43,7 +51,7 @@ const AdminHome = () => {
                 </div>
               </Card>
             ))} */}
-            <Chart />
+            <Chart tickets={tickets} />
           </div>
         </main>
       </div>
