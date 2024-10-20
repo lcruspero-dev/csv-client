@@ -18,6 +18,7 @@ import { ProtectedRoute } from "./pages/ProtectedRoute";
 import Request from "./pages/requestSomething/Request";
 import CreateCategory from "./pages/createCategory/CreateCatergory";
 import CreateAssign from "./pages/assigns/CreateAssigns";
+import ExportData from "./pages/exportData/ExportData";
 
 function App() {
   return (
@@ -44,6 +45,7 @@ function App() {
             <Route path="/memo/:id" element={<ViewIndividualMemo />} />
             <Route path="/addcategory" element={<CreateCategory />} />
             <Route path="/addassign" element={<CreateAssign />} />
+            <Route path="/exportdata" element={<ExportData />} />
 
             {/* Admin Routes */}
             {/* <Route element={<ProtectedRoute requiresAdmin={true} />}>

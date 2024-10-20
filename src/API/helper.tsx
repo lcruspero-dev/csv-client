@@ -35,13 +35,13 @@ export const registrationApi = async (body: object) => {
 // };
 
 // export const formattedDate = date.toLocaleDateString('en-US', options);
-
+import { format, parseISO } from "date-fns";
 export const formattedDate = (dateString: string): string => {
-  const options: Intl.DateTimeFormatOptions = {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  };
-  return new Date(dateString).toLocaleDateString(undefined, options);
+  if (!dateString) return "";
+
+  // Parse the ISO string
+  const date = parseISO(dateString);
+
+  // Format the date and time
+  return format(date, "EEEE, MMMM d, yyyy 'at' h:mm a");
 };
