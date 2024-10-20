@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import * as XLSX from "xlsx";
+
 import BackButton from "@/components/kit/BackButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ExportDatas } from "@/API/endpoint";
+import { formattedDate } from "@/API/helper";
 
 interface FormData {
   startDate: string;
@@ -39,22 +41,27 @@ const ExportData: React.FC = () => {
   });
 
   const filterData = (data: Ticket[], filters: FormData): Ticket[] => {
-    return data.filter((ticket) => {
-      const ticketDate = new Date(ticket.createdAt);
-      const startDate = new Date(filters.startDate);
-      const endDate = new Date(filters.endDate);
+    return data
+      .filter((ticket) => {
+        const ticketDate = new Date(ticket.createdAt);
+        const startDate = new Date(filters.startDate);
+        const endDate = new Date(filters.endDate);
 
-      // Date range filter
-      if (ticketDate < startDate || ticketDate > endDate) return false;
+        // Date range filter
+        if (ticketDate < startDate || ticketDate > endDate) return false;
 
-      // Department filter
-      if (filters.department !== "ALL" && ticket.department !== filters.department) return false;
+        // Department filter
+        if (filters.department !== "ALL" && ticket.department !== filters.department) return false;
 
-      // Status filter
-      if (filters.status !== "ALL" && ticket.status !== filters.status) return false;
+        // Status filter
+        if (filters.status !== "ALL" && ticket.status !== filters.status) return false;
 
-      return true;
-    });
+        return true;
+      })
+      .map((ticket) => ({
+        ...ticket,
+        createdAt: formattedDate(ticket.createdAt),
+      }));
   };
 
   const onSubmit = async (formData: FormData): Promise<void> => {
@@ -64,7 +71,7 @@ const ExportData: React.FC = () => {
       const response = await ExportDatas.getAllTicket();
       const allTickets: Ticket[] = response.data;
 
-      // Apply filters
+      // Apply filters and format dates
       const filteredTickets = filterData(allTickets, formData);
 
       // Generate and download Excel file
