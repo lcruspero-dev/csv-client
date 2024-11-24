@@ -90,7 +90,7 @@ const UserViewIndovidualTicket: React.FC = () => {
         <BackButton />
         <div className="flex justify-between px-10 items-center mt-5 ">
           <div>
-            <h1 className="font-bold text-xl">Ticket ID: {details?._id}</h1>
+            <h1 className="font-bold text-base">Ticket ID: {details?._id}</h1>
             <p className="text-sm">
               Date Submitted: {formattedDate(details?.createdAt || "")}
             </p>

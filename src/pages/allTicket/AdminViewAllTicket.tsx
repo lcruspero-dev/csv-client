@@ -1,21 +1,21 @@
-import React, { useEffect, useState } from "react";
 import { Assigns, Category, TicketAPi } from "@/API/endpoint";
 import { formattedDate } from "@/API/helper";
 import BackButton from "@/components/kit/BackButton";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import LoadingComponent from "@/components/ui/loading";
 import {
   Table,
   TableBody,
   TableCell,
-  
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ChevronsLeftIcon, ChevronsRightIcon, SearchIcon } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Assigned } from "../assigns/CreateAssigns";
-import {   ChevronsLeftIcon, ChevronsRightIcon } from "lucide-react";
 
 export interface Ticket {
   _id: string;
@@ -41,6 +41,7 @@ const ViewAllRaisedTickets: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [statusFilter, setStatusFilter] = useState<string>("open");
   const [assignedToFilter, setAssignedToFilter] = useState<string>("all");
+  const [searchTicketId, setSearchTicketId] = useState<string>("");
   const [, setAssignedToOptions] = useState<string[]>([]);
   const [userRole, setUserRole] = useState<string>("");
   const [itCategories, setItCategories] = useState<string[]>([]);
@@ -55,23 +56,27 @@ const ViewAllRaisedTickets: React.FC = () => {
   const getHrCategory = async () => {
     try {
       const response = await Category.getHrCategories();
-      const categories: Category[] = response.data.categories;  
-      const categoryNames = categories.map((category: Category) => category.category); 
+      const categories: Category[] = response.data.categories;
+      const categoryNames = categories.map(
+        (category: Category) => category.category
+      );
       setHrCatergories(categoryNames);
     } catch (error) {
       console.error(error);
-    }  
+    }
   };
 
   const getItCategory = async () => {
     try {
       const response = await Category.getItCategories();
-      const categories: Category[] = response.data.categories;  
-      const categoryNames = categories.map((category: Category) => category.category); 
+      const categories: Category[] = response.data.categories;
+      const categoryNames = categories.map(
+        (category: Category) => category.category
+      );
       setItCategories(categoryNames);
     } catch (error) {
       console.error(error);
-    }  
+    }
   };
 
   useEffect(() => {
@@ -143,7 +148,7 @@ const ViewAllRaisedTickets: React.FC = () => {
         filtered = filtered.filter((ticket) => ticket.status === status);
       }
     }
-    
+
     setFilteredTickets(filtered);
     setCurrentPage(1); // Reset to first page when filters change
   };
@@ -157,11 +162,11 @@ const ViewAllRaisedTickets: React.FC = () => {
           setUserRole(user.role);
         } catch (error) {
           console.error("Error parsing user data from localStorage:", error);
-          setUserRole(""); // Set a default role or handle the error as needed
+          setUserRole("");
         }
       } else {
         console.error("User data not found in localStorage");
-        setUserRole(""); // Set a default role or handle the error as needed
+        setUserRole("");
       }
     };
 
@@ -186,15 +191,41 @@ const ViewAllRaisedTickets: React.FC = () => {
   };
 
   useEffect(() => {
-    getAssigns()
+    getAssigns();
     filterTickets(allRaisedTickets, statusFilter, assignedToFilter, userRole);
   }, [statusFilter, assignedToFilter, allRaisedTickets, userRole]);
-  
-  const getFilteredAssign = (assign: Assigned[], loginUserRole: string): Assigned[] => { 
+
+  const getFilteredAssign = (
+    assign: Assigned[],
+    loginUserRole: string
+  ): Assigned[] => {
     if (loginUserRole === "SUPERADMIN") {
       return assign;
     }
     return assign.filter((item) => item.role === loginUserRole);
+  };
+
+  const handleSearchSubmit = () => {
+    if (searchTicketId.trim()) {
+      // Find the ticket with the matching ID
+      const foundTicket = allRaisedTickets.find(
+        (ticket) => ticket._id.toLowerCase() === searchTicketId.toLowerCase()
+      );
+
+      if (foundTicket) {
+        // Navigate to the ticket details page
+        navigate(`/ticket/${foundTicket._id}`);
+      } else {
+        // Show an error message
+        alert("Ticket not found");
+      }
+    }
+  };
+
+  const handleSearchKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleSearchSubmit();
+    }
   };
 
   const filteredAssign = getFilteredAssign(assign, loginUserRole);
@@ -270,6 +301,31 @@ const ViewAllRaisedTickets: React.FC = () => {
               <option value="Not Assigned">Not Assigned</option>
             </select>
           </div>
+          <div className="flex items-center">
+            <label htmlFor="searchTicket" className="mr-2">
+              Search by ID:
+            </label>
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Input
+                  id="searchTicket"
+                  type="text"
+                  value={searchTicketId}
+                  onChange={(e) => setSearchTicketId(e.target.value)}
+                  onKeyPress={handleSearchKeyPress}
+                  placeholder="Enter ticket ID..."
+                  className="pl-8 w-48"
+                />
+                <SearchIcon className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              </div>
+              <Button
+                onClick={handleSearchSubmit}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Search
+              </Button>
+            </div>
+          </div>
         </div>
         <div className="text-lg font-semibold">
           Total Tickets: {filteredTickets.length}
@@ -278,23 +334,41 @@ const ViewAllRaisedTickets: React.FC = () => {
       <Table>
         <TableHeader className="bg-slate-200">
           <TableRow>
-            <TableHead className="text-center font-bold text-black w-48">Date</TableHead>
-            <TableHead className="text-center font-bold text-black w-40">Category</TableHead>
-            <TableHead className="font-bold text-black text-center w-40">Name</TableHead>
-            <TableHead className="font-bold text-black text-center w-80">Description</TableHead>
-            <TableHead className="font-bold text-black text-center w-26">Priority</TableHead>
-            <TableHead className="text-center font-bold text-black w-26">Status</TableHead>
-            <TableHead className="text-center font-bold text-black w-36">Assigned to</TableHead>
-            <TableHead className="font-bold text-black text-center w-24">Action</TableHead>
+            <TableHead className="text-center font-bold text-black w-48">
+              Date
+            </TableHead>
+            <TableHead className="text-center font-bold text-black w-40">
+              Category
+            </TableHead>
+            <TableHead className="font-bold text-black text-center w-40">
+              Name
+            </TableHead>
+            <TableHead className="font-bold text-black text-center w-80">
+              Description
+            </TableHead>
+            <TableHead className="font-bold text-black text-center w-26">
+              Priority
+            </TableHead>
+            <TableHead className="text-center font-bold text-black w-26">
+              Status
+            </TableHead>
+            <TableHead className="text-center font-bold text-black w-36">
+              Assigned to
+            </TableHead>
+            <TableHead className="font-bold text-black text-center w-24">
+              Action
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {currentTickets.map((ticket, index) => (
             <TableRow
               key={ticket._id}
-              className={`${index % 2 === 0 ? "bg-gray-100" : "bg-white"} text-sm`}
+              className={`${
+                index % 2 === 0 ? "bg-gray-100" : "bg-white"
+              } text-sm`}
             >
-              <TableCell className="font-medium text-center text-xs">
+              <TableCell className="font-medium text-center">
                 {formattedDate(ticket.createdAt)}
               </TableCell>
               <TableCell className="text-center">{ticket.category}</TableCell>
@@ -327,20 +401,19 @@ const ViewAllRaisedTickets: React.FC = () => {
             </TableRow>
           ))}
         </TableBody>
-       
       </Table>
-      <div className="flex  items-center justify-end gap-4 border-t-2   mb-16 ">
-        <div className="mt-4 flex items-center  gap-4">
-        <button onClick={goToPreviousPage} disabled={currentPage === 1} >
-          <ChevronsLeftIcon className="text-blue-950 hover:scale-150 hover:text-green-600" />
-        </button>
-        <span>
-          Page {currentPage} of {totalPages}
-        </span>
-        <button onClick={goToNextPage} disabled={currentPage === totalPages}>
-          <ChevronsRightIcon className="text-blue-950 hover:scale-150 hover:text-green-600" />
+      <div className="flex items-center justify-end gap-4 border-t-2 mb-16">
+        <div className="mt-4 flex items-center gap-4">
+          <button onClick={goToPreviousPage} disabled={currentPage === 1}>
+            <ChevronsLeftIcon className="text-blue-950 hover:scale-150 hover:text-green-600" />
           </button>
-          </div>
+          <span>
+            Page {currentPage} of {totalPages}
+          </span>
+          <button onClick={goToNextPage} disabled={currentPage === totalPages}>
+            <ChevronsRightIcon className="text-blue-950 hover:scale-150 hover:text-green-600" />
+          </button>
+        </div>
       </div>
     </div>
   );

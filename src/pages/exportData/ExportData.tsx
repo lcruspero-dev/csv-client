@@ -1,14 +1,21 @@
 import React, { useState } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import * as XLSX from "xlsx";
 
+import { ExportDatas } from "@/API/endpoint";
+import { formattedDate } from "@/API/helper";
 import BackButton from "@/components/kit/BackButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ExportDatas } from "@/API/endpoint";
-import { formattedDate } from "@/API/helper";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface FormData {
   startDate: string;
@@ -22,7 +29,17 @@ interface Ticket {
   createdAt: string;
   department: string;
   status: string;
-  // Add other ticket properties as needed
+}
+
+interface Note {
+  _id: string;
+  user: string;
+  name: string;
+  ticket: string;
+  text: string;
+  isStaff: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const ExportData: React.FC = () => {
@@ -40,47 +57,99 @@ const ExportData: React.FC = () => {
     },
   });
 
-  const filterData = (data: Ticket[], filters: FormData): Ticket[] => {
-    return data
-      .filter((ticket) => {
-        const ticketDate = new Date(ticket.createdAt);
-        const startDate = new Date(filters.startDate);
-        const endDate = new Date(filters.endDate);
+  const getLatestNote = async (ticketId: string): Promise<string> => {
+    try {
+      const response = await ExportDatas.getNotes(ticketId);
+      const notes: Note[] = response.data;
 
-        // Date range filter
-        if (ticketDate < startDate || ticketDate > endDate) return false;
+      // Sort notes by createdAt in descending order and get the latest one
+      const sortedNotes = notes.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
 
-        // Department filter
-        if (filters.department !== "ALL" && ticket.department !== filters.department) return false;
+      return sortedNotes.length > 0 ? sortedNotes[0].text : "";
+    } catch (error) {
+      console.error(`Error fetching notes for ticket ${ticketId}:`, error);
+      return "";
+    }
+  };
 
-        // Status filter
-        if (filters.status !== "ALL" && ticket.status !== filters.status) return false;
+  const filterAndEnrichData = async (
+    data: Ticket[],
+    filters: FormData
+  ): Promise<unknown[]> => {
+    // First filter the tickets
+    const filteredTickets = data.filter((ticket) => {
+      const ticketDate = new Date(ticket.createdAt);
+      const startDate = new Date(filters.startDate);
+      const endDate = new Date(filters.endDate);
 
-        return true;
+      // Date range filter
+      if (ticketDate < startDate || ticketDate > endDate) return false;
+
+      // Department filter
+      if (
+        filters.department !== "ALL" &&
+        ticket.department !== filters.department
+      )
+        return false;
+
+      // Status filter
+      if (filters.status !== "ALL" && ticket.status !== filters.status)
+        return false;
+
+      return true;
+    });
+
+    // Then fetch notes for each filtered ticket
+    const ticketsWithNotes = await Promise.all(
+      filteredTickets.map(async (ticket) => {
+        const latestNote = await getLatestNote(ticket._id);
+        return {
+          ...ticket,
+          createdAt: formattedDate(ticket.createdAt),
+          ClosingNote: latestNote,
+        };
       })
-      .map((ticket) => ({
-        ...ticket,
-        createdAt: formattedDate(ticket.createdAt),
-      }));
+    );
+
+    return ticketsWithNotes;
   };
 
   const onSubmit = async (formData: FormData): Promise<void> => {
     setIsLoading(true);
     try {
-      // Fetch all data from your API
+      // Fetch all tickets
       const response = await ExportDatas.getAllTicket();
       const allTickets: Ticket[] = response.data;
 
-      // Apply filters and format dates
-      const filteredTickets = filterData(allTickets, formData);
+      // Filter tickets and fetch their notes
+      const enrichedTickets = await filterAndEnrichData(allTickets, formData);
 
       // Generate and download Excel file
-      const worksheet = XLSX.utils.json_to_sheet(filteredTickets);
+      const worksheet = XLSX.utils.json_to_sheet(enrichedTickets);
+
+      // Adjust column widths
+      const maxWidth = 50;
+      const colWidths: { [key: string]: number } = {
+        A: 20, // createdAt
+        B: 15, // department
+        C: 15, // status
+        D: maxWidth, // latestNote
+      };
+
+      worksheet["!cols"] = Object.keys(colWidths).map((key) => ({
+        wch: colWidths[key],
+      }));
+
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Filtered Tickets");
 
       // Generate a filename with the current date
-      const fileName = `Filtered_Tickets_${new Date().toISOString().split("T")[0]}.xlsx`;
+      const fileName = `Filtered_Tickets_${
+        new Date().toISOString().split("T")[0]
+      }.xlsx`;
 
       // Trigger the file download
       XLSX.writeFile(workbook, fileName);
@@ -113,9 +182,13 @@ const ExportData: React.FC = () => {
           name="startDate"
           control={control}
           rules={{ required: "Start date is required" }}
-          render={({ field }) => <Input {...field} type="date" required className="!mb-2" />}
+          render={({ field }) => (
+            <Input {...field} type="date" required className="!mb-2" />
+          )}
         />
-        {errors.startDate && <p className="text-red-500">{errors.startDate.message}</p>}
+        {errors.startDate && (
+          <p className="text-red-500">{errors.startDate.message}</p>
+        )}
 
         <Label htmlFor="endDate" className="text-base font-bold">
           <p>End Date</p>
@@ -124,9 +197,13 @@ const ExportData: React.FC = () => {
           name="endDate"
           control={control}
           rules={{ required: "End date is required" }}
-          render={({ field }) => <Input {...field} type="date" required className="!mb-2" />}
+          render={({ field }) => (
+            <Input {...field} type="date" required className="!mb-2" />
+          )}
         />
-        {errors.endDate && <p className="text-red-500">{errors.endDate.message}</p>}
+        {errors.endDate && (
+          <p className="text-red-500">{errors.endDate.message}</p>
+        )}
 
         <Label htmlFor="department" className="text-base font-bold">
           Department
@@ -150,7 +227,9 @@ const ExportData: React.FC = () => {
             </Select>
           )}
         />
-        {errors.department && <p className="text-red-500">{errors.department.message}</p>}
+        {errors.department && (
+          <p className="text-red-500">{errors.department.message}</p>
+        )}
 
         <Label htmlFor="status" className="text-base font-bold">
           Status
@@ -175,7 +254,9 @@ const ExportData: React.FC = () => {
             </Select>
           )}
         />
-        {errors.status && <p className="text-red-500">{errors.status.message}</p>}
+        {errors.status && (
+          <p className="text-red-500">{errors.status.message}</p>
+        )}
 
         <Button className="w-full mt-2" type="submit" disabled={isLoading}>
           {isLoading ? "Exporting..." : "Export Data"}

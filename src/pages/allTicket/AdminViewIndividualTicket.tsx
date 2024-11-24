@@ -29,7 +29,6 @@ import { toast } from "@/components/ui/use-toast";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Ticket } from "./ViewAllTicket";
- 
 
 const AdminViewIndovidualTicket: React.FC = () => {
   const [details, setDetails] = useState<Ticket>();
@@ -42,8 +41,8 @@ const AdminViewIndovidualTicket: React.FC = () => {
   const [status, setStatus] = useState<any>();
   const [priority, setPriority] = useState<any>();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false); 
-  const[listAssigns, setListAssigns] = useState<any[]>([]);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [listAssigns, setListAssigns] = useState<any[]>([]);
   const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(event.target.value);
   };
@@ -71,10 +70,10 @@ const AdminViewIndovidualTicket: React.FC = () => {
       setListAssigns(response.data.assigns);
     } catch (error) {
       console.error(error);
-    } 
+    }
   };
   useEffect(() => {
-    getAssigns()
+    getAssigns();
     if (id) {
       setIsLoading(true); // Set loading to true before fetching data
       Promise.all([getTicket(id), getAllNotes(id)])
@@ -192,13 +191,13 @@ const AdminViewIndovidualTicket: React.FC = () => {
                         <SelectValue placeholder={details?.assignedTo} />
                       </SelectTrigger>
                       <SelectContent>
-                      <SelectGroup> 
-              {listAssigns.map((assign: any) => (
-                <SelectItem key={assign.name} value={assign.name}>
-                  {assign.name}
-                </SelectItem>
-              ))} 
-            </SelectGroup>
+                        <SelectGroup>
+                          {listAssigns.map((assign: any) => (
+                            <SelectItem key={assign.name} value={assign.name}>
+                              {assign.name}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
                       </SelectContent>
                     </Select>
                   </div>
@@ -258,7 +257,7 @@ const AdminViewIndovidualTicket: React.FC = () => {
 
         <div className="flex justify-between px-10 items-center mt-5 ">
           <div>
-            <h1 className="font-bold text-xl">Ticket ID: {details?._id}</h1>
+            <h1 className="font-bold text-base">Ticket ID: {details?._id}</h1>
             <p className="text-sm">
               Date Submitted: {formattedDate(details?.createdAt || "")}
             </p>
@@ -331,7 +330,7 @@ const AdminViewIndovidualTicket: React.FC = () => {
                 <div className="flex flex-col sm:flex-row justify-between">
                   <div className="flex-1 min-w-0 mr-4">
                     <p className="font-semibold break-words text-sm">
-                      From {note.name}
+                      {note.name}
                     </p>
                     <p className="break-words text-sm">{note.text}</p>
                   </div>

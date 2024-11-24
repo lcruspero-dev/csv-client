@@ -17,7 +17,7 @@ import LoadingComponent from "@/components/ui/loading";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { formattedDate } from "../../API/helper";
- 
+
 export interface Memo {
   _id: string;
   subject: string;
@@ -57,7 +57,6 @@ function ViewMemo() {
     }
   };
 
-  
   useEffect(() => {
     getMemos();
   }, []);
@@ -65,7 +64,7 @@ function ViewMemo() {
     return <LoadingComponent />; // Render loading component while fetching data
   }
 
-  console.log("memos",memos)
+  console.log("memos", memos);
   return (
     <>
       <div className="container mx-auto">
@@ -75,10 +74,10 @@ function ViewMemo() {
           </div>
           {user?.isAdmin && (
             <div className="absolute right-36 top-12">
-              <CreateMemo  setMemos={setMemos} setLoading={setLoading}/>
+              <CreateMemo setMemos={setMemos} setLoading={setLoading} />
             </div>
           )}
-          <h1 className="text-4xl font-bold text-center py-7">Memo List</h1>
+          <h1 className="text-3xl font-bold text-center py-7">Memo List</h1>
         </div>
         <Table>
           <TableHeader className="bg-slate-200 ">
