@@ -11,14 +11,15 @@ import ViewMemo from "./pages/memo/ViewMemo";
 import ViewAllRaisedTickets from "./pages/allTicket/AdminViewAllTicket";
 import ViewAllTicket from "./pages/allTicket/ViewAllTicket";
 import ViewIndividualTicket from "./pages/allTicket/ViewIndividualTicket";
+import CreateAssign from "./pages/assigns/CreateAssigns";
+import CreateCategory from "./pages/createCategory/CreateCatergory";
+import ExportData from "./pages/exportData/ExportData";
 import CreateTicket from "./pages/getHelp/CreateTicket";
 import Homepage from "./pages/homePage/Homepage";
 import ViewIndividualMemo from "./pages/memo/ViewIndividualMemo";
 import { ProtectedRoute } from "./pages/ProtectedRoute";
 import Request from "./pages/requestSomething/Request";
-import CreateCategory from "./pages/createCategory/CreateCatergory";
-import CreateAssign from "./pages/assigns/CreateAssigns";
-import ExportData from "./pages/exportData/ExportData";
+import TimeTracker from "./pages/timeTracker/TimeTracker";
 
 function App() {
   return (
@@ -46,6 +47,7 @@ function App() {
             <Route path="/addcategory" element={<CreateCategory />} />
             <Route path="/addassign" element={<CreateAssign />} />
             <Route path="/exportdata" element={<ExportData />} />
+            <Route path="/timetracker" element={<TimeTracker />} />
 
             {/* Admin Routes */}
             {/* <Route element={<ProtectedRoute requiresAdmin={true} />}>

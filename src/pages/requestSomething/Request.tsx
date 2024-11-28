@@ -28,10 +28,10 @@ const Request = () => {
     category: "",
     description: "",
     file: null,
-    department:"HR"
+    department: "HR",
   });
   const [categories, setCatergories] = useState([]);
- 
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -81,14 +81,22 @@ const Request = () => {
 
     setIsSubmitting(true);
     try {
-      const response = await TicketAPi.createTicket(form);
-      console.log(response.data);
-      toast({
-        title: "Success",
-        description: "Ticket created successfully",
-        variant: "default",
-      });
-      navigate("/view-ticket");
+      if (form.category === "Leave Request") {
+        // Redirect to Leave Request form
+        window.open(
+          "https://forms.clickup.com/9011215196/f/8chreuw-4371/UA7PRKOIVL9H5J9MHQ",
+          "_blank"
+        );
+      } else {
+        const response = await TicketAPi.createTicket(form);
+        console.log(response.data);
+        toast({
+          title: "Success",
+          description: "Ticket created successfully",
+          variant: "default",
+        });
+        navigate("/view-ticket");
+      }
     } catch (error) {
       toast({ title: "Failed to create ticket" });
       console.error(error);
@@ -103,14 +111,14 @@ const Request = () => {
       setCatergories(response.data.categories);
     } catch (error) {
       console.error(error);
-    }  
+    }
   };
 
   useEffect(() => {
     getCategory();
   }, []);
 
-  console.log("categories",categories)
+  console.log("categories", categories);
   return (
     <div className="container flex justify-center p-3">
       <BackButton />
@@ -170,28 +178,109 @@ const Request = () => {
             <SelectValue placeholder="Category" />
           </SelectTrigger>
           <SelectContent>
-            <SelectGroup> 
+            <SelectGroup>
               {categories.map((category: any) => (
                 <SelectItem key={category.category} value={category.category}>
                   {category.category}
                 </SelectItem>
-              ))} 
+              ))}
             </SelectGroup>
           </SelectContent>
         </Select>
-        <Label htmlFor="description" className="text-base font-bold">
-          Description of the request
-        </Label>
-        <Textarea
-          className="h-36"
-          name="description"
-          placeholder="Description"
-          required
-          onChange={handleChange}
-          disabled={isSubmitting}
-        />
+        {form.category !== "Leave Request" && (
+          <>
+            <Label htmlFor="description" className="text-base font-bold">
+              Description of the request
+            </Label>
+            <Textarea
+              className="h-36"
+              name="description"
+              placeholder="Description"
+              required
+              onChange={handleChange}
+              disabled={isSubmitting}
+            />
+          </>
+        )}
+        {form.category === "Leave Request" && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+            <h2 className="text-lg font-bold text-blue-800 mb-3">
+              Guidelines for Filing Planned Leave
+            </h2>
+
+            <div className="space-y-4">
+              <section>
+                <h3 className="font-semibold text-blue-700 mb-2">
+                  Submission Process
+                </h3>
+                <ul className="list-disc list-inside text-blue-600">
+                  <li>Submit your leave request via the ClickUp Leave Form</li>
+                  <li>
+                    Select your Team Manager as the Immediate Head when
+                    completing the form
+                  </li>
+                </ul>
+              </section>
+
+              <section>
+                <h3 className="font-semibold text-blue-700 mb-2">
+                  Submission Timeline
+                </h3>
+                <ul className="list-disc list-inside text-blue-600">
+                  <li>
+                    Vacation Leave (VL) must be filed at least 14 calendar days
+                    in advance
+                  </li>
+                  <li>
+                    Emergency Leave (EL) must be communicated to your Team
+                    Leader immediately, with the leave request filed within 24
+                    hours of your absence
+                  </li>
+                </ul>
+              </section>
+
+              <section>
+                <h3 className="font-semibold text-blue-700 mb-2">
+                  Required Documentation
+                </h3>
+                <ul className="list-disc list-inside text-blue-600">
+                  <li>
+                    Documentation must be submitted along with the leave form
+                    (e.g., Medical Certificate for SL, proof of emergency for
+                    EL)
+                  </li>
+                  <li>
+                    Leave requests without proper documentation will not be
+                    approved
+                  </li>
+                </ul>
+              </section>
+
+              <section>
+                <h3 className="font-semibold text-blue-700 mb-2">
+                  Approval Process
+                </h3>
+                <ul className="list-disc list-inside text-blue-600">
+                  <li>
+                    All leave requests are subject to approval by your Immediate
+                    Head and HR
+                  </li>
+                  <li>
+                    Do not finalize any personal arrangements until you receive
+                    confirmation
+                  </li>
+                </ul>
+              </section>
+            </div>
+          </div>
+        )}
+
         <Button className="w-full mt-2" type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Creating Ticket..." : "Create Ticket"}
+          {form.category === "Leave Request"
+            ? "Open Leave Form"
+            : isSubmitting
+            ? "Creating Ticket..."
+            : "Create Ticket"}
         </Button>
       </form>
     </div>

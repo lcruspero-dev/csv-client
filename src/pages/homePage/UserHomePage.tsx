@@ -3,6 +3,7 @@ import request from "@/assets/Checklist.webp";
 import gethelp from "@/assets/g10.webp";
 import ticket from "@/assets/Group.webp";
 import test from "@/assets/login.webp";
+import timetracker from "@/assets/timetracker.webp";
 import { Card } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 
@@ -47,13 +48,16 @@ const UserHome = () => {
           <img src={ticket} alt="tickets" />
           <p className="py-3 font-bold">View My Tickets</p>
         </Card>
-        <Card>
-          <img src={test} alt="test" />
-          <p className="py-3 font-bold">Coming Soon</p>
+        <Card
+          className="hover:scale-105 ease-in-out duration-200 cursor-pointer hover:border-1 hover:border-[#5a95ff] "
+          onClick={() => navigate("/timetracker")}
+        >
+          <img src={timetracker} alt="Time tracker" />
+          <p className="py-3 font-bold">Time Tracker</p>
         </Card>
-        <Card>
-          <img src={test} alt="test" />
-          <p className="py-3 font-bold">Coming Soon</p>
+        <Card className="hover:scale-105 ease-in-out duration-200 cursor-pointer hover:border-1 hover:border-[#5a95ff] ">
+          <img src={test} alt="NTE" />
+          <p className="py-3 font-bold">NTE</p>
         </Card>
       </div>
     </>
