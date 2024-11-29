@@ -20,6 +20,13 @@ const UserHome = () => {
       </section>
       <div className=" container grid grid-cols-3 gap-5 mt-5 text-center p-5 drop-shadow-lg w-6/12">
         <Card
+          className="hover:scale-105 ease-in-out duration-200 cursor-pointer hover:border-1 hover:border-[#5a95ff] "
+          onClick={() => navigate("/timetracker")}
+        >
+          <img src={timetracker} alt="Time tracker" />
+          <p className="py-3 font-bold">Time Tracker</p>
+        </Card>
+        <Card
           className="hover:scale-105 ease-in-out duration-200 cursor-pointer hover:border-1 hover:border-[#5a95ff]  "
           onClick={() => navigate("/all-memo")}
         >
@@ -48,13 +55,7 @@ const UserHome = () => {
           <img src={ticket} alt="tickets" />
           <p className="py-3 font-bold">View My Tickets</p>
         </Card>
-        <Card
-          className="hover:scale-105 ease-in-out duration-200 cursor-pointer hover:border-1 hover:border-[#5a95ff] "
-          onClick={() => navigate("/timetracker")}
-        >
-          <img src={timetracker} alt="Time tracker" />
-          <p className="py-3 font-bold">Time Tracker</p>
-        </Card>
+
         <Card className="hover:scale-105 ease-in-out duration-200 cursor-pointer hover:border-1 hover:border-[#5a95ff] ">
           <img src={test} alt="NTE" />
           <p className="py-3 font-bold">Coming Soon</p>

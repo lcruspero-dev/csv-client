@@ -27,6 +27,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import axios from "axios"; // Ensure axios is imported
 import { Clock, LogIn, LogOut } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
@@ -37,6 +38,11 @@ interface AttendanceEntry {
   timeOut?: string;
   totalHours?: number;
   notes?: string;
+}
+
+interface CurrentTimeResponse {
+  date: string;
+  time: string;
 }
 
 export const AttendanceTracker: React.FC = () => {
@@ -56,11 +62,8 @@ export const AttendanceTracker: React.FC = () => {
   const startIndex = (currentPage - 1) * entriesPerPage;
   const endIndex = startIndex + entriesPerPage;
   const currentEntries = attendanceEntries.slice(startIndex, endIndex);
-  interface PageChangeHandler {
-    (pageNumber: number): void;
-  }
 
-  const handlePageChange: PageChangeHandler = (pageNumber) => {
+  const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
   };
 
@@ -72,51 +75,46 @@ export const AttendanceTracker: React.FC = () => {
     }
     return pages;
   };
+
   const getAttendance = async () => {
     try {
       const response = await timer.getAttendanceEntries();
       setAttendanceEntries(response.data);
     } catch (error) {
-      console.error("Error getting current time:", error);
+      console.error("Error getting attendance entries:", error);
     }
   };
-  // Load saved entries from localStorage on component mount
+
+  // Fetch current time from API
+  const getCurrentTimeFromAPI = async (): Promise<CurrentTimeResponse> => {
+    try {
+      const response = await axios.get(
+        "http://localhost:5000/api/current-time"
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error getting current time from API:", error);
+      // Fallback to local time if API fails
+      const now = new Date();
+      return {
+        date: now.toLocaleDateString(),
+        time: now.toLocaleTimeString(),
+      };
+    }
+  };
+
+  // Load saved entries and current time on component mount
   useEffect(() => {
     getAttendance();
-  }, [isTimeIn]);
+    getCurrentTime();
+  }, []);
 
-  // Save entries to localStorage whenever they change
-  // useEffect(() => {
-  //   localStorage.setItem("attendanceEntries", JSON.stringify(attendanceEntries));
-  // }, [attendanceEntries]);
-
-  // Real-time elapsed time tracking
-  // useEffect(() => {
-  //   let intervalId: NodeJS.Timeout;
-
-  //   if (isTimeIn) {
-  //     const startTime = new Date(`${currentEntry.date} ${currentEntry.timeIn}`).getTime();
-
-  //     intervalId = setInterval(() => {
-  //       const currentTime = new Date().getTime();
-  //       const diffMs = currentTime - startTime;
-  //       setElapsedTime(Math.floor(diffMs / 1000)); // Convert to seconds
-  //     }, 1000);
-  //   }
-
-  //   // Cleanup interval
-  //   return () => {
-  //     if (intervalId) {
-  //       clearInterval(intervalId);
-  //     }
-  //   };
-  // }, [isTimeIn, currentEntry]);
-
+  // Elapsed time tracking using requestAnimationFrame
   useEffect(() => {
     let startTime: number;
     let animationFrameId: number;
 
-    if (isTimeIn) {
+    if (isTimeIn && currentEntry.date && currentEntry.timeIn) {
       startTime = new Date(
         `${currentEntry.date} ${currentEntry.timeIn}`
       ).getTime();
@@ -152,7 +150,6 @@ export const AttendanceTracker: React.FC = () => {
   const getCurrentTime = async () => {
     try {
       const response = await timer.getCurrentTimeIn();
-      console.log("response get current time in", response.data);
       const currentTimeData = response.data[0];
       if (currentTimeData.timeOut) {
         setIsTimeIn(false);
@@ -164,71 +161,50 @@ export const AttendanceTracker: React.FC = () => {
       console.error("Error getting current time:", error);
     }
   };
-  useEffect(() => {
-    getCurrentTime();
-  }, []);
 
   const handleTimeIn = async () => {
-    const now = new Date();
-    const entry: AttendanceEntry = {
-      id: `entry-${now.getTime()}`,
-      date: now.toLocaleDateString(),
-      timeIn: now.toLocaleTimeString(),
-    };
-
     try {
+      // Get current time from API
+      const currentTimeData = await getCurrentTimeFromAPI();
+
+      const entry: AttendanceEntry = {
+        id: `entry-${new Date().getTime()}`,
+        date: currentTimeData.date,
+        timeIn: currentTimeData.time,
+      };
+
       const response = await timer.timeIn(entry);
       setCurrentEntry(response.data);
       setIsTimeIn(true);
-
       setElapsedTime(0);
     } catch (error) {
       console.error("Error logging time:", error);
-      // Handle error appropriately
     }
   };
 
-  // const handleTimeOut = (notes?: string) => {
-  //   if (!currentEntry) return;
-
-  //   const now = new Date();
-  //   const timeInDate = new Date(`${currentEntry.date} ${currentEntry.timeIn}`);
-  //   const timeOutDate = now;
-
-  //   // Calculate total hours
-  //   const diffMs = timeOutDate.getTime() - timeInDate.getTime();
-  //   const totalHours = diffMs / (1000 * 60 * 60); // Convert milliseconds to hours
-
-  //   const completedEntry: AttendanceEntry = {
-  //     ...(currentEntry as AttendanceEntry),
-  //     timeOut: now.toLocaleTimeString(),
-  //     totalHours: Number(totalHours.toFixed(2)),
-  //     notes: notes,
-  //   };
-
-  //   setAttendanceEntries((prev) => [completedEntry, ...prev]);
-  //   setCurrentEntry({});
-  //   setIsTimeIn(false);
-  //   setDialogOpen(false);
-  //   setElapsedTime(0);
-  // };
   const handleTimeOut = async ({ notes }: { notes?: string }) => {
-    const now = new Date();
-    const timeInDate = new Date(`${currentEntry.date} ${currentEntry.timeIn}`);
-    const timeOutDate = now;
-
-    // Calculate total hours
-    const diffMs = timeOutDate.getTime() - timeInDate.getTime();
-    const totalHours = diffMs / (1000 * 60 * 60); // Convert milliseconds to hours
-
-    const updatedEntry = {
-      ...currentEntry,
-      timeOut: now.toLocaleTimeString(),
-      totalHours: Number(totalHours.toFixed(2)),
-      notes: notes,
-    };
-
     try {
+      // Get current time from API for time out
+      const currentTimeData = await getCurrentTimeFromAPI();
+
+      const timeInDate = new Date(
+        `${currentEntry.date} ${currentEntry.timeIn}`
+      );
+      const timeOutDate = new Date(
+        `${currentTimeData.date} ${currentTimeData.time}`
+      );
+
+      // Calculate total hours
+      const diffMs = timeOutDate.getTime() - timeInDate.getTime();
+      const totalHours = diffMs / (1000 * 60 * 60); // Convert milliseconds to hours
+
+      const updatedEntry = {
+        ...currentEntry,
+        timeOut: currentTimeData.time,
+        totalHours: Number(totalHours.toFixed(2)),
+        notes: notes,
+      };
+
       await timer.timeOut(updatedEntry);
       setCurrentEntry(updatedEntry);
       setIsTimeIn(false);
@@ -238,6 +214,7 @@ export const AttendanceTracker: React.FC = () => {
       console.error("Error logging timeout:", error);
     }
   };
+
   console.log("currentEntry", currentEntry);
   return (
     <Card className="w-full max-w-4xl mx-auto">
@@ -318,7 +295,7 @@ export const AttendanceTracker: React.FC = () => {
             )}
           </div>
 
-          {/* Attendance History */}
+          {/* Attendance History Table (Unchanged) */}
           <Card className="w-full">
             <CardHeader>
               <CardTitle>Time Tracker History</CardTitle>
@@ -347,6 +324,7 @@ export const AttendanceTracker: React.FC = () => {
                 </TableBody>
               </Table>
 
+              {/* Pagination (Unchanged) */}
               <div className="mt-4 flex justify-end items-end text-xs">
                 <Pagination>
                   <PaginationContent>
