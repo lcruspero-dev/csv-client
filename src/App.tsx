@@ -14,6 +14,7 @@ import ViewIndividualTicket from "./pages/allTicket/ViewIndividualTicket";
 import CreateAssign from "./pages/assigns/CreateAssigns";
 import CreateCategory from "./pages/createCategory/CreateCatergory";
 import ExportData from "./pages/exportData/ExportData";
+import ExportDataTime from "./pages/exportData/ExportDataTime";
 import CreateTicket from "./pages/getHelp/CreateTicket";
 import Homepage from "./pages/homePage/Homepage";
 import ViewIndividualMemo from "./pages/memo/ViewIndividualMemo";
@@ -48,6 +49,7 @@ function App() {
             <Route path="/addassign" element={<CreateAssign />} />
             <Route path="/exportdata" element={<ExportData />} />
             <Route path="/timetracker" element={<TimeTracker />} />
+            <Route path="/exporttimetracker" element={<ExportDataTime />} />
 
             {/* Admin Routes */}
             {/* <Route element={<ProtectedRoute requiresAdmin={true} />}>

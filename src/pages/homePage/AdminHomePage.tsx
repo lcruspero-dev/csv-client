@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { ExportDatas } from "@/API/endpoint";
 import Sidebar from "@/components/ui/Sidebar";
 import Chart from "@/components/ui/charts";
-import { ExportDatas } from "@/API/endpoint";
+import { useEffect, useState } from "react";
 
 const AdminHome = () => {
   //   const navigate = useNavigate();
@@ -35,7 +35,9 @@ const AdminHome = () => {
             <h2 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#1638df] to-[#192fb4]">
               Welcome to Admin Dashboard
             </h2>
-            <p className="text-2xl font-bold mt-2 text-gray-700">Please choose from an option </p>
+            <p className="text-2xl font-bold mt-2 text-gray-700">
+              Please select an option
+            </p>
           </section>
 
           <div className="">

@@ -2,7 +2,13 @@ import { timer } from "@/API/endpoint";
 import BackButton from "@/components/kit/BackButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -13,7 +19,14 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Clock, LogIn, LogOut } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
@@ -28,8 +41,12 @@ interface AttendanceEntry {
 
 export const AttendanceTracker: React.FC = () => {
   const [isTimeIn, setIsTimeIn] = useState(false);
-  const [attendanceEntries, setAttendanceEntries] = useState<AttendanceEntry[]>([]);
-  const [currentEntry, setCurrentEntry] = useState<Partial<AttendanceEntry>>({});
+  const [attendanceEntries, setAttendanceEntries] = useState<AttendanceEntry[]>(
+    []
+  );
+  const [currentEntry, setCurrentEntry] = useState<Partial<AttendanceEntry>>(
+    {}
+  );
   const [dialogOpen, setDialogOpen] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
@@ -100,7 +117,9 @@ export const AttendanceTracker: React.FC = () => {
     let animationFrameId: number;
 
     if (isTimeIn) {
-      startTime = new Date(`${currentEntry.date} ${currentEntry.timeIn}`).getTime();
+      startTime = new Date(
+        `${currentEntry.date} ${currentEntry.timeIn}`
+      ).getTime();
 
       const updateTimer = () => {
         const currentTime = new Date().getTime();
@@ -125,9 +144,9 @@ export const AttendanceTracker: React.FC = () => {
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
 
-    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds
+    return `${hours.toString().padStart(2, "0")}:${minutes
       .toString()
-      .padStart(2, "0")}`;
+      .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
   };
 
   const getCurrentTime = async () => {
@@ -236,7 +255,9 @@ export const AttendanceTracker: React.FC = () => {
           <div className="flex flex-col items-center space-y-4">
             {/* Running Time Display */}
             {isTimeIn && (
-              <div className="text-4xl font-bold tracking-tighter text-center">{formatElapsedTime(elapsedTime)}</div>
+              <div className="text-4xl font-bold tracking-tighter text-center">
+                {formatElapsedTime(elapsedTime)}
+              </div>
             )}
 
             {/* Time In/Out Buttons */}
@@ -261,12 +282,18 @@ export const AttendanceTracker: React.FC = () => {
                         <Label htmlFor="notes" className="text-right">
                           Notes (Optional)
                         </Label>
-                        <Input id="notes" className="col-span-3" placeholder="Add any notes about your work day" />
+                        <Input
+                          id="notes"
+                          className="col-span-3"
+                          placeholder="Add any notes about your work day"
+                        />
                       </div>
                       <div className="flex justify-end">
                         <Button
                           onClick={() => {
-                            const notesInput = document.getElementById("notes") as HTMLInputElement;
+                            const notesInput = document.getElementById(
+                              "notes"
+                            ) as HTMLInputElement;
                             handleTimeOut({
                               notes: notesInput?.value,
                             });
@@ -294,7 +321,7 @@ export const AttendanceTracker: React.FC = () => {
           {/* Attendance History */}
           <Card className="w-full">
             <CardHeader>
-              <CardTitle>Attendance History</CardTitle>
+              <CardTitle>Time Tracker History</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
@@ -326,7 +353,11 @@ export const AttendanceTracker: React.FC = () => {
                     <PaginationItem>
                       <PaginationPrevious
                         onClick={() => handlePageChange(currentPage - 1)}
-                        className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        className={
+                          currentPage === 1
+                            ? "pointer-events-none opacity-50"
+                            : "cursor-pointer"
+                        }
                       />
                     </PaginationItem>
 
@@ -345,7 +376,11 @@ export const AttendanceTracker: React.FC = () => {
                     <PaginationItem>
                       <PaginationNext
                         onClick={() => handlePageChange(currentPage + 1)}
-                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        className={
+                          currentPage === totalPages
+                            ? "pointer-events-none opacity-50"
+                            : "cursor-pointer"
+                        }
                       />
                     </PaginationItem>
                   </PaginationContent>

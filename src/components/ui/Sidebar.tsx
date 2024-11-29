@@ -1,8 +1,8 @@
-import React, { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ChevronLeft, ChevronRight, Menu } from "lucide-react";
+import React from "react";
+import { useNavigate } from "react-router-dom";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -17,37 +17,17 @@ interface NavItem {
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   const navigate = useNavigate();
 
-  // Get user role from localStorage
-  const userRole = useMemo(() => {
-    const userString = localStorage.getItem("user");
-    if (userString) {
-      try {
-        const user = JSON.parse(userString);
-        return user.role;
-      } catch (error) {
-        console.error("Error parsing user data from localStorage:", error);
-      }
-    }
-    return null;
-  }, []);
-
-  const navItems: NavItem[] = useMemo(() => {
-    const items: NavItem[] = [
-      { title: "Memo", path: "/all-memo" },
-      { title: "HR Support Request", path: "/request-something" },
-      { title: "IT Support Request", path: "/create-ticket" },
-      { title: "Manage Tickets", path: "/all-tickets" },
-      { title: "Add Category", path: "/addcategory" },
-      { title: "Add Assignee", path: "/addassign" },
-    ];
-
-    // Add "Export Data" only if the user is SUPERADMIN
-    if (userRole === "SUPERADMIN") {
-      items.push({ title: "Export Data", path: "/exportdata" });
-    }
-
-    return items;
-  }, [userRole]);
+  const navItems: NavItem[] = [
+    { title: "Memo", path: "/all-memo" },
+    { title: "Time Tracker", path: "/timetracker" },
+    { title: "HR Support Request", path: "/request-something" },
+    { title: "IT Support Request", path: "/create-ticket" },
+    { title: "Manage Tickets", path: "/all-tickets" },
+    { title: "Add Category", path: "/addcategory" },
+    { title: "Add Assignee", path: "/addassign" },
+    { title: "Export tickets Data", path: "/exportdata" },
+    { title: "Export Time Tracker Data", path: "/exporttimetracker" },
+  ];
 
   return (
     <>
@@ -61,7 +41,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         <SheetContent side="left" className="w-64">
           <nav className="flex flex-col space-y-4">
             {navItems.map((item, index) => (
-              <Button key={index} variant="ghost" onClick={() => navigate(item.path)} className="justify-start">
+              <Button
+                key={index}
+                variant="ghost"
+                onClick={() => navigate(item.path)}
+                className="justify-start"
+              >
                 {item.title}
               </Button>
             ))}
@@ -75,8 +60,17 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
           isOpen ? "w-64" : "w-16"
         } bg-white shadow-lg`}
       >
-        <Button variant="ghost" size="icon" className="self-end m-2" onClick={toggleSidebar}>
-          {isOpen ? <ChevronLeft className="h-6 w-6" /> : <ChevronRight className="h-6 w-6" />}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="self-end m-2"
+          onClick={toggleSidebar}
+        >
+          {isOpen ? (
+            <ChevronLeft className="h-6 w-6" />
+          ) : (
+            <ChevronRight className="h-6 w-6" />
+          )}
         </Button>
         <nav className="flex flex-col space-y-4 p-4">
           {navItems.map((item, index) => (
