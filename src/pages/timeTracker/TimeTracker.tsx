@@ -2,13 +2,7 @@ import { timer } from "@/API/endpoint";
 import BackButton from "@/components/kit/BackButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -19,15 +13,8 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import axios from "axios"; // Ensure axios is imported
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
 import { Clock, LogIn, LogOut } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
@@ -47,15 +34,12 @@ interface CurrentTimeResponse {
 
 export const AttendanceTracker: React.FC = () => {
   const [isTimeIn, setIsTimeIn] = useState(false);
-  const [attendanceEntries, setAttendanceEntries] = useState<AttendanceEntry[]>(
-    []
-  );
-  const [currentEntry, setCurrentEntry] = useState<Partial<AttendanceEntry>>(
-    {}
-  );
+  const [attendanceEntries, setAttendanceEntries] = useState<AttendanceEntry[]>([]);
+  const [currentEntry, setCurrentEntry] = useState<Partial<AttendanceEntry>>({});
   const [dialogOpen, setDialogOpen] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+  const [currentServerTime, setCurrentServerTime] = useState<CurrentTimeResponse>({ date: "", time: "" });
   const entriesPerPage = 10;
 
   const totalPages = Math.ceil(attendanceEntries.length / entriesPerPage);
@@ -80,6 +64,7 @@ export const AttendanceTracker: React.FC = () => {
     try {
       const response = await timer.getAttendanceEntries();
       setAttendanceEntries(response.data);
+      console.log("attendance entries", response.data);
     } catch (error) {
       console.error("Error getting attendance entries:", error);
     }
@@ -88,9 +73,9 @@ export const AttendanceTracker: React.FC = () => {
   // Fetch current time from API
   const getCurrentTimeFromAPI = async (): Promise<CurrentTimeResponse> => {
     try {
-      const response = await axios.get(
-        "http://localhost:5000/api/current-time"
-      );
+      const response = await timer.getServerTime();
+      console.log("server time", response.data);
+      setCurrentServerTime(response.data);
       return response.data;
     } catch (error) {
       console.error("Error getting current time from API:", error);
@@ -107,44 +92,46 @@ export const AttendanceTracker: React.FC = () => {
   useEffect(() => {
     getAttendance();
     getCurrentTime();
+    getCurrentTimeFromAPI();
   }, []);
 
   // Elapsed time tracking using requestAnimationFrame
   useEffect(() => {
     let startTime: number;
-    let animationFrameId: number;
+    let intervalId: NodeJS.Timeout;
+    let timeOffset = 0; // Difference between server and local time
 
     if (isTimeIn && currentEntry.date && currentEntry.timeIn) {
-      startTime = new Date(
-        `${currentEntry.date} ${currentEntry.timeIn}`
-      ).getTime();
+      // Calculate initial offset between server and local time
+      const serverTime = new Date(`${currentServerTime.date} ${currentServerTime.time}`).getTime();
+      const localTime = Date.now();
+      timeOffset = serverTime - localTime;
 
-      const updateTimer = () => {
-        const currentTime = new Date().getTime();
+      // Calculate start time with offset
+      startTime = new Date(`${currentEntry.date} ${currentEntry.timeIn}`).getTime();
+
+      intervalId = setInterval(() => {
+        const currentTime = Date.now() + timeOffset; // Apply offset to local time
         const diffMs = currentTime - startTime;
         setElapsedTime(Math.floor(diffMs / 1000));
-        animationFrameId = requestAnimationFrame(updateTimer);
-      };
-
-      animationFrameId = requestAnimationFrame(updateTimer);
+      }, 1000);
     }
 
     return () => {
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
+      if (intervalId) {
+        clearInterval(intervalId);
       }
     };
-  }, [isTimeIn, currentEntry]);
-
+  }, [isTimeIn, currentEntry, currentServerTime]);
   // Format elapsed time to hours and minutes
   const formatElapsedTime = (totalSeconds: number) => {
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
 
-    return `${hours.toString().padStart(2, "0")}:${minutes
+    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds
       .toString()
-      .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+      .padStart(2, "0")}`;
   };
 
   const getCurrentTime = async () => {
@@ -175,6 +162,7 @@ export const AttendanceTracker: React.FC = () => {
 
       const response = await timer.timeIn(entry);
       setCurrentEntry(response.data);
+      getAttendance();
       setIsTimeIn(true);
       setElapsedTime(0);
     } catch (error) {
@@ -187,12 +175,8 @@ export const AttendanceTracker: React.FC = () => {
       // Get current time from API for time out
       const currentTimeData = await getCurrentTimeFromAPI();
 
-      const timeInDate = new Date(
-        `${currentEntry.date} ${currentEntry.timeIn}`
-      );
-      const timeOutDate = new Date(
-        `${currentTimeData.date} ${currentTimeData.time}`
-      );
+      const timeInDate = new Date(`${currentEntry.date} ${currentEntry.timeIn}`);
+      const timeOutDate = new Date(`${currentTimeData.date} ${currentTimeData.time}`);
 
       // Calculate total hours
       const diffMs = timeOutDate.getTime() - timeInDate.getTime();
@@ -207,6 +191,7 @@ export const AttendanceTracker: React.FC = () => {
 
       await timer.timeOut(updatedEntry);
       setCurrentEntry(updatedEntry);
+      getAttendance();
       setIsTimeIn(false);
       setDialogOpen(false);
       setElapsedTime(0);
@@ -215,7 +200,7 @@ export const AttendanceTracker: React.FC = () => {
     }
   };
 
-  console.log("currentEntry", currentEntry);
+  // console.log("currentEntry", currentEntry);
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
@@ -232,9 +217,7 @@ export const AttendanceTracker: React.FC = () => {
           <div className="flex flex-col items-center space-y-4">
             {/* Running Time Display */}
             {isTimeIn && (
-              <div className="text-4xl font-bold tracking-tighter text-center">
-                {formatElapsedTime(elapsedTime)}
-              </div>
+              <div className="text-4xl font-bold tracking-tighter text-center">{formatElapsedTime(elapsedTime)}</div>
             )}
 
             {/* Time In/Out Buttons */}
@@ -259,18 +242,12 @@ export const AttendanceTracker: React.FC = () => {
                         <Label htmlFor="notes" className="text-right">
                           Notes (Optional)
                         </Label>
-                        <Input
-                          id="notes"
-                          className="col-span-3"
-                          placeholder="Add any notes about your work day"
-                        />
+                        <Input id="notes" className="col-span-3" placeholder="Add any notes about your work day" />
                       </div>
                       <div className="flex justify-end">
                         <Button
                           onClick={() => {
-                            const notesInput = document.getElementById(
-                              "notes"
-                            ) as HTMLInputElement;
+                            const notesInput = document.getElementById("notes") as HTMLInputElement;
                             handleTimeOut({
                               notes: notesInput?.value,
                             });
@@ -331,11 +308,7 @@ export const AttendanceTracker: React.FC = () => {
                     <PaginationItem>
                       <PaginationPrevious
                         onClick={() => handlePageChange(currentPage - 1)}
-                        className={
-                          currentPage === 1
-                            ? "pointer-events-none opacity-50"
-                            : "cursor-pointer"
-                        }
+                        className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                       />
                     </PaginationItem>
 
@@ -354,11 +327,7 @@ export const AttendanceTracker: React.FC = () => {
                     <PaginationItem>
                       <PaginationNext
                         onClick={() => handlePageChange(currentPage + 1)}
-                        className={
-                          currentPage === totalPages
-                            ? "pointer-events-none opacity-50"
-                            : "cursor-pointer"
-                        }
+                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
                       />
                     </PaginationItem>
                   </PaginationContent>
