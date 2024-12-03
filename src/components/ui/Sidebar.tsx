@@ -27,6 +27,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
     { title: "Add Assignee", path: "/addassign" },
     { title: "Export tickets Data", path: "/exportdata" },
     { title: "Export Time Tracker Data", path: "/exporttimetracker" },
+    { title: "Reset User Password", path: "/resetuserpassword" },
   ];
 
   return (

@@ -20,6 +20,7 @@ import Homepage from "./pages/homePage/Homepage";
 import ViewIndividualMemo from "./pages/memo/ViewIndividualMemo";
 import { ProtectedRoute } from "./pages/ProtectedRoute";
 import Request from "./pages/requestSomething/Request";
+import AdminResetPassword from "./pages/resetPassword/adminResetPassword";
 import TimeTracker from "./pages/timeTracker/TimeTracker";
 
 function App() {
@@ -50,6 +51,7 @@ function App() {
             <Route path="/exportdata" element={<ExportData />} />
             <Route path="/timetracker" element={<TimeTracker />} />
             <Route path="/exporttimetracker" element={<ExportDataTime />} />
+            <Route path="/resetuserpassword" element={<AdminResetPassword />} />
 
             {/* Admin Routes */}
             {/* <Route element={<ProtectedRoute requiresAdmin={true} />}>
