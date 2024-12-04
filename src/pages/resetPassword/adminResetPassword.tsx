@@ -118,7 +118,7 @@ const AdminResetPassword: React.FC = () => {
       </div>
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-center">Admin Reset Password</CardTitle>
+          <CardTitle className="text-center">Reset User Password</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -130,7 +130,7 @@ const AdminResetPassword: React.FC = () => {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                placeholder="Enter your email"
+                placeholder="Enter user email"
                 className={errors.email ? "border-red-500" : ""}
               />
               {errors.email && (

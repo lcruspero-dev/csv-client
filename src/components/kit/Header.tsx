@@ -41,7 +41,7 @@ const Header: React.FC = () => {
               <div className="flex items-center space-x-4">
                 <span className=" text-1xl  p-2 drop-shadow-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#1638df] to-[#192fb4]">
                   {" "}
-                  Welcome {user?.name}
+                  Welcome, {user?.name}
                 </span>
                 <Button onClick={handleLogout}>Logout</Button>
               </div>
