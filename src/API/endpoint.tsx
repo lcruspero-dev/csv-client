@@ -85,3 +85,12 @@ export const ResetPassword = {
   AdminResetPassword: (body: object) =>
     apiHelper("/api/users/admin-reset-password", "POST", body),
 };
+
+export const TimeRecordAPI = {
+  getTimeRecordsByNameAndDate: (name: string, date: string) =>
+    apiHelper(`/api/employeeTimes/search?name=${name}&date=${date}`, "GET"),
+  updateTimeRecord: (id: string, body: object) =>
+    apiHelper(`/api/employeeTimes/${id}`, "PUT", body),
+  deleteTimeRecord: (id: string) =>
+    apiHelper(`/api/employeeTimes/${id}`, "DELETE"),
+};

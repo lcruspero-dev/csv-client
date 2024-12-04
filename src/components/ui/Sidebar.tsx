@@ -23,10 +23,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
     { title: "HR Support Request", path: "/request-something" },
     { title: "IT Support Request", path: "/create-ticket" },
     { title: "Manage Tickets", path: "/all-tickets" },
-    { title: "Add Category", path: "/addcategory" },
-    { title: "Add Assignee", path: "/addassign" },
+    { title: "Add Ticket Category", path: "/addcategory" },
+    { title: "Add Ticket Assignee", path: "/addassign" },
     { title: "Export tickets Data", path: "/exportdata" },
     { title: "Export Time Tracker Data", path: "/exporttimetracker" },
+    { title: "Edit Time Record", path: "/timerecord" },
     { title: "Reset User Password", path: "/resetuserpassword" },
   ];
 
@@ -73,7 +74,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
             <ChevronRight className="h-6 w-6" />
           )}
         </Button>
-        <nav className="flex flex-col space-y-4 p-4">
+        <nav className="flex flex-col space-y-1 p-4">
           {navItems.map((item, index) => (
             <Button
               key={index}
