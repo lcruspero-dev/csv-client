@@ -2,7 +2,13 @@ import { timer } from "@/API/endpoint";
 import BackButton from "@/components/kit/BackButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -13,7 +19,21 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 import { Clock, LogIn, LogOut } from "lucide-react";
 import React, { useEffect, useState } from "react";
@@ -25,6 +45,7 @@ interface AttendanceEntry {
   timeOut?: string;
   totalHours?: number;
   notes?: string;
+  shift?: string;
 }
 
 interface CurrentTimeResponse {
@@ -34,13 +55,21 @@ interface CurrentTimeResponse {
 
 export const AttendanceTracker: React.FC = () => {
   const [isTimeIn, setIsTimeIn] = useState(false);
-  const [attendanceEntries, setAttendanceEntries] = useState<AttendanceEntry[]>([]);
-  const [currentEntry, setCurrentEntry] = useState<Partial<AttendanceEntry>>({});
+  const [attendanceEntries, setAttendanceEntries] = useState<AttendanceEntry[]>(
+    []
+  );
+  const [currentEntry, setCurrentEntry] = useState<Partial<AttendanceEntry>>(
+    {}
+  );
   const [dialogOpen, setDialogOpen] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [currentServerTime, setCurrentServerTime] = useState<CurrentTimeResponse>({ date: "", time: "" });
+  const [currentServerTime, setCurrentServerTime] =
+    useState<CurrentTimeResponse>({ date: "", time: "" });
+  const [selectedShift, setSelectedShift] = useState<string | null>(null);
   const entriesPerPage = 10;
+
+  const SHIFT_OPTIONS = ["Shift 1", "Shift 2", "Shift 3", "Staff"];
 
   const totalPages = Math.ceil(attendanceEntries.length / entriesPerPage);
   const startIndex = (currentPage - 1) * entriesPerPage;
@@ -103,12 +132,16 @@ export const AttendanceTracker: React.FC = () => {
 
     if (isTimeIn && currentEntry.date && currentEntry.timeIn) {
       // Calculate initial offset between server and local time
-      const serverTime = new Date(`${currentServerTime.date} ${currentServerTime.time}`).getTime();
+      const serverTime = new Date(
+        `${currentServerTime.date} ${currentServerTime.time}`
+      ).getTime();
       const localTime = Date.now();
       timeOffset = serverTime - localTime;
 
       // Calculate start time with offset
-      startTime = new Date(`${currentEntry.date} ${currentEntry.timeIn}`).getTime();
+      startTime = new Date(
+        `${currentEntry.date} ${currentEntry.timeIn}`
+      ).getTime();
 
       intervalId = setInterval(() => {
         const currentTime = Date.now() + timeOffset; // Apply offset to local time
@@ -123,15 +156,16 @@ export const AttendanceTracker: React.FC = () => {
       }
     };
   }, [isTimeIn, currentEntry, currentServerTime]);
+
   // Format elapsed time to hours and minutes
   const formatElapsedTime = (totalSeconds: number) => {
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
 
-    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds
+    return `${hours.toString().padStart(2, "0")}:${minutes
       .toString()
-      .padStart(2, "0")}`;
+      .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
   };
 
   const getCurrentTime = async () => {
@@ -158,6 +192,7 @@ export const AttendanceTracker: React.FC = () => {
         id: `entry-${new Date().getTime()}`,
         date: currentTimeData.date,
         timeIn: currentTimeData.time,
+        shift: selectedShift || "",
       };
 
       const response = await timer.timeIn(entry);
@@ -175,8 +210,12 @@ export const AttendanceTracker: React.FC = () => {
       // Get current time from API for time out
       const currentTimeData = await getCurrentTimeFromAPI();
 
-      const timeInDate = new Date(`${currentEntry.date} ${currentEntry.timeIn}`);
-      const timeOutDate = new Date(`${currentTimeData.date} ${currentTimeData.time}`);
+      const timeInDate = new Date(
+        `${currentEntry.date} ${currentEntry.timeIn}`
+      );
+      const timeOutDate = new Date(
+        `${currentTimeData.date} ${currentTimeData.time}`
+      );
 
       // Calculate total hours
       const diffMs = timeOutDate.getTime() - timeInDate.getTime();
@@ -195,12 +234,12 @@ export const AttendanceTracker: React.FC = () => {
       setIsTimeIn(false);
       setDialogOpen(false);
       setElapsedTime(0);
+      setSelectedShift(null);
     } catch (error) {
       console.error("Error logging timeout:", error);
     }
   };
 
-  // console.log("currentEntry", currentEntry);
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
@@ -215,15 +254,43 @@ export const AttendanceTracker: React.FC = () => {
         <div className="flex flex-col space-y-4">
           {/* Time In/Out Section */}
           <div className="flex flex-col items-center space-y-4">
+            {/* Shift Selection */}
+            {!isTimeIn && (
+              <div className="w-full max-w-xs text-center">
+                <Label>Select your shift schedule</Label>
+                <Select
+                  value={selectedShift || undefined}
+                  onValueChange={(value) => setSelectedShift(value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Shift" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SHIFT_OPTIONS.map((shift) => (
+                      <SelectItem key={shift} value={shift}>
+                        {shift}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             {/* Running Time Display */}
             {isTimeIn && (
-              <div className="text-4xl font-bold tracking-tighter text-center">{formatElapsedTime(elapsedTime)}</div>
+              <div className="text-4xl font-bold tracking-tighter text-center">
+                {formatElapsedTime(elapsedTime)}
+              </div>
             )}
 
             {/* Time In/Out Buttons */}
             <div className="flex justify-center space-x-4">
               {!isTimeIn ? (
-                <Button onClick={handleTimeIn} className="flex items-center">
+                <Button
+                  onClick={handleTimeIn}
+                  className="flex items-center"
+                  disabled={!selectedShift}
+                >
                   <LogIn className="mr-2 h-4 w-4" /> Time In
                 </Button>
               ) : (
@@ -242,12 +309,18 @@ export const AttendanceTracker: React.FC = () => {
                         <Label htmlFor="notes" className="text-right">
                           Notes (Optional)
                         </Label>
-                        <Input id="notes" className="col-span-3" placeholder="Add any notes about your work day" />
+                        <Input
+                          id="notes"
+                          className="col-span-3"
+                          placeholder="Add any notes about your work day"
+                        />
                       </div>
                       <div className="flex justify-end">
                         <Button
                           onClick={() => {
-                            const notesInput = document.getElementById("notes") as HTMLInputElement;
+                            const notesInput = document.getElementById(
+                              "notes"
+                            ) as HTMLInputElement;
                             handleTimeOut({
                               notes: notesInput?.value,
                             });
@@ -268,6 +341,7 @@ export const AttendanceTracker: React.FC = () => {
                 <p className="font-semibold">Current Session</p>
                 <p>Date: {currentEntry.date}</p>
                 <p>Time In: {currentEntry.timeIn}</p>
+                <p>Shift: {currentEntry.shift}</p>
               </div>
             )}
           </div>
@@ -285,6 +359,7 @@ export const AttendanceTracker: React.FC = () => {
                     <TableHead>Time In</TableHead>
                     <TableHead>Time Out</TableHead>
                     <TableHead>Total Hours</TableHead>
+                    <TableHead>Shift</TableHead>
                     <TableHead>Notes</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -293,8 +368,9 @@ export const AttendanceTracker: React.FC = () => {
                     <TableRow key={entry.id}>
                       <TableCell>{entry.date}</TableCell>
                       <TableCell>{entry.timeIn}</TableCell>
-                      <TableCell>{entry.timeOut || "N/A"}</TableCell>
+                      <TableCell>{entry.timeOut || "In Progress"}</TableCell>
                       <TableCell>{entry.totalHours || "N/A"}</TableCell>
+                      <TableCell>{entry.shift}</TableCell>
                       <TableCell>{entry.notes || "-"}</TableCell>
                     </TableRow>
                   ))}
@@ -308,7 +384,11 @@ export const AttendanceTracker: React.FC = () => {
                     <PaginationItem>
                       <PaginationPrevious
                         onClick={() => handlePageChange(currentPage - 1)}
-                        className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        className={
+                          currentPage === 1
+                            ? "pointer-events-none opacity-50"
+                            : "cursor-pointer"
+                        }
                       />
                     </PaginationItem>
 
@@ -327,7 +407,11 @@ export const AttendanceTracker: React.FC = () => {
                     <PaginationItem>
                       <PaginationNext
                         onClick={() => handlePageChange(currentPage + 1)}
-                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        className={
+                          currentPage === totalPages
+                            ? "pointer-events-none opacity-50"
+                            : "cursor-pointer"
+                        }
                       />
                     </PaginationItem>
                   </PaginationContent>

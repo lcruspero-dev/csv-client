@@ -90,7 +90,7 @@ export const TimeRecordAPI = {
   getTimeRecordsByNameAndDate: (name: string, date: string) =>
     apiHelper(`/api/employeeTimes/search?name=${name}&date=${date}`, "GET"),
   updateTimeRecord: (id: string, body: object) =>
-    apiHelper(`/api/employeeTimes/${id}`, "PUT", body),
+    apiHelper(`/api/employeeTimes/${id}`, "PATCH", body),
   deleteTimeRecord: (id: string) =>
     apiHelper(`/api/employeeTimes/${id}`, "DELETE"),
 };

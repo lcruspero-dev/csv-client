@@ -22,6 +22,7 @@ interface EmployeeTimes {
   timeOut: string;
   totalHours: string;
   notes: string;
+  shift: string;
   createdAt: string;
   updatedAt: string;
   __v: number;
@@ -72,8 +73,9 @@ const ExportDataTime: React.FC = () => {
 
       // Map data to match desired Excel columns
       const mappedData = filteredEmployeeTimes.map((entry) => ({
-        EmployeeName: entry.employeeName,
         Date: entry.date,
+        EmployeeName: entry.employeeName,
+        Shift: entry.shift,
         TimeIn: entry.timeIn,
         TimeOut: entry.timeOut,
         TotalHours: entry.totalHours,
@@ -85,8 +87,9 @@ const ExportDataTime: React.FC = () => {
 
       // Adjust column widths
       worksheet["!cols"] = [
+        { wch: 15 }, // date
         { wch: 20 }, // EmployeeName
-        { wch: 15 }, // Date
+        { wch: 10 }, // Shift
         { wch: 15 }, // TimeIn
         { wch: 15 }, // TimeOut
         { wch: 10 }, // TotalHours

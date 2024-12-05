@@ -26,14 +26,15 @@ import React, { useState } from "react";
 
 // Interface for Time Record
 interface TimeRecord {
-  id: string;
+  _id: string;
   employeeId: string;
   employeeName: string;
   date: string;
   timeIn: string;
   timeOut: string;
-  totalHours: number;
+  totalHours: string;
   notes?: string;
+  shift?: string;
 }
 
 const AdminTimeRecordEdit: React.FC = () => {
@@ -42,6 +43,25 @@ const AdminTimeRecordEdit: React.FC = () => {
   const [timeRecords, setTimeRecords] = useState<TimeRecord[]>([]);
   const [editingRecord, setEditingRecord] = useState<TimeRecord | null>(null);
   const { toast } = useToast();
+
+  // Utility function to convert date to MM/DD/YYYY format
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+  };
+
+  // Utility function to convert 24-hour time to 12-hour time with AM/PM
+  const formatTime = (timeString: string): string => {
+    const [hours, minutes] = timeString.split(":");
+    const hour = parseInt(hours, 10);
+    const minute = parseInt(minutes, 10);
+
+    const ampm = hour >= 12 ? "PM" : "AM";
+    const formattedHour = hour % 12 || 12;
+    const formattedMinute = minute.toString().padStart(2, "0");
+
+    return `${formattedHour}:${formattedMinute}:00 ${ampm}`;
+  };
 
   // Search for time records
   const handleSearch = async () => {
@@ -57,7 +77,7 @@ const AdminTimeRecordEdit: React.FC = () => {
     try {
       const response = await TimeRecordAPI.getTimeRecordsByNameAndDate(
         searchName,
-        searchDate
+        formatDate(searchDate)
       );
       setTimeRecords(response.data);
 
@@ -88,12 +108,23 @@ const AdminTimeRecordEdit: React.FC = () => {
     if (!editingRecord) return;
 
     try {
-      await TimeRecordAPI.updateTimeRecord(editingRecord.id, editingRecord);
+      // Format the date and time before sending to backend
+      const formattedRecord = {
+        ...editingRecord,
+        date: formatDate(editingRecord.date),
+        timeIn: formatTime(editingRecord.timeIn),
+        timeOut: formatTime(editingRecord.timeOut),
+      };
+
+      await TimeRecordAPI.updateTimeRecord(
+        formattedRecord._id,
+        formattedRecord
+      );
 
       // Update local state
       setTimeRecords((prev) =>
         prev.map((record) =>
-          record.id === editingRecord.id ? editingRecord : record
+          record._id === formattedRecord._id ? formattedRecord : record
         )
       );
 
@@ -115,12 +146,12 @@ const AdminTimeRecordEdit: React.FC = () => {
   };
 
   // Delete record
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (_id: string) => {
     try {
-      await TimeRecordAPI.deleteTimeRecord(id);
+      await TimeRecordAPI.deleteTimeRecord(_id);
 
       // Update local state
-      setTimeRecords((prev) => prev.filter((record) => record.id !== id));
+      setTimeRecords((prev) => prev.filter((record) => record._id !== _id));
 
       toast({
         title: "Success",
@@ -183,7 +214,7 @@ const AdminTimeRecordEdit: React.FC = () => {
                   <div>
                     <Label>Date</Label>
                     <Input
-                      type="date"
+                      type="text"
                       value={editingRecord.date}
                       onChange={(e) =>
                         setEditingRecord((prev) =>
@@ -193,21 +224,9 @@ const AdminTimeRecordEdit: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <Label>Time In</Label>
-                    <Input
-                      type="time"
-                      value={editingRecord.timeIn}
-                      onChange={(e) =>
-                        setEditingRecord((prev) =>
-                          prev ? { ...prev, timeIn: e.target.value } : null
-                        )
-                      }
-                    />
-                  </div>
-                  <div>
                     <Label>Time Out</Label>
                     <Input
-                      type="time"
+                      type="text"
                       value={editingRecord.timeOut}
                       onChange={(e) =>
                         setEditingRecord((prev) =>
@@ -217,15 +236,51 @@ const AdminTimeRecordEdit: React.FC = () => {
                     />
                   </div>
                   <div>
+                    <Label>Time In</Label>
+                    <Input
+                      type="text"
+                      value={editingRecord.timeIn}
+                      onChange={(e) =>
+                        setEditingRecord((prev) =>
+                          prev ? { ...prev, timeIn: e.target.value } : null
+                        )
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label>Total Hours</Label>
+                    <Input
+                      type="text"
+                      value={editingRecord.totalHours}
+                      onChange={(e) =>
+                        setEditingRecord((prev) =>
+                          prev ? { ...prev, totalHours: e.target.value } : null
+                        )
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label>Shift</Label>
+                    <Input
+                      value={editingRecord.shift || ""}
+                      onChange={(e) =>
+                        setEditingRecord((prev) =>
+                          prev ? { ...prev, shift: e.target.value } : null
+                        )
+                      }
+                      placeholder="Enter shift"
+                    />
+                  </div>
+                  <div>
                     <Label>Notes</Label>
                     <Input
-                      value={editingRecord.notes || ""}
+                      type="text"
+                      value={editingRecord.notes}
                       onChange={(e) =>
                         setEditingRecord((prev) =>
                           prev ? { ...prev, notes: e.target.value } : null
                         )
                       }
-                      placeholder="Optional notes"
                     />
                   </div>
                 </div>
@@ -252,18 +307,20 @@ const AdminTimeRecordEdit: React.FC = () => {
                   <TableHead>Time In</TableHead>
                   <TableHead>Time Out</TableHead>
                   <TableHead>Total Hours</TableHead>
+                  <TableHead>Shift</TableHead>
                   <TableHead>Notes</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {timeRecords.map((record) => (
-                  <TableRow key={record.id}>
+                  <TableRow key={record._id}>
                     <TableCell>{record.employeeName}</TableCell>
                     <TableCell>{record.date}</TableCell>
                     <TableCell>{record.timeIn}</TableCell>
                     <TableCell>{record.timeOut}</TableCell>
                     <TableCell>{record.totalHours}</TableCell>
+                    <TableCell>{record.shift || "-"}</TableCell>
                     <TableCell>{record.notes || "-"}</TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
@@ -293,7 +350,7 @@ const AdminTimeRecordEdit: React.FC = () => {
                               </DialogClose>
                               <Button
                                 variant="destructive"
-                                onClick={() => handleDelete(record.id)}
+                                onClick={() => handleDelete(record._id)}
                               >
                                 Delete
                               </Button>
