@@ -50,17 +50,41 @@ const AdminTimeRecordEdit: React.FC = () => {
     return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
   };
 
-  // Utility function to convert 24-hour time to 12-hour time with AM/PM
-  const formatTime = (timeString: string): string => {
-    const [hours, minutes] = timeString.split(":");
-    const hour = parseInt(hours, 10);
-    const minute = parseInt(minutes, 10);
+  // Utility function to calculate total hours
+  const calculateTotalHours = (timeIn: string, timeOut: string): string => {
+    const parseTime = (time: string) => {
+      const [timePart, modifier] = time.split(" ");
+      // eslint-disable-next-line prefer-const
+      let [hours, minutes, seconds] = timePart.split(":").map(Number);
+      if (modifier === "PM" && hours !== 12) hours += 12;
+      if (modifier === "AM" && hours === 12) hours = 0;
+      return { hours, minutes, seconds };
+    };
 
-    const ampm = hour >= 12 ? "PM" : "AM";
-    const formattedHour = hour % 12 || 12;
-    const formattedMinute = minute.toString().padStart(2, "0");
+    const {
+      hours: inHours,
+      minutes: inMinutes,
+      seconds: inSeconds,
+    } = parseTime(timeIn);
+    const {
+      hours: outHours,
+      minutes: outMinutes,
+      seconds: outSeconds,
+    } = parseTime(timeOut);
 
-    return `${formattedHour}:${formattedMinute}:00 ${ampm}`;
+    // eslint-disable-next-line prefer-const
+    let inTotalSeconds = inHours * 3600 + inMinutes * 60 + inSeconds;
+    let outTotalSeconds = outHours * 3600 + outMinutes * 60 + outSeconds;
+
+    // Adjust for crossing midnight
+    if (outTotalSeconds < inTotalSeconds) {
+      outTotalSeconds += 24 * 3600; // Add 24 hours in seconds
+    }
+
+    const totalSeconds = outTotalSeconds - inTotalSeconds;
+    const totalHours = (totalSeconds / 3600).toFixed(2);
+
+    return totalHours;
   };
 
   // Search for time records
@@ -108,23 +132,12 @@ const AdminTimeRecordEdit: React.FC = () => {
     if (!editingRecord) return;
 
     try {
-      // Format the date and time before sending to backend
-      const formattedRecord = {
-        ...editingRecord,
-        date: formatDate(editingRecord.date),
-        timeIn: formatTime(editingRecord.timeIn),
-        timeOut: formatTime(editingRecord.timeOut),
-      };
-
-      await TimeRecordAPI.updateTimeRecord(
-        formattedRecord._id,
-        formattedRecord
-      );
+      await TimeRecordAPI.updateTimeRecord(editingRecord._id, editingRecord);
 
       // Update local state
       setTimeRecords((prev) =>
         prev.map((record) =>
-          record._id === formattedRecord._id ? formattedRecord : record
+          record._id === editingRecord._id ? editingRecord : record
         )
       );
 
@@ -230,7 +243,16 @@ const AdminTimeRecordEdit: React.FC = () => {
                       value={editingRecord.timeOut}
                       onChange={(e) =>
                         setEditingRecord((prev) =>
-                          prev ? { ...prev, timeOut: e.target.value } : null
+                          prev
+                            ? {
+                                ...prev,
+                                timeOut: e.target.value,
+                                totalHours: calculateTotalHours(
+                                  prev.timeIn,
+                                  e.target.value
+                                ),
+                              }
+                            : null
                         )
                       }
                     />
@@ -242,7 +264,16 @@ const AdminTimeRecordEdit: React.FC = () => {
                       value={editingRecord.timeIn}
                       onChange={(e) =>
                         setEditingRecord((prev) =>
-                          prev ? { ...prev, timeIn: e.target.value } : null
+                          prev
+                            ? {
+                                ...prev,
+                                timeIn: e.target.value,
+                                totalHours: calculateTotalHours(
+                                  e.target.value,
+                                  prev.timeOut
+                                ),
+                              }
+                            : null
                         )
                       }
                     />
@@ -252,11 +283,7 @@ const AdminTimeRecordEdit: React.FC = () => {
                     <Input
                       type="text"
                       value={editingRecord.totalHours}
-                      onChange={(e) =>
-                        setEditingRecord((prev) =>
-                          prev ? { ...prev, totalHours: e.target.value } : null
-                        )
-                      }
+                      readOnly
                     />
                   </div>
                   <div>
