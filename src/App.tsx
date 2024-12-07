@@ -22,6 +22,7 @@ import { ProtectedRoute } from "./pages/ProtectedRoute";
 import Request from "./pages/requestSomething/Request";
 import AdminResetPassword from "./pages/resetPassword/adminResetPassword";
 import AdminTimeRecordEdit from "./pages/timeTracker/EditTime";
+import LeadTeamManagement from "./pages/timeTracker/TeamManagement";
 import TimeTracker from "./pages/timeTracker/TimeTracker";
 
 function App() {
@@ -54,6 +55,7 @@ function App() {
             <Route path="/exporttimetracker" element={<ExportDataTime />} />
             <Route path="/resetuserpassword" element={<AdminResetPassword />} />
             <Route path="/timerecord" element={<AdminTimeRecordEdit />} />
+            <Route path="/teammanagement" element={<LeadTeamManagement />} />
 
             {/* Admin Routes */}
             {/* <Route element={<ProtectedRoute requiresAdmin={true} />}>
