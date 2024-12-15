@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import {
   Dialog,
   DialogContent,
@@ -17,25 +18,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Calendar, Pencil, Trash2, UserPlus } from "lucide-react";
+import { addDays, format, startOfWeek } from "date-fns";
+import { Pencil, Trash2, UserPlus } from "lucide-react";
 import React, { useEffect, useState } from "react";
+import { DateRange } from "react-day-picker";
 
-// Interfaces for type safety
 interface TeamMember {
   id: string;
   name: string;
   availability: {
-    [day: string]: boolean; // Only track availability
+    [day: string]: boolean;
   };
 }
 
 export const LeadTeamManagement: React.FC = () => {
-  // State management
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-
-  // Dialog and form states
   const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
-  const [isSetDatesDialogOpen, setIsSetDatesDialogOpen] = useState(false);
   const [newMember, setNewMember] = useState({
     name: "",
     availability: {
@@ -48,9 +46,11 @@ export const LeadTeamManagement: React.FC = () => {
       SUN: false,
     },
   });
-
-  // Default dates state
-  const [defaultDates, setDefaultDates] = useState({
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: undefined,
+    to: undefined,
+  });
+  const [formattedDates, setFormattedDates] = useState({
     MON: "",
     TUE: "",
     WED: "",
@@ -60,7 +60,6 @@ export const LeadTeamManagement: React.FC = () => {
     SUN: "",
   });
 
-  // Fetch team members (placeholder for actual API call)
   const fetchTeamMembers = async () => {
     try {
       console.log("Fetching team members");
@@ -69,14 +68,14 @@ export const LeadTeamManagement: React.FC = () => {
     }
   };
 
-  // Add team member
   const handleAddMember = async () => {
     try {
+      if (!newMember.name.trim()) return;
+
       setTeamMembers([
         ...teamMembers,
         { ...newMember, id: Date.now().toString() },
       ]);
-      setIsAddMemberDialogOpen(false);
       setNewMember({
         name: "",
         availability: {
@@ -94,7 +93,6 @@ export const LeadTeamManagement: React.FC = () => {
     }
   };
 
-  // Remove team member
   const handleRemoveMember = async (memberId: string) => {
     try {
       setTeamMembers(teamMembers.filter((member) => member.id !== memberId));
@@ -103,32 +101,42 @@ export const LeadTeamManagement: React.FC = () => {
     }
   };
 
-  // Toggle availability
-  const toggleAvailability = (memberId: string, day: string) => {
-    setTeamMembers((prevMembers) =>
-      prevMembers.map((member) =>
-        member.id === memberId
-          ? {
-              ...member,
-              availability: {
-                ...member.availability,
-                [day]: !member.availability[day],
-              },
-            }
-          : member
-      )
-    );
+  const setAvailabilityForDay = (memberId: string, day: string) => {
+    const updatedMembers = teamMembers.map((member) => {
+      if (member.id === memberId) {
+        return {
+          ...member,
+          availability: {
+            ...member.availability,
+            [day]: !member.availability[day],
+          },
+        };
+      }
+      return member;
+    });
+    setTeamMembers(updatedMembers);
   };
 
-  // Set default dates for the header
-  const handleSetDefaultDates = () => {
-    setIsSetDatesDialogOpen(false);
+  const setFormattedDatesForRange = () => {
+    if (dateRange?.from && dateRange?.to) {
+      const weekStart = startOfWeek(dateRange.from, { weekStartsOn: 1 });
+      const dates = {
+        MON: format(weekStart, "MM/dd/yy"),
+        TUE: format(addDays(weekStart, 1), "MM/dd/yy"),
+        WED: format(addDays(weekStart, 2), "MM/dd/yy"),
+        THU: format(addDays(weekStart, 3), "MM/dd/yy"),
+        FRI: format(addDays(weekStart, 4), "MM/dd/yy"),
+        SAT: format(addDays(weekStart, 5), "MM/dd/yy"),
+        SUN: format(addDays(weekStart, 6), "MM/dd/yy"),
+      };
+      setFormattedDates(dates);
+    }
   };
 
-  // Load data on component mount
   useEffect(() => {
     fetchTeamMembers();
-  }, []);
+    setFormattedDatesForRange();
+  }, [dateRange]);
 
   return (
     <Card className="w-full max-w-6xl mx-auto">
@@ -138,20 +146,15 @@ export const LeadTeamManagement: React.FC = () => {
             <UserPlus className="mr-2" /> Team Management
           </div>
           <div className="flex gap-2">
-            {/* Set Dates Button */}
-            <Button
-              variant="outline"
-              onClick={() => setIsSetDatesDialogOpen(true)}
-            >
-              <Calendar className="mr-2 h-4 w-4" /> Set Dates
-            </Button>
-            {/* Add Team Member Button */}
             <Dialog
               open={isAddMemberDialogOpen}
               onOpenChange={setIsAddMemberDialogOpen}
             >
               <DialogTrigger asChild>
-                <Button variant="outline">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsAddMemberDialogOpen(true)}
+                >
                   <UserPlus className="mr-2 h-4 w-4" /> Add Team Member
                 </Button>
               </DialogTrigger>
@@ -175,7 +178,14 @@ export const LeadTeamManagement: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex justify-end">
-                  <Button onClick={handleAddMember}>Add Member</Button>
+                  <Button
+                    onClick={() => {
+                      handleAddMember();
+                      setIsAddMemberDialogOpen(false); // Close the dialog after adding
+                    }}
+                  >
+                    Add Member
+                  </Button>
                 </div>
               </DialogContent>
             </Dialog>
@@ -183,51 +193,21 @@ export const LeadTeamManagement: React.FC = () => {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {/* Set Dates Dialog */}
-        <Dialog
-          open={isSetDatesDialogOpen}
-          onOpenChange={setIsSetDatesDialogOpen}
-        >
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Set Default Dates</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              {["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"].map((day) => (
-                <div key={day} className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor={`date-${day}`} className="text-right">
-                    {day} Date
-                  </Label>
-                  <Input
-                    id={`date-${day}`}
-                    type="text"
-                    placeholder="MM/DD/YY"
-                    value={defaultDates[day as keyof typeof defaultDates]}
-                    onChange={(e) =>
-                      setDefaultDates((prev) => ({
-                        ...prev,
-                        [day]: e.target.value,
-                      }))
-                    }
-                    className="col-span-3"
-                  />
-                </div>
-              ))}
-            </div>
-            <div className="flex justify-end">
-              <Button onClick={handleSetDefaultDates}>Set Dates</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Team Members Section */}
+        <DatePickerWithRange
+          initialFocus
+          mode="range"
+          defaultMonth={new Date()}
+          selected={dateRange}
+          onSelect={setDateRange}
+          numberOfMonths={2}
+        />
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
-              {["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"].map((day) => (
+              {Object.keys(formattedDates).map((day) => (
                 <TableHead key={day}>
-                  {day} {defaultDates[day] && `(${defaultDates[day]})`}
+                  {day} {formattedDates[day] && `(${formattedDates[day]})`}
                 </TableHead>
               ))}
               <TableHead>Actions</TableHead>
@@ -237,35 +217,27 @@ export const LeadTeamManagement: React.FC = () => {
             {teamMembers.map((member) => (
               <TableRow key={member.id}>
                 <TableCell>{member.name}</TableCell>
-                {["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"].map(
-                  (day) => (
-                    <TableCell key={day} className="text-center">
-                      <Button
-                        variant={
-                          member.availability[day] ? "default" : "outline"
-                        }
-                        onClick={() => toggleAvailability(member.id, day)}
-                      >
-                        {member.availability[day] ? "✔️" : "✖️"}
-                      </Button>
-                    </TableCell>
-                  )
-                )}
+                {Object.keys(member.availability).map((day) => (
+                  <TableCell key={day} className="text-center">
+                    <Button
+                      variant={member.availability[day] ? "default" : "outline"}
+                      onClick={() => setAvailabilityForDay(member.id, day)}
+                    >
+                      {member.availability[day] ? "+" : "-"}
+                    </Button>
+                  </TableCell>
+                ))}
                 <TableCell>
                   <div className="flex gap-2">
-                    {/* Edit Button */}
                     <Button
                       variant="outline"
                       size="icon"
                       onClick={() => {
                         console.log("Edit action triggered for", member.name);
-                        // Add your edit logic here
                       }}
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
-
-                    {/* Delete Button */}
                     <Button
                       variant="destructive"
                       size="icon"

@@ -76,6 +76,10 @@ export const ExportDatas = {
 export const timer = {
   timeIn: (body: object) => apiHelper("/api/employeeTimes", "POST", body),
   timeOut: (body: object) => apiHelper("/api/employeeTimes", "PUT", body),
+  updateBreakStart: (body: object) =>
+    apiHelper("/api/employeeTimes/break", "PUT", body),
+  updateBreakEnd: (body: object) =>
+    apiHelper("/api/employeeTimes/break", "PUT", body),
   getCurrentTimeIn: () => apiHelper("/api/employeeTimes/null", "GET"),
   getAttendanceEntries: () => apiHelper("/api/employeeTimes/time", "GET"),
   getServerTime: () => apiHelper("/api/current-time", "GET"),

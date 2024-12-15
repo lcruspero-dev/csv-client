@@ -35,7 +35,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import { Clock, LogIn, LogOut } from "lucide-react";
+import { Clock, Coffee, LogIn, LogOut } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
 interface AttendanceEntry {
@@ -46,6 +46,9 @@ interface AttendanceEntry {
   totalHours?: number;
   notes?: string;
   shift?: string;
+  breakStart?: string;
+  breakEnd?: string;
+  totalBreakTime?: number;
 }
 
 interface CurrentTimeResponse {
@@ -65,10 +68,16 @@ export const AttendanceTracker: React.FC = () => {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [currentServerTime, setCurrentServerTime] =
-    useState<CurrentTimeResponse>({ date: "", time: "" });
+    useState<CurrentTimeResponse>({
+      date: "",
+      time: "",
+    });
   const [selectedShift, setSelectedShift] = useState<string | null>(null);
-  const entriesPerPage = 10;
+  const [isBreakTime, setIsBreakTime] = useState(false);
+  const [breakStartTime, setBreakStartTime] = useState<number | null>(null);
+  const [totalBreakTime, setTotalBreakTime] = useState(0);
 
+  const entriesPerPage = 10;
   const SHIFT_OPTIONS = ["Shift 1", "Shift 2", "Shift 3", "Staff"];
 
   const totalPages = Math.ceil(attendanceEntries.length / entriesPerPage);
@@ -80,7 +89,6 @@ export const AttendanceTracker: React.FC = () => {
     setCurrentPage(pageNumber);
   };
 
-  // Generate page numbers for pagination
   const getPageNumbers = () => {
     const pages = [];
     for (let i = 1; i <= totalPages; i++) {
@@ -93,22 +101,18 @@ export const AttendanceTracker: React.FC = () => {
     try {
       const response = await timer.getAttendanceEntries();
       setAttendanceEntries(response.data);
-      console.log("attendance entries", response.data);
     } catch (error) {
       console.error("Error getting attendance entries:", error);
     }
   };
 
-  // Fetch current time from API
   const getCurrentTimeFromAPI = async (): Promise<CurrentTimeResponse> => {
     try {
       const response = await timer.getServerTime();
-      console.log("server time", response.data);
       setCurrentServerTime(response.data);
       return response.data;
     } catch (error) {
       console.error("Error getting current time from API:", error);
-      // Fallback to local time if API fails
       const now = new Date();
       return {
         date: now.toLocaleDateString(),
@@ -117,35 +121,31 @@ export const AttendanceTracker: React.FC = () => {
     }
   };
 
-  // Load saved entries and current time on component mount
   useEffect(() => {
     getAttendance();
-    getCurrentTime();
     getCurrentTimeFromAPI();
+    getCurrentTime();
   }, []);
 
-  // Elapsed time tracking using requestAnimationFrame
   useEffect(() => {
     let startTime: number;
     let intervalId: NodeJS.Timeout;
-    let timeOffset = 0; // Difference between server and local time
+    let timeOffset = 0;
 
     if (isTimeIn && currentEntry.date && currentEntry.timeIn) {
-      // Calculate initial offset between server and local time
       const serverTime = new Date(
         `${currentServerTime.date} ${currentServerTime.time}`
       ).getTime();
       const localTime = Date.now();
       timeOffset = serverTime - localTime;
 
-      // Calculate start time with offset
       startTime = new Date(
         `${currentEntry.date} ${currentEntry.timeIn}`
       ).getTime();
 
       intervalId = setInterval(() => {
-        const currentTime = Date.now() + timeOffset; // Apply offset to local time
-        const diffMs = currentTime - startTime;
+        const currentTime = Date.now() + timeOffset;
+        const diffMs = currentTime - startTime - totalBreakTime * 1000;
         setElapsedTime(Math.floor(diffMs / 1000));
       }, 1000);
     }
@@ -155,9 +155,8 @@ export const AttendanceTracker: React.FC = () => {
         clearInterval(intervalId);
       }
     };
-  }, [isTimeIn, currentEntry, currentServerTime]);
+  }, [isTimeIn, currentEntry, currentServerTime, totalBreakTime]);
 
-  // Format elapsed time to hours and minutes
   const formatElapsedTime = (totalSeconds: number) => {
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -185,7 +184,6 @@ export const AttendanceTracker: React.FC = () => {
 
   const handleTimeIn = async () => {
     try {
-      // Get current time from API
       const currentTimeData = await getCurrentTimeFromAPI();
 
       const entry: AttendanceEntry = {
@@ -200,6 +198,7 @@ export const AttendanceTracker: React.FC = () => {
       getAttendance();
       setIsTimeIn(true);
       setElapsedTime(0);
+      setTotalBreakTime(0);
     } catch (error) {
       console.error("Error logging time:", error);
     }
@@ -207,7 +206,6 @@ export const AttendanceTracker: React.FC = () => {
 
   const handleTimeOut = async ({ notes }: { notes?: string }) => {
     try {
-      // Get current time from API for time out
       const currentTimeData = await getCurrentTimeFromAPI();
 
       const timeInDate = new Date(
@@ -217,15 +215,16 @@ export const AttendanceTracker: React.FC = () => {
         `${currentTimeData.date} ${currentTimeData.time}`
       );
 
-      // Calculate total hours
-      const diffMs = timeOutDate.getTime() - timeInDate.getTime();
-      const totalHours = diffMs / (1000 * 60 * 60); // Convert milliseconds to hours
+      const diffMs =
+        timeOutDate.getTime() - timeInDate.getTime() - totalBreakTime * 1000;
+      const totalHours = diffMs / (1000 * 60 * 60);
 
       const updatedEntry = {
         ...currentEntry,
         timeOut: currentTimeData.time,
         totalHours: Number(totalHours.toFixed(2)),
         notes: notes,
+        totalBreakTime: totalBreakTime,
       };
 
       await timer.timeOut(updatedEntry);
@@ -234,9 +233,51 @@ export const AttendanceTracker: React.FC = () => {
       setIsTimeIn(false);
       setDialogOpen(false);
       setElapsedTime(0);
+      setTotalBreakTime(0);
       setSelectedShift(null);
+      setIsBreakTime(false);
     } catch (error) {
       console.error("Error logging timeout:", error);
+    }
+  };
+
+  const handleBreakStart = async () => {
+    try {
+      const currentTimeData = await getCurrentTimeFromAPI();
+
+      const updatedEntry = {
+        ...currentEntry,
+        breakStart: currentTimeData.time,
+      };
+
+      await timer.updateBreakStart(updatedEntry);
+      setIsBreakTime(true);
+      setBreakStartTime(Date.now());
+    } catch (error) {
+      console.error("Error starting break:", error);
+    }
+  };
+
+  const handleBreakEnd = async () => {
+    try {
+      const currentTimeData = await getCurrentTimeFromAPI();
+
+      if (breakStartTime) {
+        const breakDuration = Math.floor((Date.now() - breakStartTime) / 1000);
+        setTotalBreakTime((prev) => prev + breakDuration);
+
+        const updatedEntry = {
+          ...currentEntry,
+          breakEnd: currentTimeData.time,
+          totalBreakTime: totalBreakTime + breakDuration,
+        };
+
+        await timer.updateBreakEnd(updatedEntry);
+        setIsBreakTime(false);
+        setBreakStartTime(null);
+      }
+    } catch (error) {
+      console.error("Error ending break:", error);
     }
   };
 
@@ -252,9 +293,7 @@ export const AttendanceTracker: React.FC = () => {
           <BackButton />
         </div>
         <div className="flex flex-col space-y-4">
-          {/* Time In/Out Section */}
           <div className="flex flex-col items-center space-y-4">
-            {/* Shift Selection */}
             {!isTimeIn && (
               <div className="w-full max-w-xs text-center">
                 <Label>Select your shift schedule</Label>
@@ -276,14 +315,12 @@ export const AttendanceTracker: React.FC = () => {
               </div>
             )}
 
-            {/* Running Time Display */}
             {isTimeIn && (
               <div className="text-4xl font-bold tracking-tighter text-center">
                 {formatElapsedTime(elapsedTime)}
               </div>
             )}
 
-            {/* Time In/Out Buttons */}
             <div className="flex justify-center space-x-4">
               {!isTimeIn ? (
                 <Button
@@ -294,59 +331,90 @@ export const AttendanceTracker: React.FC = () => {
                   <LogIn className="mr-2 h-4 w-4" /> Time In
                 </Button>
               ) : (
-                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="destructive" className="flex items-center">
-                      <LogOut className="mr-2 h-4 w-4" /> Time Out
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Time Out</DialogTitle>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="notes" className="text-right">
-                          Notes (Optional)
-                        </Label>
-                        <Input
-                          id="notes"
-                          className="col-span-3"
-                          placeholder="Add any notes about your work day"
-                        />
+                <>
+                  {currentEntry.shift === "Staff" &&
+                    (!isBreakTime ? (
+                      <Button
+                        onClick={handleBreakStart}
+                        variant="default"
+                        className="flex items-center"
+                      >
+                        <Coffee className="mr-1 h-4 w-4" />
+                        Start Break
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={handleBreakEnd}
+                        variant="default"
+                        className="flex items-center"
+                      >
+                        <Coffee className="mr-2 h-4 w-4" /> End Break
+                      </Button>
+                    ))}
+                  <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="destructive"
+                        className="flex items-center"
+                        disabled={isBreakTime}
+                      >
+                        <LogOut className="mr-2 h-4 w-4" /> Time Out
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Time Out</DialogTitle>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="notes" className="text-right">
+                            Notes (Optional)
+                          </Label>
+                          <Input
+                            id="notes"
+                            className="col-span-3"
+                            placeholder="Add any notes about your work day"
+                          />
+                        </div>
+                        <div className="flex justify-end">
+                          <Button
+                            onClick={() => {
+                              const notesInput = document.getElementById(
+                                "notes"
+                              ) as HTMLInputElement;
+                              handleTimeOut({
+                                notes: notesInput?.value,
+                              });
+                            }}
+                          >
+                            Confirm Time Out
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex justify-end">
-                        <Button
-                          onClick={() => {
-                            const notesInput = document.getElementById(
-                              "notes"
-                            ) as HTMLInputElement;
-                            handleTimeOut({
-                              notes: notesInput?.value,
-                            });
-                          }}
-                        >
-                          Confirm Time Out
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                    </DialogContent>
+                  </Dialog>
+                </>
               )}
             </div>
 
-            {/* Current Session Information */}
             {isTimeIn && (
               <div className="text-center p-4 bg-muted rounded-lg">
                 <p className="font-semibold">Current Session</p>
                 <p>Date: {currentEntry.date}</p>
                 <p>Time In: {currentEntry.timeIn}</p>
                 <p>Shift: {currentEntry.shift}</p>
+                {currentEntry.shift === "Staff" && (
+                  <>
+                    {isBreakTime && (
+                      <p>Break Started: {currentEntry.breakStart}</p>
+                    )}
+                    <p>Total Break Time: {formatElapsedTime(totalBreakTime)}</p>
+                  </>
+                )}
               </div>
             )}
           </div>
 
-          {/* Attendance History Table (Unchanged) */}
           <Card className="w-full">
             <CardHeader>
               <CardTitle>Time Tracker History</CardTitle>
@@ -359,6 +427,9 @@ export const AttendanceTracker: React.FC = () => {
                     <TableHead>Time In</TableHead>
                     <TableHead>Time Out</TableHead>
                     <TableHead>Total Hours</TableHead>
+                    {attendanceEntries.some(
+                      (entry) => entry.shift === "Staff"
+                    ) && <TableHead>Break Time</TableHead>}
                     <TableHead>Shift</TableHead>
                     <TableHead>Notes</TableHead>
                   </TableRow>
@@ -370,6 +441,13 @@ export const AttendanceTracker: React.FC = () => {
                       <TableCell>{entry.timeIn}</TableCell>
                       <TableCell>{entry.timeOut || "In Progress"}</TableCell>
                       <TableCell>{entry.totalHours || "N/A"}</TableCell>
+                      {attendanceEntries.some((e) => e.shift === "Staff") && (
+                        <TableCell>
+                          {entry.shift === "Staff"
+                            ? entry.totalBreakTime || "-"
+                            : "-"}
+                        </TableCell>
+                      )}
                       <TableCell>{entry.shift}</TableCell>
                       <TableCell>{entry.notes || "-"}</TableCell>
                     </TableRow>
@@ -377,7 +455,7 @@ export const AttendanceTracker: React.FC = () => {
                 </TableBody>
               </Table>
 
-              {/* Pagination (Unchanged) */}
+              {/* Pagination (unchanged) */}
               <div className="mt-4 flex justify-end items-end text-xs">
                 <Pagination>
                   <PaginationContent>
