@@ -1,4 +1,5 @@
-import { TimeRecordAPI } from "@/API/endpoint"; // Assuming this is your API endpoint
+/* eslint-disable prefer-const */
+import { TimeRecordAPI } from "@/API/endpoint";
 import BackButton from "@/components/kit/BackButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,20 +23,92 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
 import { Pencil, Search, Trash2 } from "lucide-react";
-import React, { useState } from "react";
+import React, {  useState } from "react";
 
-// Interface for Time Record
 interface TimeRecord {
   _id: string;
   employeeId: string;
   employeeName: string;
   date: string;
-  timeIn: string;
-  timeOut: string;
+  timeIn: string | null;
+  timeOut: string | null;
   totalHours: string;
-  notes?: string;
-  shift?: string;
+  notes?: string | null;
+  shift?: string | null;
+  breakStart?: string | null;
+  breakEnd?: string | null;
+  totalBreakTime?: string | null;
 }
+
+const calculateTotalHours = (record: TimeRecord): { totalHours: string; totalBreakTime: string } => {
+  // Guard clause for invalid or incomplete data
+  if (!record.timeIn || !record.timeOut) {
+    return {
+      totalHours: "0.00",
+      totalBreakTime: "0.00"
+    };
+  }
+
+  const parseTime = (time: string | null | undefined) => {
+    if (!time) return { hours: 0, minutes: 0, seconds: 0 };
+    
+    const [timePart, modifier] = time.split(" ");
+    let [hours, minutes, seconds] = timePart.split(":").map(Number);
+    if (modifier === "PM" && hours !== 12) hours += 12;
+    if (modifier === "AM" && hours === 12) hours = 0;
+    return { hours, minutes, seconds };
+  };
+
+  const convertToSeconds = (timeString: string | null | undefined) => {
+    if (!timeString) return 0;
+    const { hours, minutes, seconds } = parseTime(timeString);
+    return hours * 3600 + minutes * 60 + seconds;
+  };
+
+  // Calculate main work duration
+  let inTotalSeconds = convertToSeconds(record.timeIn);
+  let outTotalSeconds = convertToSeconds(record.timeOut);
+
+  // Guard against invalid time values
+  if (inTotalSeconds === 0 || outTotalSeconds === 0) {
+    return {
+      totalHours: "0.00",
+      totalBreakTime: "0.00"
+    };
+  }
+
+  // Adjust for crossing midnight
+  if (outTotalSeconds < inTotalSeconds) {
+    outTotalSeconds += 24 * 3600;
+  }
+
+  // Calculate break duration if break times exist and are valid
+  let breakTimeSeconds = 0;
+  if (record.breakStart && record.breakEnd) {
+    let breakStartSeconds = convertToSeconds(record.breakStart);
+    let breakEndSeconds = convertToSeconds(record.breakEnd);
+
+    if (breakStartSeconds > 0 && breakEndSeconds > 0) {
+      // Adjust break time for midnight crossing
+      if (breakEndSeconds < breakStartSeconds) {
+        breakEndSeconds += 24 * 3600;
+      }
+      breakTimeSeconds = breakEndSeconds - breakStartSeconds;
+    }
+  }
+
+  const totalWorkSeconds = outTotalSeconds - inTotalSeconds;
+  const netWorkSeconds = Math.max(0, totalWorkSeconds - breakTimeSeconds);
+
+  // Convert to hours with 2 decimal places, ensuring non-negative values
+  const totalHours = (netWorkSeconds / 3600).toFixed(2);
+  const totalBreakTime = (breakTimeSeconds / 3600).toFixed(2);
+
+  return {
+    totalHours,
+    totalBreakTime
+  };
+};
 
 const AdminTimeRecordEdit: React.FC = () => {
   const [searchName, setSearchName] = useState("");
@@ -44,50 +117,11 @@ const AdminTimeRecordEdit: React.FC = () => {
   const [editingRecord, setEditingRecord] = useState<TimeRecord | null>(null);
   const { toast } = useToast();
 
-  // Utility function to convert date to MM/DD/YYYY format
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
   };
 
-  // Utility function to calculate total hours
-  const calculateTotalHours = (timeIn: string, timeOut: string): string => {
-    const parseTime = (time: string) => {
-      const [timePart, modifier] = time.split(" ");
-      // eslint-disable-next-line prefer-const
-      let [hours, minutes, seconds] = timePart.split(":").map(Number);
-      if (modifier === "PM" && hours !== 12) hours += 12;
-      if (modifier === "AM" && hours === 12) hours = 0;
-      return { hours, minutes, seconds };
-    };
-
-    const {
-      hours: inHours,
-      minutes: inMinutes,
-      seconds: inSeconds,
-    } = parseTime(timeIn);
-    const {
-      hours: outHours,
-      minutes: outMinutes,
-      seconds: outSeconds,
-    } = parseTime(timeOut);
-
-    // eslint-disable-next-line prefer-const
-    let inTotalSeconds = inHours * 3600 + inMinutes * 60 + inSeconds;
-    let outTotalSeconds = outHours * 3600 + outMinutes * 60 + outSeconds;
-
-    // Adjust for crossing midnight
-    if (outTotalSeconds < inTotalSeconds) {
-      outTotalSeconds += 24 * 3600; // Add 24 hours in seconds
-    }
-
-    const totalSeconds = outTotalSeconds - inTotalSeconds;
-    const totalHours = (totalSeconds / 3600).toFixed(2);
-
-    return totalHours;
-  };
-
-  // Search for time records
   const handleSearch = async () => {
     if (!searchName || !searchDate) {
       toast({
@@ -121,32 +155,43 @@ const AdminTimeRecordEdit: React.FC = () => {
       });
     }
   };
-
-  // Edit record handler
+ 
   const handleEdit = (record: TimeRecord) => {
     setEditingRecord(record);
   };
 
-  // Update record
   const handleUpdate = async () => {
     if (!editingRecord) return;
-
+  
     try {
-      await TimeRecordAPI.updateTimeRecord(editingRecord._id, editingRecord);
-
-      // Update local state
+      // Calculate updated total hours and break time before saving
+      const { totalHours, totalBreakTime } = calculateTotalHours(editingRecord);
+      
+      // Create the complete updated record with all fields
+      const updatedRecord = {
+        ...editingRecord,
+        breakStart: editingRecord.breakStart || null,
+        breakEnd: editingRecord.breakEnd || null,
+        totalHours,
+        totalBreakTime
+      };
+      console.log("updatedRecord", updatedRecord);
+      // Make the API call with the complete record
+      await TimeRecordAPI.updateTimeRecord(updatedRecord._id, updatedRecord);
+  
+      // Update the local state with the new record
       setTimeRecords((prev) =>
         prev.map((record) =>
-          record._id === editingRecord._id ? editingRecord : record
+          record._id === updatedRecord._id ? updatedRecord : record
         )
       );
-
+  
       toast({
         title: "Success",
         description: "Time record updated successfully",
         variant: "default",
       });
-
+  
       setEditingRecord(null);
     } catch (error) {
       console.error("Update failed", error);
@@ -158,12 +203,9 @@ const AdminTimeRecordEdit: React.FC = () => {
     }
   };
 
-  // Delete record
   const handleDelete = async (_id: string) => {
     try {
       await TimeRecordAPI.deleteTimeRecord(_id);
-
-      // Update local state
       setTimeRecords((prev) => prev.filter((record) => record._id !== _id));
 
       toast({
@@ -181,6 +223,24 @@ const AdminTimeRecordEdit: React.FC = () => {
     }
   };
 
+  const handleTimeInputChange = (
+    field: keyof TimeRecord,
+    value: string,
+    record: TimeRecord
+  ) => {
+    const updatedRecord = {
+      ...record,
+      [field]: value || null
+    };
+    
+    const { totalHours, totalBreakTime } = calculateTotalHours(updatedRecord);
+    setEditingRecord({
+      ...updatedRecord,
+      totalHours,
+      totalBreakTime
+    });
+  };
+ 
   return (
     <div className="container mx-auto p-4">
       <div className="mb-2">
@@ -191,7 +251,6 @@ const AdminTimeRecordEdit: React.FC = () => {
           <CardTitle>Time Record Management</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* Search Section */}
           <div className="flex space-x-4 mb-6">
             <div className="flex-grow">
               <Label>Employee Name</Label>
@@ -216,7 +275,6 @@ const AdminTimeRecordEdit: React.FC = () => {
             </div>
           </div>
 
-          {/* Edit Modal (if a record is being edited) */}
           {editingRecord && (
             <Card className="mb-6">
               <CardHeader>
@@ -229,53 +287,46 @@ const AdminTimeRecordEdit: React.FC = () => {
                     <Input
                       type="text"
                       value={editingRecord.date}
-                      onChange={(e) =>
-                        setEditingRecord((prev) =>
-                          prev ? { ...prev, date: e.target.value } : null
-                        )
-                      }
+                      onChange={(e) => handleTimeInputChange('date', e.target.value, editingRecord)}
                     />
                   </div>
                   <div>
-                    <Label>Time Out</Label>
+                    <Label>Shift</Label>
                     <Input
-                      type="text"
-                      value={editingRecord.timeOut}
-                      onChange={(e) =>
-                        setEditingRecord((prev) =>
-                          prev
-                            ? {
-                                ...prev,
-                                timeOut: e.target.value,
-                                totalHours: calculateTotalHours(
-                                  prev.timeIn,
-                                  e.target.value
-                                ),
-                              }
-                            : null
-                        )
-                      }
+                      value={editingRecord.shift || ''}
+                      onChange={(e) => handleTimeInputChange('shift', e.target.value, editingRecord)}
                     />
                   </div>
                   <div>
                     <Label>Time In</Label>
                     <Input
                       type="text"
-                      value={editingRecord.timeIn}
-                      onChange={(e) =>
-                        setEditingRecord((prev) =>
-                          prev
-                            ? {
-                                ...prev,
-                                timeIn: e.target.value,
-                                totalHours: calculateTotalHours(
-                                  e.target.value,
-                                  prev.timeOut
-                                ),
-                              }
-                            : null
-                        )
-                      }
+                      value={editingRecord.timeIn || ''}
+                      onChange={(e) => handleTimeInputChange('timeIn', e.target.value, editingRecord)}
+                    />
+                  </div>
+                  <div>
+                    <Label>Time Out</Label>
+                    <Input
+                      type="text"
+                      value={editingRecord.timeOut || ''}
+                      onChange={(e) => handleTimeInputChange('timeOut', e.target.value, editingRecord)}
+                    />
+                  </div>
+                  <div>
+                    <Label>Break Start</Label>
+                    <Input
+                      type="text"
+                      value={editingRecord.breakStart || ''}
+                      onChange={(e) => handleTimeInputChange('breakStart', e.target.value, editingRecord)}
+                    />
+                  </div>
+                  <div>
+                    <Label>Break End</Label>
+                    <Input
+                      type="text"
+                      value={editingRecord.breakEnd || ''}
+                      onChange={(e) => handleTimeInputChange('breakEnd', e.target.value, editingRecord)}
                     />
                   </div>
                   <div>
@@ -287,27 +338,20 @@ const AdminTimeRecordEdit: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <Label>Shift</Label>
+                    <Label>Total Break Time</Label>
                     <Input
-                      value={editingRecord.shift || ""}
-                      onChange={(e) =>
-                        setEditingRecord((prev) =>
-                          prev ? { ...prev, shift: e.target.value } : null
-                        )
-                      }
-                      placeholder="Enter shift"
+                      type="text"
+                      value={editingRecord.totalBreakTime || '0.00'}
+                      readOnly
                     />
                   </div>
+                  
                   <div>
                     <Label>Notes</Label>
                     <Input
                       type="text"
-                      value={editingRecord.notes}
-                      onChange={(e) =>
-                        setEditingRecord((prev) =>
-                          prev ? { ...prev, notes: e.target.value } : null
-                        )
-                      }
+                      value={editingRecord.notes || ''}
+                      onChange={(e) => handleTimeInputChange('notes', e.target.value, editingRecord)}
                     />
                   </div>
                 </div>
@@ -324,7 +368,6 @@ const AdminTimeRecordEdit: React.FC = () => {
             </Card>
           )}
 
-          {/* Time Records Table */}
           {timeRecords.length > 0 && (
             <Table>
               <TableHeader>
@@ -334,6 +377,7 @@ const AdminTimeRecordEdit: React.FC = () => {
                   <TableHead>Time In</TableHead>
                   <TableHead>Time Out</TableHead>
                   <TableHead>Total Hours</TableHead>
+                  <TableHead>Total Break</TableHead>
                   <TableHead>Shift</TableHead>
                   <TableHead>Notes</TableHead>
                   <TableHead>Actions</TableHead>
@@ -344,11 +388,12 @@ const AdminTimeRecordEdit: React.FC = () => {
                   <TableRow key={record._id}>
                     <TableCell>{record.employeeName}</TableCell>
                     <TableCell>{record.date}</TableCell>
-                    <TableCell>{record.timeIn}</TableCell>
-                    <TableCell>{record.timeOut}</TableCell>
+                    <TableCell>{record.timeIn || '-'}</TableCell>
+                    <TableCell>{record.timeOut || '-'}</TableCell>
                     <TableCell>{record.totalHours}</TableCell>
-                    <TableCell>{record.shift || "-"}</TableCell>
-                    <TableCell>{record.notes || "-"}</TableCell>
+                    <TableCell>{record.totalBreakTime || '0.00'}</TableCell>
+                    <TableCell>{record.shift || '-'}</TableCell>
+                    <TableCell>{record.notes || '-'}</TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
                         <Button
@@ -368,9 +413,7 @@ const AdminTimeRecordEdit: React.FC = () => {
                             <DialogHeader>
                               <DialogTitle>Confirm Deletion</DialogTitle>
                             </DialogHeader>
-                            <p>
-                              Are you sure you want to delete this time record?
-                            </p>
+                            <p>Are you sure you want to delete this time record?</p>
                             <div className="flex justify-end space-x-2">
                               <DialogClose asChild>
                                 <Button variant="outline">Cancel</Button>

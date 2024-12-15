@@ -34,6 +34,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+// import { time } from "console";
 
 import { Clock, Coffee, LogIn, LogOut } from "lucide-react";
 import React, { useEffect, useState } from "react";
@@ -49,6 +50,8 @@ interface AttendanceEntry {
   breakStart?: string;
   breakEnd?: string;
   totalBreakTime?: number;
+  dateBreakStart?: string;
+  dateBreakEnd?: string;
 }
 
 interface CurrentTimeResponse {
@@ -58,6 +61,7 @@ interface CurrentTimeResponse {
 
 export const AttendanceTracker: React.FC = () => {
   const [isTimeIn, setIsTimeIn] = useState(false);
+  // const [isTimeIn2, setIsTimeIn2] = useState(false);
   const [attendanceEntries, setAttendanceEntries] = useState<AttendanceEntry[]>(
     []
   );
@@ -73,9 +77,9 @@ export const AttendanceTracker: React.FC = () => {
       time: "",
     });
   const [selectedShift, setSelectedShift] = useState<string | null>(null);
-  const [isBreakTime, setIsBreakTime] = useState(false);
-  const [breakStartTime, setBreakStartTime] = useState<number | null>(null);
-  const [totalBreakTime, setTotalBreakTime] = useState(0);
+  // const [isBreakTime, setIsBreakTime] = useState(false);
+  // const [breakStartTime, setBreakStartTime] = useState<number | null>(null);
+  // const [totalBreakTime, setTotalBreakTime] = useState(0);
 
   const entriesPerPage = 10;
   const SHIFT_OPTIONS = ["Shift 1", "Shift 2", "Shift 3", "Staff"];
@@ -126,36 +130,65 @@ export const AttendanceTracker: React.FC = () => {
     getCurrentTimeFromAPI();
     getCurrentTime();
   }, []);
-
+console.log("currentEntry", currentEntry) 
   useEffect(() => {
     let startTime: number;
+    let timeInstartTime: number;
     let intervalId: NodeJS.Timeout;
     let timeOffset = 0;
+    // const breakTimeInMilliseconds = currentEntry.totalBreakTime 
+    //     ? Number(currentEntry.totalBreakTime) * 3600 * 1000 
+    //     : 0;
+    
+    const breakStart = new Date(`${currentEntry.dateBreakStart} ${currentEntry.breakStart}`);
+    const breakEnd = new Date(`${currentEntry.dateBreakEnd} ${currentEntry.breakEnd}`);
+    console.log(breakStart, breakEnd)
+    // Adjust break end date if it's the next day
+    if (breakEnd < breakStart) {
+      breakEnd.setDate(breakEnd.getDate() + 1);
+    }
+    // Calculate the new break duration in milliseconds
+          const breakDurationMs = currentEntry.totalBreakTime 
+          ?breakEnd.getTime() - breakStart.getTime():0;
 
-    if (isTimeIn && currentEntry.date && currentEntry.timeIn) {
+    if (isTimeIn && currentEntry.date) {
+      // Calculate server-client time offset
       const serverTime = new Date(
-        `${currentServerTime.date} ${currentServerTime.time}`
+          `${currentServerTime.date} ${currentServerTime.time}`
       ).getTime();
       const localTime = Date.now();
       timeOffset = serverTime - localTime;
 
+      // Determine reference start time based on break status
+      const isOnBreak = currentEntry.breakStart && !currentEntry.breakEnd;
+      const timeReference = isOnBreak ? currentEntry.breakStart : currentEntry.timeIn;
+      
       startTime = new Date(
-        `${currentEntry.date} ${currentEntry.timeIn}`
+          `${currentEntry.dateBreakStart} ${timeReference}`
       ).getTime();
-
+      timeInstartTime = new Date(
+        `${currentEntry.date} ${timeReference}`
+    ).getTime();
       intervalId = setInterval(() => {
-        const currentTime = Date.now() + timeOffset;
-        const diffMs = currentTime - startTime - totalBreakTime * 1000;
-        setElapsedTime(Math.floor(diffMs / 1000));
-      }, 1000);
-    }
+          const currentTime = Date.now() + timeOffset;
+          let diffMs;
+        
+          if (isOnBreak) {
+              // If on break, calculate time from break start
+              diffMs = currentTime - startTime;
+          }  else {
+            // Convert totalBreakTime from hours to seconds before applying
+            
+            diffMs = currentTime - timeInstartTime - breakDurationMs ;
+        }
 
+          setElapsedTime(Math.floor(diffMs / 1000));
+      }, 1000);
     return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
+      clearInterval(intervalId);
     };
-  }, [isTimeIn, currentEntry, currentServerTime, totalBreakTime]);
+  }
+  }, [isTimeIn, currentEntry, currentServerTime,]);
 
   const formatElapsedTime = (totalSeconds: number) => {
     const hours = Math.floor(totalSeconds / 3600);
@@ -173,8 +206,12 @@ export const AttendanceTracker: React.FC = () => {
       const currentTimeData = response.data[0];
       if (currentTimeData.timeOut) {
         setIsTimeIn(false);
-      } else {
+        // setIsTimeIn2(false);
+      }
+       
+      else {
         setIsTimeIn(true);
+        // setIsTimeIn2(true);
       }
       setCurrentEntry(currentTimeData);
     } catch (error) {
@@ -196,9 +233,9 @@ export const AttendanceTracker: React.FC = () => {
       const response = await timer.timeIn(entry);
       setCurrentEntry(response.data);
       getAttendance();
+      // setIsTimeIn2(true);
       setIsTimeIn(true);
       setElapsedTime(0);
-      setTotalBreakTime(0);
     } catch (error) {
       console.error("Error logging time:", error);
     }
@@ -208,15 +245,29 @@ export const AttendanceTracker: React.FC = () => {
     try {
       const currentTimeData = await getCurrentTimeFromAPI();
 
+
       const timeInDate = new Date(
         `${currentEntry.date} ${currentEntry.timeIn}`
       );
       const timeOutDate = new Date(
         `${currentTimeData.date} ${currentTimeData.time}`
       );
+// dapat sa backend data
+const breakStart = new Date(`${currentEntry.dateBreakStart} ${currentEntry.breakStart}`);
+const breakEnd = new Date(`${currentEntry.dateBreakEnd} ${currentEntry.breakEnd}`);
+
+// Adjust break end date if it's the next day
+if (breakEnd < breakStart) {
+  breakEnd.setDate(breakEnd.getDate() + 1);
+}
+// Calculate the new break duration in milliseconds
+      const breakDurationMs = currentEntry.totalBreakTime 
+      ?breakEnd.getTime() - breakStart.getTime():0;
+      
+      
 
       const diffMs =
-        timeOutDate.getTime() - timeInDate.getTime() - totalBreakTime * 1000;
+        timeOutDate.getTime() - timeInDate.getTime() - breakDurationMs;
       const totalHours = diffMs / (1000 * 60 * 60);
 
       const updatedEntry = {
@@ -224,18 +275,18 @@ export const AttendanceTracker: React.FC = () => {
         timeOut: currentTimeData.time,
         totalHours: Number(totalHours.toFixed(2)),
         notes: notes,
-        totalBreakTime: totalBreakTime,
+        // totalBreakTime:totalBreakTime/ (1000 * 60),
       };
 
       await timer.timeOut(updatedEntry);
       setCurrentEntry(updatedEntry);
       getAttendance();
       setIsTimeIn(false);
+      // setIsTimeIn2(false);
       setDialogOpen(false);
       setElapsedTime(0);
-      setTotalBreakTime(0);
       setSelectedShift(null);
-      setIsBreakTime(false);
+      // setIsBreakTime(false);
     } catch (error) {
       console.error("Error logging timeout:", error);
     }
@@ -248,39 +299,96 @@ export const AttendanceTracker: React.FC = () => {
       const updatedEntry = {
         ...currentEntry,
         breakStart: currentTimeData.time,
+        dateBreakStart: currentTimeData.date,
       };
 
-      await timer.updateBreakStart(updatedEntry);
-      setIsBreakTime(true);
-      setBreakStartTime(Date.now());
+      const response = await timer.updateBreakStart(updatedEntry);
+      setCurrentEntry(response.data);
+      // setIsBreakTime(true);
+      // setIsTimeIn2(false);
+      setElapsedTime(0);
+     
     } catch (error) {
       console.error("Error starting break:", error);
     }
   };
 
+  // const handleBreakEnd = async () => {
+  //   try {
+  //   const currentTimeData = await getCurrentTimeFromAPI();
+
+  //   const breakStart = new Date(
+  //     `${currentEntry.date} ${currentEntry.breakStart}`
+  //   );
+  //   const breakEnd = new Date(
+  //     `${currentTimeData.date} ${currentTimeData.time}`
+  //     );
+  //   const totalBreakTime  = currentEntry.totalBreakTime 
+  //     ?breakEnd.getTime() - breakStart.getTime():0;
+
+  //   const diffMs =
+  //   breakEnd.getTime() - breakStart.getTime() - totalBreakTime;
+  //   const totalBreakTimeCount = diffMs / (1000 * 60 * 60);
+
+  //   const updatedEntry = {
+  //     ...currentEntry,
+  //     breakEnd: currentTimeData.time,
+  //     totalBreakTime: Number(totalBreakTimeCount.toFixed(2)), 
+      
+  //   };
+  //   // try {
+  //   //   const currentTimeData = await getCurrentTimeFromAPI();
+
+  //   //     const updatedEntry = {
+  //   //       ...currentEntry,
+  //   //       breakEnd: currentTimeData.time,
+  //   //      totalBreakTime: (new Date(`${currentEntry.date} ${currentTimeData.time}`).getTime() - new Date(`${currentEntry.date} ${currentEntry.breakStart}`).getTime()) / 1000,
+  //   //     };
+
+  //     const response = await timer.updateBreakEnd(updatedEntry);
+  //     setCurrentEntry(response.data);
+  //       // setIsBreakTime(false);
+  //       // setIsTimeIn2(true);
+       
+     
+  //   } catch (error) {
+  //     console.error("Error ending break:", error);
+  //   }
+  // };
   const handleBreakEnd = async () => {
     try {
       const currentTimeData = await getCurrentTimeFromAPI();
-
-      if (breakStartTime) {
-        const breakDuration = Math.floor((Date.now() - breakStartTime) / 1000);
-        setTotalBreakTime((prev) => prev + breakDuration);
-
-        const updatedEntry = {
-          ...currentEntry,
-          breakEnd: currentTimeData.time,
-          totalBreakTime: totalBreakTime + breakDuration,
-        };
-
-        await timer.updateBreakEnd(updatedEntry);
-        setIsBreakTime(false);
-        setBreakStartTime(null);
+      
+      // Create date objects for break start and end
+      const breakStart = new Date(`${currentEntry.dateBreakStart} ${currentEntry.breakStart}`);
+      const breakEnd = new Date(`${currentTimeData.date} ${currentTimeData.time}`);
+      
+      // Adjust break end date if it's the next day
+      if (breakEnd < breakStart) {
+        breakEnd.setDate(breakEnd.getDate() + 1);
       }
+  
+      // Calculate the new break duration in milliseconds
+      const breakDurationMs = breakEnd.getTime() - breakStart.getTime();
+      
+      // Convert break duration to hours and add to any existing break time
+      const newBreakTimeHours = breakDurationMs / (1000 * 60 * 60);
+      const totalBreakTimeHours = (currentEntry.totalBreakTime || 0) + newBreakTimeHours;
+  
+      const updatedEntry = {
+        ...currentEntry,
+        breakEnd: currentTimeData.time,
+        dateBreakEnd: currentTimeData.date,
+        
+        totalBreakTime: Number(totalBreakTimeHours.toFixed(2)),
+      };
+  
+      const response = await timer.updateBreakEnd(updatedEntry);
+      setCurrentEntry(response.data);
     } catch (error) {
       console.error("Error ending break:", error);
     }
   };
-
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
@@ -294,7 +402,7 @@ export const AttendanceTracker: React.FC = () => {
         </div>
         <div className="flex flex-col space-y-4">
           <div className="flex flex-col items-center space-y-4">
-            {!isTimeIn && (
+            {!isTimeIn  && (
               <div className="w-full max-w-xs text-center">
                 <Label>Select your shift schedule</Label>
                 <Select
@@ -314,12 +422,19 @@ export const AttendanceTracker: React.FC = () => {
                 </Select>
               </div>
             )}
-
-            {isTimeIn && (
-              <div className="text-4xl font-bold tracking-tighter text-center">
+{/* 
+            {currentEntry.timeIn !== null     && (
+              <div className="text-4xl font-bold  text-red-600 tracking-tighter text-center">
                 {formatElapsedTime(elapsedTime)}
               </div>
-            )}
+            )} */}
+             {currentEntry.breakStart !== null && currentEntry.breakEnd === null ? (
+              <div className="text-4xl font-bold tracking-tighter text-red-600 text-center">
+                <p className="text-base text-black tracking-wide">BREAK TIME </p>{formatElapsedTime(elapsedTime)}
+              </div>
+            ): (   <div className={`text-4xl font-bold tracking-tighter text-center ${currentEntry?.timeIn ? "" : "hidden"}`} >
+              {formatElapsedTime(elapsedTime)}
+            </div>)}
 
             <div className="flex justify-center space-x-4">
               {!isTimeIn ? (
@@ -333,11 +448,12 @@ export const AttendanceTracker: React.FC = () => {
               ) : (
                 <>
                   {currentEntry.shift === "Staff" &&
-                    (!isBreakTime ? (
+                    (currentEntry.breakStart === null ? (
                       <Button
                         onClick={handleBreakStart}
                         variant="default"
                         className="flex items-center"
+                        disabled={currentEntry.totalBreakTime !== null}
                       >
                         <Coffee className="mr-1 h-4 w-4" />
                         Start Break
@@ -346,7 +462,8 @@ export const AttendanceTracker: React.FC = () => {
                       <Button
                         onClick={handleBreakEnd}
                         variant="default"
-                        className="flex items-center"
+                          className="flex items-center"
+                          disabled={currentEntry.breakStart !== null && currentEntry.breakEnd !== null}
                       >
                         <Coffee className="mr-2 h-4 w-4" /> End Break
                       </Button>
@@ -356,7 +473,7 @@ export const AttendanceTracker: React.FC = () => {
                       <Button
                         variant="destructive"
                         className="flex items-center"
-                        disabled={isBreakTime}
+                        disabled={currentEntry.breakStart !== null && currentEntry.breakEnd === null}
                       >
                         <LogOut className="mr-2 h-4 w-4" /> Time Out
                       </Button>
@@ -405,10 +522,10 @@ export const AttendanceTracker: React.FC = () => {
                 <p>Shift: {currentEntry.shift}</p>
                 {currentEntry.shift === "Staff" && (
                   <>
-                    {isBreakTime && (
+                   
                       <p>Break Started: {currentEntry.breakStart}</p>
-                    )}
-                    <p>Total Break Time: {formatElapsedTime(totalBreakTime)}</p>
+                      <p>Break Ended: {currentEntry.breakEnd }</p>
+                    <p>Total Break Time: {currentEntry.totalBreakTime}</p>
                   </>
                 )}
               </div>

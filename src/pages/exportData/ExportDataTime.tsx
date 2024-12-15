@@ -26,6 +26,10 @@ interface EmployeeTimes {
   createdAt: string;
   updatedAt: string;
   __v: number;
+  breakEnd: string;
+  breakStart: string;
+  totalBreakTime: string;
+
 }
 
 // Helper function to parse the date for filtering
@@ -79,7 +83,11 @@ const ExportDataTime: React.FC = () => {
         TimeIn: entry.timeIn,
         TimeOut: entry.timeOut,
         TotalHours: entry.totalHours,
+        totalBreakTime: entry.totalBreakTime,
+        breakStart: entry.breakStart,
+        breakEnd: entry.breakEnd,
         Notes: entry.notes,
+      
       }));
 
       // Generate and download Excel file
@@ -93,6 +101,9 @@ const ExportDataTime: React.FC = () => {
         { wch: 15 }, // TimeIn
         { wch: 15 }, // TimeOut
         { wch: 10 }, // TotalHours
+        { wch: 10 }, // totalBreakTime
+        { wch: 15 }, // breakStart
+        { wch: 15 }, // breakEnd
         { wch: 30 }, // Notes
       ];
 
