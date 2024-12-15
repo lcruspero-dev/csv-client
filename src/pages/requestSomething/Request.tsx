@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Category, TicketAPi } from "@/API/endpoint";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -99,8 +100,7 @@ const Request = () => {
 
     setIsSubmitting(true);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const response = await TicketAPi.createTicket({
+      await TicketAPi.createTicket({
         ...form,
         description:
           form.category === "Leave Request"
