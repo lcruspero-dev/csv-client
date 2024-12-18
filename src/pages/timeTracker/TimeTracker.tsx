@@ -130,65 +130,72 @@ export const AttendanceTracker: React.FC = () => {
     getCurrentTimeFromAPI();
     getCurrentTime();
   }, []);
-console.log("currentEntry", currentEntry) 
+  console.log("currentEntry", currentEntry);
   useEffect(() => {
     let startTime: number;
     let timeInstartTime: number;
     let intervalId: NodeJS.Timeout;
     let timeOffset = 0;
-    // const breakTimeInMilliseconds = currentEntry.totalBreakTime 
-    //     ? Number(currentEntry.totalBreakTime) * 3600 * 1000 
+    // const breakTimeInMilliseconds = currentEntry.totalBreakTime
+    //     ? Number(currentEntry.totalBreakTime) * 3600 * 1000
     //     : 0;
-    
-    const breakStart = new Date(`${currentEntry.dateBreakStart} ${currentEntry.breakStart}`);
-    const breakEnd = new Date(`${currentEntry.dateBreakEnd} ${currentEntry.breakEnd}`);
-    console.log(breakStart, breakEnd)
+
+    const breakStart = new Date(
+      `${currentEntry.dateBreakStart} ${currentEntry.breakStart}`
+    );
+    const breakEnd = new Date(
+      `${currentEntry.dateBreakEnd} ${currentEntry.breakEnd}`
+    );
+    console.log(breakStart, breakEnd);
     // Adjust break end date if it's the next day
     if (breakEnd < breakStart) {
       breakEnd.setDate(breakEnd.getDate() + 1);
     }
     // Calculate the new break duration in milliseconds
-          const breakDurationMs = currentEntry.totalBreakTime 
-          ?breakEnd.getTime() - breakStart.getTime():0;
+    const breakDurationMs = currentEntry.totalBreakTime
+      ? breakEnd.getTime() - breakStart.getTime()
+      : 0;
 
     if (isTimeIn && currentEntry.date) {
       // Calculate server-client time offset
       const serverTime = new Date(
-          `${currentServerTime.date} ${currentServerTime.time}`
+        `${currentServerTime.date} ${currentServerTime.time}`
       ).getTime();
       const localTime = Date.now();
       timeOffset = serverTime - localTime;
 
       // Determine reference start time based on break status
       const isOnBreak = currentEntry.breakStart && !currentEntry.breakEnd;
-      const timeReference = isOnBreak ? currentEntry.breakStart : currentEntry.timeIn;
-      
+      const timeReference = isOnBreak
+        ? currentEntry.breakStart
+        : currentEntry.timeIn;
+
       startTime = new Date(
-          `${currentEntry.dateBreakStart} ${timeReference}`
+        `${currentEntry.dateBreakStart} ${timeReference}`
       ).getTime();
       timeInstartTime = new Date(
         `${currentEntry.date} ${timeReference}`
-    ).getTime();
+      ).getTime();
       intervalId = setInterval(() => {
-          const currentTime = Date.now() + timeOffset;
-          let diffMs;
-        
-          if (isOnBreak) {
-              // If on break, calculate time from break start
-              diffMs = currentTime - startTime;
-          }  else {
-            // Convert totalBreakTime from hours to seconds before applying
-            
-            diffMs = currentTime - timeInstartTime - breakDurationMs ;
+        const currentTime = Date.now() + timeOffset;
+        let diffMs;
+
+        if (isOnBreak) {
+          // If on break, calculate time from break start
+          diffMs = currentTime - startTime;
+        } else {
+          // Convert totalBreakTime from hours to seconds before applying
+
+          diffMs = currentTime - timeInstartTime - breakDurationMs;
         }
 
-          setElapsedTime(Math.floor(diffMs / 1000));
+        setElapsedTime(Math.floor(diffMs / 1000));
       }, 1000);
-    return () => {
-      clearInterval(intervalId);
-    };
-  }
-  }, [isTimeIn, currentEntry, currentServerTime,]);
+      return () => {
+        clearInterval(intervalId);
+      };
+    }
+  }, [isTimeIn, currentEntry, currentServerTime]);
 
   const formatElapsedTime = (totalSeconds: number) => {
     const hours = Math.floor(totalSeconds / 3600);
@@ -207,9 +214,7 @@ console.log("currentEntry", currentEntry)
       if (currentTimeData.timeOut) {
         setIsTimeIn(false);
         // setIsTimeIn2(false);
-      }
-       
-      else {
+      } else {
         setIsTimeIn(true);
         // setIsTimeIn2(true);
       }
@@ -245,26 +250,28 @@ console.log("currentEntry", currentEntry)
     try {
       const currentTimeData = await getCurrentTimeFromAPI();
 
-
       const timeInDate = new Date(
         `${currentEntry.date} ${currentEntry.timeIn}`
       );
       const timeOutDate = new Date(
         `${currentTimeData.date} ${currentTimeData.time}`
       );
-// dapat sa backend data
-const breakStart = new Date(`${currentEntry.dateBreakStart} ${currentEntry.breakStart}`);
-const breakEnd = new Date(`${currentEntry.dateBreakEnd} ${currentEntry.breakEnd}`);
+      // dapat sa backend data
+      const breakStart = new Date(
+        `${currentEntry.dateBreakStart} ${currentEntry.breakStart}`
+      );
+      const breakEnd = new Date(
+        `${currentEntry.dateBreakEnd} ${currentEntry.breakEnd}`
+      );
 
-// Adjust break end date if it's the next day
-if (breakEnd < breakStart) {
-  breakEnd.setDate(breakEnd.getDate() + 1);
-}
-// Calculate the new break duration in milliseconds
-      const breakDurationMs = currentEntry.totalBreakTime 
-      ?breakEnd.getTime() - breakStart.getTime():0;
-      
-      
+      // Adjust break end date if it's the next day
+      if (breakEnd < breakStart) {
+        breakEnd.setDate(breakEnd.getDate() + 1);
+      }
+      // Calculate the new break duration in milliseconds
+      const breakDurationMs = currentEntry.totalBreakTime
+        ? breakEnd.getTime() - breakStart.getTime()
+        : 0;
 
       const diffMs =
         timeOutDate.getTime() - timeInDate.getTime() - breakDurationMs;
@@ -307,7 +314,6 @@ if (breakEnd < breakStart) {
       // setIsBreakTime(true);
       // setIsTimeIn2(false);
       setElapsedTime(0);
-     
     } catch (error) {
       console.error("Error starting break:", error);
     }
@@ -323,7 +329,7 @@ if (breakEnd < breakStart) {
   //   const breakEnd = new Date(
   //     `${currentTimeData.date} ${currentTimeData.time}`
   //     );
-  //   const totalBreakTime  = currentEntry.totalBreakTime 
+  //   const totalBreakTime  = currentEntry.totalBreakTime
   //     ?breakEnd.getTime() - breakStart.getTime():0;
 
   //   const diffMs =
@@ -333,8 +339,8 @@ if (breakEnd < breakStart) {
   //   const updatedEntry = {
   //     ...currentEntry,
   //     breakEnd: currentTimeData.time,
-  //     totalBreakTime: Number(totalBreakTimeCount.toFixed(2)), 
-      
+  //     totalBreakTime: Number(totalBreakTimeCount.toFixed(2)),
+
   //   };
   //   // try {
   //   //   const currentTimeData = await getCurrentTimeFromAPI();
@@ -349,8 +355,7 @@ if (breakEnd < breakStart) {
   //     setCurrentEntry(response.data);
   //       // setIsBreakTime(false);
   //       // setIsTimeIn2(true);
-       
-     
+
   //   } catch (error) {
   //     console.error("Error ending break:", error);
   //   }
@@ -358,31 +363,36 @@ if (breakEnd < breakStart) {
   const handleBreakEnd = async () => {
     try {
       const currentTimeData = await getCurrentTimeFromAPI();
-      
+
       // Create date objects for break start and end
-      const breakStart = new Date(`${currentEntry.dateBreakStart} ${currentEntry.breakStart}`);
-      const breakEnd = new Date(`${currentTimeData.date} ${currentTimeData.time}`);
-      
+      const breakStart = new Date(
+        `${currentEntry.dateBreakStart} ${currentEntry.breakStart}`
+      );
+      const breakEnd = new Date(
+        `${currentTimeData.date} ${currentTimeData.time}`
+      );
+
       // Adjust break end date if it's the next day
       if (breakEnd < breakStart) {
         breakEnd.setDate(breakEnd.getDate() + 1);
       }
-  
+
       // Calculate the new break duration in milliseconds
       const breakDurationMs = breakEnd.getTime() - breakStart.getTime();
-      
+
       // Convert break duration to hours and add to any existing break time
       const newBreakTimeHours = breakDurationMs / (1000 * 60 * 60);
-      const totalBreakTimeHours = (currentEntry.totalBreakTime || 0) + newBreakTimeHours;
-  
+      const totalBreakTimeHours =
+        (currentEntry.totalBreakTime || 0) + newBreakTimeHours;
+
       const updatedEntry = {
         ...currentEntry,
         breakEnd: currentTimeData.time,
         dateBreakEnd: currentTimeData.date,
-        
+
         totalBreakTime: Number(totalBreakTimeHours.toFixed(2)),
       };
-  
+
       const response = await timer.updateBreakEnd(updatedEntry);
       setCurrentEntry(response.data);
     } catch (error) {
@@ -402,7 +412,7 @@ if (breakEnd < breakStart) {
         </div>
         <div className="flex flex-col space-y-4">
           <div className="flex flex-col items-center space-y-4">
-            {!isTimeIn  && (
+            {!isTimeIn && (
               <div className="w-full max-w-xs text-center">
                 <Label>Select your shift schedule</Label>
                 <Select
@@ -422,19 +432,29 @@ if (breakEnd < breakStart) {
                 </Select>
               </div>
             )}
-{/* 
+            {/* 
             {currentEntry.timeIn !== null     && (
               <div className="text-4xl font-bold  text-red-600 tracking-tighter text-center">
                 {formatElapsedTime(elapsedTime)}
               </div>
             )} */}
-             {currentEntry.breakStart !== null && currentEntry.breakEnd === null ? (
+            {currentEntry.breakStart !== null &&
+            currentEntry.breakEnd === null ? (
               <div className="text-4xl font-bold tracking-tighter text-red-600 text-center">
-                <p className="text-base text-black tracking-wide">BREAK TIME </p>{formatElapsedTime(elapsedTime)}
+                <p className="text-base text-black tracking-wide">
+                  BREAK TIME{" "}
+                </p>
+                {formatElapsedTime(elapsedTime)}
               </div>
-            ): (   <div className={`text-4xl font-bold tracking-tighter text-center ${currentEntry?.timeIn ? "" : "hidden"}`} >
-              {formatElapsedTime(elapsedTime)}
-            </div>)}
+            ) : (
+              <div
+                className={`text-4xl font-bold tracking-tighter text-center ${
+                  currentEntry?.timeIn ? "" : "hidden"
+                }`}
+              >
+                {formatElapsedTime(elapsedTime)}
+              </div>
+            )}
 
             <div className="flex justify-center space-x-4">
               {!isTimeIn ? (
@@ -462,8 +482,11 @@ if (breakEnd < breakStart) {
                       <Button
                         onClick={handleBreakEnd}
                         variant="default"
-                          className="flex items-center"
-                          disabled={currentEntry.breakStart !== null && currentEntry.breakEnd !== null}
+                        className="flex items-center"
+                        disabled={
+                          currentEntry.breakStart !== null &&
+                          currentEntry.breakEnd !== null
+                        }
                       >
                         <Coffee className="mr-2 h-4 w-4" /> End Break
                       </Button>
@@ -473,7 +496,10 @@ if (breakEnd < breakStart) {
                       <Button
                         variant="destructive"
                         className="flex items-center"
-                        disabled={currentEntry.breakStart !== null && currentEntry.breakEnd === null}
+                        disabled={
+                          currentEntry.breakStart !== null &&
+                          currentEntry.breakEnd === null
+                        }
                       >
                         <LogOut className="mr-2 h-4 w-4" /> Time Out
                       </Button>
@@ -522,10 +548,14 @@ if (breakEnd < breakStart) {
                 <p>Shift: {currentEntry.shift}</p>
                 {currentEntry.shift === "Staff" && (
                   <>
-                   
-                      <p>Break Started: {currentEntry.breakStart}</p>
-                      <p>Break Ended: {currentEntry.breakEnd }</p>
-                    <p>Total Break Time: {currentEntry.totalBreakTime}</p>
+                    <p>Break Started: {currentEntry.breakStart}</p>
+                    <p>Break Ended: {currentEntry.breakEnd}</p>
+                    <p>
+                      Total Break Time:{" "}
+                      {currentEntry.totalBreakTime
+                        ? `${Math.round(currentEntry.totalBreakTime * 60)} min.`
+                        : " "}
+                    </p>
                   </>
                 )}
               </div>
@@ -561,7 +591,9 @@ if (breakEnd < breakStart) {
                       {attendanceEntries.some((e) => e.shift === "Staff") && (
                         <TableCell>
                           {entry.shift === "Staff"
-                            ? entry.totalBreakTime || "-"
+                            ? entry.totalBreakTime
+                              ? `${Math.round(entry.totalBreakTime * 60)} min.`
+                              : "-"
                             : "-"}
                         </TableCell>
                       )}

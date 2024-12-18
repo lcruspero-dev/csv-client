@@ -1,5 +1,5 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React from "react";
 // import { Button } from "@/components/ui/button";
 // import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 // import { DatePickerWithRange } from "@/components/ui/date-range-picker";
@@ -262,7 +262,6 @@ export const LeadTeamManagement: React.FC = () => {
     <Card className="w-full max-w-6xl mx-auto">
       <CardHeader>
         <CardTitle className="flex items-center justify-center text-2xl gap-3">
-          
           Team Management
         </CardTitle>
       </CardHeader>
@@ -270,8 +269,8 @@ export const LeadTeamManagement: React.FC = () => {
         <div className="text-center py-12 space-y-4">
           <h2 className="text-xl font-semibold">System Under Maintenance</h2>
           <p className="text-gray-600">
-            We are currently performing scheduled maintenance to improve your experience.
-            The team management system will be back online shortly.
+            We are currently performing scheduled maintenance to improve your
+            experience. The team management system will be back online shortly.
           </p>
           <p className="text-sm text-gray-500">
             Expected completion: Within 24 hours
@@ -281,6 +280,5 @@ export const LeadTeamManagement: React.FC = () => {
     </Card>
   );
 };
-
 
 export default LeadTeamManagement;
