@@ -32,10 +32,6 @@ interface EmployeeTimes {
 }
 
 // Helper function to parse the date for filtering
-const parseDate = (dateString: string): Date => {
-  const [month, day, year] = dateString.split("/").map(Number);
-  return new Date(year, month - 1, day);
-};
 
 const ExportDataTime: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
