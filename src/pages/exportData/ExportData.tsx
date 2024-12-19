@@ -80,12 +80,15 @@ const ExportData: React.FC = () => {
     filters: FormData
   ): Promise<unknown[]> => {
     // First filter the tickets
-    const filteredTickets = data.filter((ticket) => {
-      const ticketDate = new Date(ticket.createdAt);
-      const startDate = new Date(filters.startDate);
-      const endDate = new Date(filters.endDate);
+    const normalizeDate = (date: Date) =>
+      new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
-      // Date range filter
+    const filteredTickets = data.filter((ticket) => {
+      const ticketDate = normalizeDate(new Date(ticket.createdAt));
+      const startDate = normalizeDate(new Date(filters.startDate));
+      const endDate = normalizeDate(new Date(filters.endDate));
+
+      // Inclusive date range filter
       if (ticketDate < startDate || ticketDate > endDate) return false;
 
       // Department filter

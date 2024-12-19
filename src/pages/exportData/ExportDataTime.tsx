@@ -58,8 +58,27 @@ const ExportDataTime: React.FC = () => {
       const allEmployeeTimes: EmployeeTimes[] = response.data;
 
       // Parse user-provided date range
+      // const startDate = new Date(formData.startDate);
+      // const endDate = new Date(formData.endDate);
+      // Set time to start of day for start date and end of day for end date
       const startDate = new Date(formData.startDate);
+      startDate.setHours(0, 0, 0, 0);
+
       const endDate = new Date(formData.endDate);
+      endDate.setHours(23, 59, 59, 999);
+
+      // Updated parseDate function to handle both formats
+      const parseDate = (dateString: string): Date => {
+        if (dateString.includes("/")) {
+          const [month, day, year] = dateString.split("/").map(Number);
+          const date = new Date(year, month - 1, day);
+          date.setHours(0, 0, 0, 0);
+          return date;
+        }
+        const date = new Date(dateString);
+        date.setHours(0, 0, 0, 0);
+        return date;
+      };
 
       // Filter data to include only records within the date range
       const filteredEmployeeTimes = allEmployeeTimes.filter((entry) => {
