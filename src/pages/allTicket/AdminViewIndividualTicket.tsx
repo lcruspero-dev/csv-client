@@ -3,7 +3,6 @@ import { Assigns, TicketAPi } from "@/API/endpoint";
 import { formattedDate } from "@/API/helper";
 import BackButton from "@/components/kit/BackButton";
 import { Button } from "@/components/ui/button";
-
 import { Label } from "@/components/ui/label";
 import Loading from "@/components/ui/loading";
 import {
@@ -43,9 +42,13 @@ const AdminViewIndovidualTicket: React.FC = () => {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [listAssigns, setListAssigns] = useState<any[]>([]);
+  const [closeMessage, setCloseMessage] = useState("");
+  const [showTextArea, setShowTextArea] = useState(false);
+
   const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(event.target.value);
   };
+
   const getTicket = async (ticketId: string) => {
     try {
       const response = await TicketAPi.getIndividualTicket(ticketId);
@@ -55,6 +58,7 @@ const AdminViewIndovidualTicket: React.FC = () => {
       console.error(error);
     }
   };
+
   const getAllNotes = async (ticketId: string) => {
     try {
       const response = await TicketAPi.getNotes(ticketId);
@@ -63,6 +67,7 @@ const AdminViewIndovidualTicket: React.FC = () => {
       console.error(error);
     }
   };
+
   const getAssigns = async () => {
     try {
       const response = await Assigns.getAssign();
@@ -72,33 +77,36 @@ const AdminViewIndovidualTicket: React.FC = () => {
       console.error(error);
     }
   };
+
   useEffect(() => {
     getAssigns();
     if (id) {
-      setIsLoading(true); // Set loading to true before fetching data
+      setIsLoading(true);
       Promise.all([getTicket(id), getAllNotes(id)])
-        .then(() => setIsLoading(false)) // Set loading to false after both promises resolve
+        .then(() => setIsLoading(false))
         .catch((error) => {
           console.error(error);
-          setIsLoading(false); // Ensure loading is set to false even if there's an error
+          setIsLoading(false);
         });
     }
   }, [id]);
-  console.log(assign);
-  console.log(status);
+
   const handleAssignChange = (value: string) => {
     setAssign({ ...assign, assign: value });
   };
+
   const handleStatusChange = (value: string) => {
     setStatus({ ...status, status: value });
+    setShowTextArea(value === "closed");
   };
 
   const handlePriorityChange = (value: string) => {
     setPriority({ ...priority, priority: value });
   };
+
   const SubmitNote = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return; // Prevent multiple submissions
+    if (isSubmitting) return;
     if (!id || !details?._id) {
       console.error("Ticket ID or User ID is missing");
       return;
@@ -121,12 +129,10 @@ const AdminViewIndovidualTicket: React.FC = () => {
       setIsSubmitting(false);
     }
   };
-  if (isLoading) {
-    return <Loading />; // Show loading component while data is being fetched
-  }
+
   const handleEditButton = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isUpdating) return; // Prevent multiple submissions
+    if (isUpdating) return;
 
     setIsUpdating(true);
     const body = {
@@ -134,10 +140,25 @@ const AdminViewIndovidualTicket: React.FC = () => {
       status: status?.status,
       priority: priority?.priority,
     };
+
     try {
       const response = await TicketAPi.updateTicket(id, body);
       console.log("response.data", response.data);
+
+      // If status is closed and there's a close message, submit the note
+      if (status?.status === "closed" && closeMessage.trim()) {
+        const noteBody = {
+          ticket: id,
+          text: closeMessage,
+          isStaff: false,
+          user: details?._id,
+        };
+        await TicketAPi.createNote(id, noteBody);
+        setCloseMessage("");
+      }
+
       getTicket(String(id));
+      getAllNotes(String(id));
       setIsSheetOpen(false);
       toast({
         title: "Ticket Updated",
@@ -155,6 +176,7 @@ const AdminViewIndovidualTicket: React.FC = () => {
       setIsUpdating(false);
     }
   };
+
   const handleFileDownload = (file: string) => {
     window.open(
       `${import.meta.env.VITE_UPLOADFILES_URL}/files/${file}`,
@@ -162,10 +184,13 @@ const AdminViewIndovidualTicket: React.FC = () => {
     );
   };
 
+  if (isLoading) {
+    return <Loading />;
+  }
+
   return (
     <div className="container">
       <div className="px-36 pt-5">
-        {/* for admin only */}
         <div className="flex justify-between px-10 items-center mt-5 ">
           <BackButton />
           <form>
@@ -183,7 +208,7 @@ const AdminViewIndovidualTicket: React.FC = () => {
                 </SheetHeader>
                 <div className="grid gap-4 py-4">
                   <div>
-                    <Label htmlFor="name" className="text-right   mb-10">
+                    <Label htmlFor="name" className="text-right mb-10">
                       Assign to
                     </Label>
                     <Select onValueChange={handleAssignChange} required>
@@ -211,7 +236,7 @@ const AdminViewIndovidualTicket: React.FC = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectGroup>
-                          <SelectItem value="open"> Open </SelectItem>
+                          <SelectItem value="open">Open</SelectItem>
                           <SelectItem value="In Progress">
                             In Progress
                           </SelectItem>
@@ -238,13 +263,30 @@ const AdminViewIndovidualTicket: React.FC = () => {
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {showTextArea && (
+                    <div>
+                      <Label htmlFor="closeNote" className="text-right">
+                        Closing Note
+                      </Label>
+                      <Textarea
+                        id="closeNote"
+                        placeholder="Enter a closing note"
+                        value={closeMessage}
+                        onChange={(e) => setCloseMessage(e.target.value)}
+                        className="mt-2"
+                      />
+                    </div>
+                  )}
                 </div>
                 <SheetFooter>
                   <SheetClose asChild>
                     <Button
                       type="submit"
                       onClick={handleEditButton}
-                      disabled={isUpdating}
+                      disabled={
+                        isUpdating || (showTextArea && !closeMessage.trim())
+                      }
                     >
                       {isUpdating ? "Saving..." : "Save changes"}
                     </Button>

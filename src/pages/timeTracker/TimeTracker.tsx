@@ -34,6 +34,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useToast } from "@/components/ui/use-toast";
 // import { time } from "console";
 
 import { Clock, Coffee, LogIn, LogOut } from "lucide-react";
@@ -88,6 +89,7 @@ export const AttendanceTracker: React.FC = () => {
   const startIndex = (currentPage - 1) * entriesPerPage;
   const endIndex = startIndex + entriesPerPage;
   const currentEntries = attendanceEntries.slice(startIndex, endIndex);
+  const { toast } = useToast();
 
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
@@ -241,8 +243,21 @@ export const AttendanceTracker: React.FC = () => {
       // setIsTimeIn2(true);
       setIsTimeIn(true);
       setElapsedTime(0);
+      toast({
+        title: "Success",
+        description: "Time-in logged successfully!",
+        variant: "default",
+      });
     } catch (error) {
       console.error("Error logging time:", error);
+
+      // Error toast notification
+      toast({
+        title: "Error",
+        description:
+          "Failed to log time. Please try again. If the issue persists, contact IT support.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -293,9 +308,22 @@ export const AttendanceTracker: React.FC = () => {
       setDialogOpen(false);
       setElapsedTime(0);
       setSelectedShift(null);
-      // setIsBreakTime(false);
+      // Success toast notification
+      toast({
+        title: "Success",
+        description: "Time-out logged successfully!",
+        variant: "default",
+      });
     } catch (error) {
       console.error("Error logging timeout:", error);
+
+      // Error toast notification
+      toast({
+        title: "Error",
+        description:
+          "Failed to log time-out. Please try again. If the issue persists, contact IT support.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -314,8 +342,22 @@ export const AttendanceTracker: React.FC = () => {
       // setIsBreakTime(true);
       // setIsTimeIn2(false);
       setElapsedTime(0);
+      // Success toast notification
+      toast({
+        title: "Success",
+        description: "Break started successfully!",
+        variant: "default",
+      });
     } catch (error) {
       console.error("Error starting break:", error);
+
+      // Error toast notification
+      toast({
+        title: "Error",
+        description:
+          "Failed to start break Please try again. If the issue persists, contact IT support.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -395,8 +437,21 @@ export const AttendanceTracker: React.FC = () => {
 
       const response = await timer.updateBreakEnd(updatedEntry);
       setCurrentEntry(response.data);
+      // Success toast notification
+      toast({
+        title: "Success",
+        description: "End break logged successfully!",
+        variant: "default",
+      });
     } catch (error) {
       console.error("Error ending break:", error);
+
+      // Error toast notification
+      toast({
+        title: "Error",
+        description: "Failed to log end break. Please try again.",
+        variant: "destructive",
+      });
     }
   };
   return (

@@ -1,7 +1,25 @@
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
 import React, { useMemo, useState } from "react";
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from "recharts";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChartConfig, ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 interface Ticket {
   department: string;
@@ -40,14 +58,19 @@ const Chart: React.FC<ChartProps> = ({ tickets }) => {
   const [activeChart, setActiveChart] = useState<DepartmentKey>("IT");
 
   const chartData = useMemo<ChartDataItem[]>(() => {
-    const data: Record<string, { open: number; "In Progress": number; closed: number }> = {
+    const data: Record<
+      string,
+      { open: number; "In Progress": number; closed: number }
+    > = {
       IT: { open: 0, "In Progress": 0, closed: 0 },
       HR: { open: 0, "In Progress": 0, closed: 0 },
     };
 
     tickets.forEach((ticket) => {
       if (data[ticket.department]) {
-        data[ticket.department][ticket.status as keyof (typeof data)[string]] += 1;
+        data[ticket.department][
+          ticket.status as keyof (typeof data)[string]
+        ] += 1;
       }
     });
 
@@ -60,13 +83,17 @@ const Chart: React.FC<ChartProps> = ({ tickets }) => {
   const total = useMemo(() => {
     return {
       IT: chartData.find((d) => d.department === "IT")
-        ? Object.values(chartData.find((d) => d.department === "IT") as ChartDataItem).reduce(
+        ? Object.values(
+            chartData.find((d) => d.department === "IT") as ChartDataItem
+          ).reduce(
             (acc, curr) => acc + (typeof curr === "number" ? curr : 0),
             0
           ) - 0
         : 0,
       HR: chartData.find((d) => d.department === "HR")
-        ? Object.values(chartData.find((d) => d.department === "HR") as ChartDataItem).reduce(
+        ? Object.values(
+            chartData.find((d) => d.department === "HR") as ChartDataItem
+          ).reduce(
             (acc, curr) => acc + (typeof curr === "number" ? curr : 0),
             0
           ) - 0
@@ -79,7 +106,9 @@ const Chart: React.FC<ChartProps> = ({ tickets }) => {
       <CardHeader className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row">
         <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-6">
           <CardTitle>Bar Chart - All Tickets</CardTitle>
-          <CardDescription>Showing total Tickets by department and status</CardDescription>
+          <CardDescription>
+            Showing total Tickets by department and status
+          </CardDescription>
         </div>
         <div className="flex">
           {(Object.keys(chartConfig) as Array<DepartmentKey>)
@@ -91,14 +120,21 @@ const Chart: React.FC<ChartProps> = ({ tickets }) => {
                 className="relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l data-[active=true]:bg-muted/50 sm:border-l sm:border-t-0 sm:px-8 sm:py-6"
                 onClick={() => setActiveChart(key)}
               >
-                <span className="text-xs text-muted-foreground">{chartConfig[key].label}</span>
-                <span className="text-lg font-bold leading-none sm:text-3xl">{total[key].toLocaleString()}</span>
+                <span className="text-xs text-muted-foreground">
+                  {chartConfig[key].label}
+                </span>
+                <span className="text-lg font-bold leading-none sm:text-3xl">
+                  {total[key].toLocaleString()}
+                </span>
               </button>
             ))}
         </div>
       </CardHeader>
       <CardContent className="px-2 sm:p-6">
-        <ChartContainer config={chartConfig} className="aspect-auto h-[250px] w-full">
+        <ChartContainer
+          config={chartConfig}
+          className="aspect-auto h-[250px] w-full"
+        >
           <BarChart
             data={chartData}
             margin={{
