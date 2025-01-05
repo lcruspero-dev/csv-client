@@ -27,6 +27,7 @@ const Request = () => {
     email: `${userLogin.email}`,
     category: "",
     description: "",
+    purpose: "",
     file: null,
     department: "HR",
   });
@@ -105,6 +106,8 @@ const Request = () => {
         description:
           form.category === "Leave Request"
             ? "[Automated Message] Leave request has been submitted via ClickUp form."
+            : form.category === "Certificate of Employment"
+            ? `Purpose: ${form.purpose}\nDetails: ${form.description}`
             : form.description,
       });
 
@@ -313,6 +316,22 @@ const Request = () => {
 
         {form.category !== "Leave Request" && (
           <>
+            {form.category === "Certificate of Employment" && (
+              <>
+                <Label htmlFor="purpose" className="text-base font-bold">
+                  Purpose
+                </Label>
+                <Input
+                  name="purpose"
+                  placeholder="Purpose for requesting Certificate of Employment"
+                  type="text"
+                  required
+                  className="!mb-2"
+                  onChange={handleChange}
+                  disabled={isSubmitting}
+                />
+              </>
+            )}
             <Label htmlFor="description" className="text-base font-bold">
               Description of the request
             </Label>
