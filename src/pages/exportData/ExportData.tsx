@@ -1,7 +1,3 @@
-import React, { useState } from "react";
-import { Controller, useForm } from "react-hook-form";
-import * as XLSX from "xlsx";
-
 import { ExportDatas } from "@/API/endpoint";
 import { formattedDate } from "@/API/helper";
 import BackButton from "@/components/kit/BackButton";
@@ -16,6 +12,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import React, { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import * as XLSX from "xlsx";
 
 interface FormData {
   startDate: string;
@@ -24,22 +23,38 @@ interface FormData {
   status: string;
 }
 
-interface Ticket {
+interface User {
   _id: string;
-  createdAt: string;
-  department: string;
-  status: string;
+  name: string;
+  email: string;
 }
 
-interface Note {
+interface Ticket {
   _id: string;
-  user: string;
+  user: User;
   name: string;
-  ticket: string;
-  text: string;
-  isStaff: boolean;
+  category: string;
+  description: string;
+  status: string;
+  priority: string;
+  assignedTo: string;
+  file: string | null;
+  department: string;
   createdAt: string;
   updatedAt: string;
+}
+
+interface TicketSummary {
+  totalTickets: number;
+  ticketsByDepartment: { [key: string]: number };
+  ticketsByStatus: { [key: string]: number };
+  ticketsByCategory: { [key: string]: number };
+  ticketsByPriority: { [key: string]: number };
+  ticketsByAssignee: { [key: string]: number };
+  averageResolutionTime: string;
+  ticketsPerDay: { [key: string]: number };
+  filesAttachedCount: number;
+  percentageWithFiles: string;
 }
 
 const ExportData: React.FC = () => {
@@ -57,108 +72,222 @@ const ExportData: React.FC = () => {
     },
   });
 
-  const getLatestNote = async (ticketId: string): Promise<string> => {
-    try {
-      const response = await ExportDatas.getNotes(ticketId);
-      const notes: Note[] = response.data;
+  const calculateResolutionTime = (
+    createdAt: string,
+    updatedAt: string
+  ): number => {
+    const start = new Date(createdAt).getTime();
+    const end = new Date(updatedAt).getTime();
+    return Math.round((end - start) / (1000 * 60 * 60)); // Hours
+  };
 
-      // Sort notes by createdAt in descending order and get the latest one
-      const sortedNotes = notes.sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
+  const formatDuration = (hours: number): string => {
+    if (hours < 24) return `${hours} hours`;
+    const days = Math.floor(hours / 24);
+    const remainingHours = hours % 24;
+    return `${days} days ${remainingHours} hours`;
+  };
 
-      return sortedNotes.length > 0 ? sortedNotes[0].text : "";
-    } catch (error) {
-      console.error(`Error fetching notes for ticket ${ticketId}:`, error);
-      return "";
+  const calculateSummaryStatistics = (tickets: Ticket[]): TicketSummary => {
+    const summary: TicketSummary = {
+      totalTickets: tickets.length,
+      ticketsByDepartment: {},
+      ticketsByStatus: {},
+      ticketsByCategory: {},
+      ticketsByPriority: {},
+      ticketsByAssignee: {},
+      ticketsPerDay: {},
+      filesAttachedCount: 0,
+      percentageWithFiles: "0%",
+      averageResolutionTime: "0 hours",
+    };
+
+    let totalResolutionTime = 0;
+    let closedTickets = 0;
+
+    tickets.forEach((ticket) => {
+      // Count by various dimensions
+      summary.ticketsByDepartment[ticket.department] =
+        (summary.ticketsByDepartment[ticket.department] || 0) + 1;
+      summary.ticketsByStatus[ticket.status] =
+        (summary.ticketsByStatus[ticket.status] || 0) + 1;
+      summary.ticketsByCategory[ticket.category] =
+        (summary.ticketsByCategory[ticket.category] || 0) + 1;
+      summary.ticketsByPriority[ticket.priority] =
+        (summary.ticketsByPriority[ticket.priority] || 0) + 1;
+      summary.ticketsByAssignee[ticket.assignedTo] =
+        (summary.ticketsByAssignee[ticket.assignedTo] || 0) + 1;
+
+      // Count by day
+      const day = ticket.createdAt.split("T")[0];
+      summary.ticketsPerDay[day] = (summary.ticketsPerDay[day] || 0) + 1;
+
+      // Count files
+      if (ticket.file) {
+        summary.filesAttachedCount++;
+      }
+
+      // Calculate resolution time for closed tickets
+      if (ticket.status.toLowerCase() === "closed") {
+        closedTickets++;
+        totalResolutionTime += calculateResolutionTime(
+          ticket.createdAt,
+          ticket.updatedAt
+        );
+      }
+    });
+
+    // Calculate averages and percentages
+    summary.percentageWithFiles = `${(
+      (summary.filesAttachedCount / tickets.length) *
+      100
+    ).toFixed(1)}%`;
+
+    if (closedTickets > 0) {
+      const avgHours = Math.round(totalResolutionTime / closedTickets);
+      summary.averageResolutionTime = formatDuration(avgHours);
     }
+
+    return summary;
+  };
+
+  const createSummaryWorksheet = (summary: TicketSummary): XLSX.WorkSheet => {
+    const summaryData = [
+      ["Ticket Summary Report"],
+      [""],
+      ["Overall Statistics"],
+      ["Total Tickets", summary.totalTickets],
+      ["Average Resolution Time", summary.averageResolutionTime],
+      [
+        "Tickets with Files",
+        `${summary.filesAttachedCount} (${summary.percentageWithFiles})`,
+      ],
+      [""],
+      ["Tickets by Department"],
+      ...Object.entries(summary.ticketsByDepartment)
+        .sort(([, a], [, b]) => b - a)
+        .map(([dept, count]) => [dept, count]),
+      [""],
+      ["Tickets by Status"],
+      ...Object.entries(summary.ticketsByStatus)
+        .sort(([, a], [, b]) => b - a)
+        .map(([status, count]) => [status, count]),
+      [""],
+      ["Tickets by Category"],
+      ...Object.entries(summary.ticketsByCategory)
+        .sort(([, a], [, b]) => b - a)
+        .map(([category, count]) => [category, count]),
+      [""],
+      ["Tickets by Priority"],
+      ...Object.entries(summary.ticketsByPriority)
+        .sort(([, a], [, b]) => b - a)
+        .map(([priority, count]) => [priority, count]),
+      [""],
+      ["Tickets by Assignee"],
+      ...Object.entries(summary.ticketsByAssignee)
+        .sort(([, a], [, b]) => b - a)
+        .map(([assignee, count]) => [assignee, count]),
+      [""],
+      ["Daily Ticket Volume"],
+      ...Object.entries(summary.ticketsPerDay)
+        .sort()
+        .map(([date, count]) => [date, count]),
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(summaryData);
+
+    // Style the worksheet
+    ws["!cols"] = [{ wch: 30 }, { wch: 15 }];
+
+    // Add some basic styling to the title
+    if (ws.A1) {
+      ws.A1.s = { font: { bold: true, sz: 14 } };
+    }
+
+    return ws;
   };
 
   const filterAndEnrichData = async (
     data: Ticket[],
     filters: FormData
-  ): Promise<unknown[]> => {
-    // First filter the tickets
+  ): Promise<Ticket[]> => {
     const normalizeDate = (date: Date) =>
       new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
-    const filteredTickets = data.filter((ticket) => {
+    return data.filter((ticket) => {
       const ticketDate = normalizeDate(new Date(ticket.createdAt));
       const startDate = normalizeDate(new Date(filters.startDate));
       const endDate = normalizeDate(new Date(filters.endDate));
 
-      // Inclusive date range filter
       if (ticketDate < startDate || ticketDate > endDate) return false;
-
-      // Department filter
       if (
         filters.department !== "ALL" &&
         ticket.department !== filters.department
       )
         return false;
-
-      // Status filter
       if (filters.status !== "ALL" && ticket.status !== filters.status)
         return false;
 
       return true;
     });
-
-    // Then fetch notes for each filtered ticket
-    const ticketsWithNotes = await Promise.all(
-      filteredTickets.map(async (ticket) => {
-        const latestNote = await getLatestNote(ticket._id);
-        return {
-          ...ticket,
-          createdAt: formattedDate(ticket.createdAt),
-          ClosingNote: latestNote,
-        };
-      })
-    );
-
-    return ticketsWithNotes;
   };
 
   const onSubmit = async (formData: FormData): Promise<void> => {
     setIsLoading(true);
     try {
-      // Fetch all tickets
       const response = await ExportDatas.getAllTicket();
       const allTickets: Ticket[] = response.data;
+      const filteredTickets = await filterAndEnrichData(allTickets, formData);
 
-      // Filter tickets and fetch their notes
-      const enrichedTickets = await filterAndEnrichData(allTickets, formData);
+      // Calculate summary statistics
+      const summary = calculateSummaryStatistics(filteredTickets);
 
-      // Generate and download Excel file
-      const worksheet = XLSX.utils.json_to_sheet(enrichedTickets);
-
-      // Adjust column widths
-      const maxWidth = 50;
-      const colWidths: { [key: string]: number } = {
-        A: 20, // createdAt
-        B: 15, // department
-        C: 15, // status
-        D: maxWidth, // latestNote
-      };
-
-      worksheet["!cols"] = Object.keys(colWidths).map((key) => ({
-        wch: colWidths[key],
-      }));
-
+      // Create workbook and add sheets
       const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Filtered Tickets");
 
-      // Generate a filename with the current date
-      const fileName = `Filtered_Tickets_${
+      // Add detailed data sheet
+      const detailsSheet = XLSX.utils.json_to_sheet(
+        filteredTickets.map((ticket) => ({
+          "Created Date": formattedDate(ticket.createdAt),
+          "Updated Date": formattedDate(ticket.updatedAt),
+          Category: ticket.category,
+          Department: ticket.department,
+          Status: ticket.status,
+          Priority: ticket.priority,
+          "Assigned To": ticket.assignedTo,
+          Requester: ticket.name,
+          Description: ticket.description,
+          "Has Attachment": ticket.file ? "Yes" : "No",
+        }))
+      );
+
+      XLSX.utils.book_append_sheet(workbook, detailsSheet, "Ticket Details");
+
+      // Add summary sheet
+      const summarySheet = createSummaryWorksheet(summary);
+      XLSX.utils.book_append_sheet(workbook, summarySheet, "Summary");
+
+      // Set column widths for details sheet
+      detailsSheet["!cols"] = [
+        { wch: 20 }, // Created Date
+        { wch: 20 }, // Updated Date
+        { wch: 20 }, // Category
+        { wch: 15 }, // Department
+        { wch: 15 }, // Status
+        { wch: 15 }, // Priority
+        { wch: 20 }, // Assigned To
+        { wch: 25 }, // Requester
+        { wch: 50 }, // Description
+        { wch: 15 }, // Has Attachment
+      ];
+
+      // Generate filename and trigger download
+      const fileName = `Ticket_Report_${
         new Date().toISOString().split("T")[0]
       }.xlsx`;
-
-      // Trigger the file download
       XLSX.writeFile(workbook, fileName);
     } catch (error) {
       console.error("Error exporting data:", error);
-      // Handle error (e.g., show an error message to the user)
     } finally {
       setIsLoading(false);
     }
