@@ -258,6 +258,7 @@ const ExportData: React.FC = () => {
           Requester: ticket.name,
           Description: ticket.description,
           "Has Attachment": ticket.file ? "Yes" : "No",
+          _id: ticket._id,
         }))
       );
 
