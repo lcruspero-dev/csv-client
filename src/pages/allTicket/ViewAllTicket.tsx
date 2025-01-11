@@ -143,7 +143,7 @@ const ViewAllTicket: React.FC = () => {
         <TableFooter>
           <TableRow>
             <TableCell colSpan={6}>
-              <div className="flex items-center justify-end gap-2 py-4">
+              <div className="flex items-center justify-end gap-2 py-1">
                 <Button
                   variant="outline"
                   size="sm"

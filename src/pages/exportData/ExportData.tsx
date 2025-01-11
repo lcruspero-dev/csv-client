@@ -42,6 +42,7 @@ interface Ticket {
   department: string;
   createdAt: string;
   updatedAt: string;
+  closingNote: string;
 }
 
 interface TicketSummary {
@@ -248,8 +249,7 @@ const ExportData: React.FC = () => {
       // Add detailed data sheet
       const detailsSheet = XLSX.utils.json_to_sheet(
         filteredTickets.map((ticket) => ({
-          "Created Date": formattedDate(ticket.createdAt),
-          "Updated Date": formattedDate(ticket.updatedAt),
+          _id: ticket._id,
           Category: ticket.category,
           Department: ticket.department,
           Status: ticket.status,
@@ -257,8 +257,10 @@ const ExportData: React.FC = () => {
           "Assigned To": ticket.assignedTo,
           Requester: ticket.name,
           Description: ticket.description,
+          "Closing Note": ticket.closingNote,
           "Has Attachment": ticket.file ? "Yes" : "No",
-          _id: ticket._id,
+          "Created Date": formattedDate(ticket.createdAt),
+          "Updated Date": formattedDate(ticket.updatedAt),
         }))
       );
 
@@ -270,16 +272,18 @@ const ExportData: React.FC = () => {
 
       // Set column widths for details sheet
       detailsSheet["!cols"] = [
-        { wch: 20 }, // Created Date
-        { wch: 20 }, // Updated Date
-        { wch: 20 }, // Category
-        { wch: 15 }, // Department
-        { wch: 15 }, // Status
-        { wch: 15 }, // Priority
-        { wch: 20 }, // Assigned To
-        { wch: 25 }, // Requester
-        { wch: 50 }, // Description
-        { wch: 15 }, // Has Attachment
+        { wch: 25 },
+        { wch: 25 },
+        { wch: 10 },
+        { wch: 10 },
+        { wch: 10 },
+        { wch: 15 },
+        { wch: 15 },
+        { wch: 30 },
+        { wch: 30 },
+        { wch: 10 },
+        { wch: 10 },
+        { wch: 10 },
       ];
 
       // Generate filename and trigger download

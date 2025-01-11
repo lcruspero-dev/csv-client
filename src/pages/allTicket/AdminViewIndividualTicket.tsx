@@ -139,6 +139,7 @@ const AdminViewIndovidualTicket: React.FC = () => {
       assignedTo: assign?.assign,
       status: status?.status,
       priority: priority?.priority,
+      closingNote: closeMessage,
     };
 
     try {
