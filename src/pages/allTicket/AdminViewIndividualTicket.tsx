@@ -175,6 +175,8 @@ const AdminViewIndovidualTicket: React.FC = () => {
       });
     } finally {
       setIsUpdating(false);
+      // Refresh the page
+      window.location.reload();
     }
   };
 
