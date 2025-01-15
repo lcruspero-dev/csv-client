@@ -4,6 +4,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import { Bell } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface Ticket {
   name: string;
@@ -22,11 +23,24 @@ interface Ticket {
 }
 
 const NotificationBell = () => {
+  const navigate = useNavigate();
   const [openTickets, setOpenTickets] = useState<Ticket[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const cardRef = useRef<HTMLDivElement | null>(null);
+  const bellRef = useRef<HTMLDivElement | null>(null);
+
+  const handleTicketClick = (ticketId: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+    navigate(`/ticket/${ticketId}`);
+    setIsOpen(false);
+  };
+
+  const handleBellClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsOpen((prev) => !prev);
+  };
 
   // Function to get user role from localStorage
   const getUserRole = (): string | null => {
@@ -56,14 +70,12 @@ const NotificationBell = () => {
 
       const user = JSON.parse(userStr);
 
-      // SUPERADMIN can see tickets from both IT and HR departments
       if (user.role === "SUPERADMIN") {
         return tickets.filter(
           (ticket) => ticket.department === "IT" || ticket.department === "HR"
         );
       }
 
-      // HR and IT users can only see their department's tickets
       if (["HR", "IT"].includes(user.role)) {
         return tickets.filter((ticket) => ticket.department === user.role);
       }
@@ -90,7 +102,6 @@ const NotificationBell = () => {
       }
     };
 
-    // Only fetch tickets if user has required role
     if (hasRequiredRole()) {
       const interval = setInterval(fetchOpenTickets, 60000);
       fetchOpenTickets();
@@ -102,19 +113,19 @@ const NotificationBell = () => {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (cardRef.current && !cardRef.current.contains(event.target as Node)) {
+      if (
+        cardRef.current &&
+        !cardRef.current.contains(event.target as Node) &&
+        bellRef.current &&
+        !bellRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
 
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    } else {
-      document.removeEventListener("mousedown", handleClickOutside);
-    }
-
+    document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isOpen]);
+  }, []);
 
   if (loading) return null;
   if (error) return null;
@@ -130,11 +141,49 @@ const NotificationBell = () => {
     return acc;
   }, {} as Record<string, Ticket[]>);
 
+  const TicketCard = ({ ticket }: { ticket: Ticket }) => (
+    <div
+      key={ticket._id}
+      className="p-3 hover:bg-gray-50 rounded-lg border cursor-pointer"
+      onClick={(e) => handleTicketClick(ticket._id, e)}
+    >
+      <div className="flex justify-between items-start">
+        <div>
+          <p className="font-medium text-sm">{ticket.name}</p>
+          <p className="text-xs text-gray-600">{ticket.category}</p>
+        </div>
+        <span
+          className={`px-2 py-1 rounded-full text-xs ${
+            ticket.priority === "1-Critical"
+              ? "bg-red-100 text-red-800"
+              : ticket.priority === "2-High"
+              ? "bg-orange-100 text-orange-800"
+              : ticket.priority === "3-Medium"
+              ? "bg-yellow-100 text-yellow-800"
+              : "bg-green-100 text-green-800"
+          }`}
+        >
+          {ticket.priority}
+        </span>
+      </div>
+      <p className="text-xs text-gray-500 mt-1">
+        {ticket.description.length > 100
+          ? `${ticket.description.substring(0, 100)}...`
+          : ticket.description}
+      </p>
+      <div className="mt-2 flex justify-between text-xs text-gray-500">
+        <span>Assigned to: {ticket.assignedTo}</span>
+        <span>{format(new Date(ticket.createdAt), "MMM d, yyyy")}</span>
+      </div>
+    </div>
+  );
+
   return (
     <div className="relative">
       <div
+        ref={bellRef}
         className="cursor-pointer flex items-center"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleBellClick}
       >
         <Bell className="h-6 w-6 text-blue-800" />
         {filteredTickets.length > 0 && (
@@ -167,48 +216,7 @@ const NotificationBell = () => {
                     </h4>
                     <div className="space-y-3">
                       {tickets.map((ticket) => (
-                        <div
-                          key={ticket._id}
-                          className="p-3 hover:bg-gray-50 rounded-lg border"
-                        >
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p className="font-medium text-sm">
-                                {ticket.name}
-                              </p>
-                              <p className="text-xs text-gray-600">
-                                {ticket.category}
-                              </p>
-                            </div>
-                            <span
-                              className={`px-2 py-1 rounded-full text-xs ${
-                                ticket.priority === "1-Critical"
-                                  ? "bg-red-100 text-red-800"
-                                  : ticket.priority === "2-High"
-                                  ? "bg-orange-100 text-orange-800"
-                                  : ticket.priority === "3-Medium"
-                                  ? "bg-yellow-100 text-yellow-800"
-                                  : "bg-green-100 text-green-800"
-                              }`}
-                            >
-                              {ticket.priority}
-                            </span>
-                          </div>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {ticket.description.length > 100
-                              ? `${ticket.description.substring(0, 100)}...`
-                              : ticket.description}
-                          </p>
-                          <div className="mt-2 flex justify-between text-xs text-gray-500">
-                            <span>Assigned to: {ticket.assignedTo}</span>
-                            <span>
-                              {format(
-                                new Date(ticket.createdAt),
-                                "MMM d, yyyy"
-                              )}
-                            </span>
-                          </div>
-                        </div>
+                        <TicketCard key={ticket._id} ticket={ticket} />
                       ))}
                     </div>
                   </div>
@@ -216,43 +224,7 @@ const NotificationBell = () => {
               ) : (
                 // Regular view for HR and IT users
                 filteredTickets.map((ticket) => (
-                  <div
-                    key={ticket._id}
-                    className="p-3 hover:bg-gray-50 rounded-lg border"
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-medium text-sm">{ticket.name}</p>
-                        <p className="text-xs text-gray-600">
-                          {ticket.category}
-                        </p>
-                      </div>
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs ${
-                          ticket.priority === "1-Critical"
-                            ? "bg-red-100 text-red-800"
-                            : ticket.priority === "2-High"
-                            ? "bg-orange-100 text-orange-800"
-                            : ticket.priority === "3-Medium"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-green-100 text-green-800"
-                        }`}
-                      >
-                        {ticket.priority}
-                      </span>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {ticket.description.length > 100
-                        ? `${ticket.description.substring(0, 100)}...`
-                        : ticket.description}
-                    </p>
-                    <div className="mt-2 flex justify-between text-xs text-gray-500">
-                      <span>Assigned to: {ticket.assignedTo}</span>
-                      <span>
-                        {format(new Date(ticket.createdAt), "MMM d, yyyy")}
-                      </span>
-                    </div>
-                  </div>
+                  <TicketCard key={ticket._id} ticket={ticket} />
                 ))
               )}
             </div>
