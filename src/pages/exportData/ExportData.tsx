@@ -53,6 +53,8 @@ interface TicketSummary {
   ticketsByPriority: { [key: string]: number };
   ticketsByAssignee: { [key: string]: number };
   averageResolutionTime: string;
+  averageResolutionTimeByDepartment: { [key: string]: string };
+  averageResolutionTimeByPriority: { [key: string]: string };
   ticketsPerDay: { [key: string]: number };
   filesAttachedCount: number;
   percentageWithFiles: string;
@@ -101,13 +103,18 @@ const ExportData: React.FC = () => {
       filesAttachedCount: 0,
       percentageWithFiles: "0%",
       averageResolutionTime: "0 hours",
+      averageResolutionTimeByDepartment: {},
+      averageResolutionTimeByPriority: {},
     };
 
+    // Track resolution times by department and priority
+    const resolutionTimesByDepartment: { [key: string]: number[] } = {};
+    const resolutionTimesByPriority: { [key: string]: number[] } = {};
     let totalResolutionTime = 0;
     let closedTickets = 0;
 
     tickets.forEach((ticket) => {
-      // Count by various dimensions
+      // Existing counting logic
       summary.ticketsByDepartment[ticket.department] =
         (summary.ticketsByDepartment[ticket.department] || 0) + 1;
       summary.ticketsByStatus[ticket.status] =
@@ -119,22 +126,33 @@ const ExportData: React.FC = () => {
       summary.ticketsByAssignee[ticket.assignedTo] =
         (summary.ticketsByAssignee[ticket.assignedTo] || 0) + 1;
 
-      // Count by day
       const day = ticket.createdAt.split("T")[0];
       summary.ticketsPerDay[day] = (summary.ticketsPerDay[day] || 0) + 1;
 
-      // Count files
       if (ticket.file) {
         summary.filesAttachedCount++;
       }
 
-      // Calculate resolution time for closed tickets
+      // Calculate resolution times for closed tickets
       if (ticket.status.toLowerCase() === "closed") {
         closedTickets++;
-        totalResolutionTime += calculateResolutionTime(
+        const resolutionTime = calculateResolutionTime(
           ticket.createdAt,
           ticket.updatedAt
         );
+        totalResolutionTime += resolutionTime;
+
+        // Track by department
+        if (!resolutionTimesByDepartment[ticket.department]) {
+          resolutionTimesByDepartment[ticket.department] = [];
+        }
+        resolutionTimesByDepartment[ticket.department].push(resolutionTime);
+
+        // Track by priority
+        if (!resolutionTimesByPriority[ticket.priority]) {
+          resolutionTimesByPriority[ticket.priority] = [];
+        }
+        resolutionTimesByPriority[ticket.priority].push(resolutionTime);
       }
     });
 
@@ -147,6 +165,24 @@ const ExportData: React.FC = () => {
     if (closedTickets > 0) {
       const avgHours = Math.round(totalResolutionTime / closedTickets);
       summary.averageResolutionTime = formatDuration(avgHours);
+
+      // Calculate average resolution time by department
+      Object.entries(resolutionTimesByDepartment).forEach(([dept, times]) => {
+        const avgTime = Math.round(
+          times.reduce((sum, time) => sum + time, 0) / times.length
+        );
+        summary.averageResolutionTimeByDepartment[dept] =
+          formatDuration(avgTime);
+      });
+
+      // Calculate average resolution time by priority
+      Object.entries(resolutionTimesByPriority).forEach(([priority, times]) => {
+        const avgTime = Math.round(
+          times.reduce((sum, time) => sum + time, 0) / times.length
+        );
+        summary.averageResolutionTimeByPriority[priority] =
+          formatDuration(avgTime);
+      });
     }
 
     return summary;
@@ -163,6 +199,16 @@ const ExportData: React.FC = () => {
         "Tickets with Files",
         `${summary.filesAttachedCount} (${summary.percentageWithFiles})`,
       ],
+      [""],
+      ["Average Resolution Time by Department"],
+      ...Object.entries(summary.averageResolutionTimeByDepartment)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([dept, time]) => [dept, time]),
+      [""],
+      ["Average Resolution Time by Priority"],
+      ...Object.entries(summary.averageResolutionTimeByPriority)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([priority, time]) => [priority, time]),
       [""],
       ["Tickets by Department"],
       ...Object.entries(summary.ticketsByDepartment)
@@ -198,7 +244,7 @@ const ExportData: React.FC = () => {
     const ws = XLSX.utils.aoa_to_sheet(summaryData);
 
     // Style the worksheet
-    ws["!cols"] = [{ wch: 30 }, { wch: 15 }];
+    ws["!cols"] = [{ wch: 30 }, { wch: 20 }];
 
     // Add some basic styling to the title
     if (ws.A1) {
