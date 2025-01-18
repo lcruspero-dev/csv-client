@@ -98,3 +98,15 @@ export const TimeRecordAPI = {
   deleteTimeRecord: (id: string) =>
     apiHelper(`/api/employeeTimes/${id}`, "DELETE"),
 };
+
+export const SurveyAPI = {
+  createSurvey: (body: object) => apiHelper("/api/surveys", "POST", body),
+  getSurveys: () => apiHelper("/api/surveys", "GET"),
+  getSurvey: (id: any) => apiHelper(`/api/surveys/search/${id}`, "GET"),
+  updateSurvey: (id: any, body: object) =>
+    apiHelper(`/api/surveys/${id}`, "PUT", body),
+  deleteSurvey: (id: any) => apiHelper(`/api/surveys/${id}`, "DELETE"),
+  getAllActiveSurveys: () => apiHelper(`/api/surveys/active`, "GET"),
+  submitResponse: (id: any, body: object) =>
+    apiHelper(`/api/surveys/${id}/respond`, "POST", body),
+};

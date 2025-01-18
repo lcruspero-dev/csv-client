@@ -8,7 +8,6 @@ import { useToast } from "@/components/ui/use-toast";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Memo, User } from "./ViewMemo";
- 
 
 const ViewIndividualMemo = () => {
   const [memos, setMemos] = useState<Memo>();
@@ -18,7 +17,7 @@ const ViewIndividualMemo = () => {
   const user: User | null = userString ? JSON.parse(userString) : null;
   const { toast } = useToast();
   const [isChecked, setIsChecked] = useState(false);
-// const [preview, setPreview] = useState<string | undefined>();
+  // const [preview, setPreview] = useState<string | undefined>();
   const handleCheckboxChange = () => {
     setIsChecked(!isChecked);
   };
@@ -32,30 +31,29 @@ const ViewIndividualMemo = () => {
       setIsLoading(false); // Set loading to false once data is fetched or an error occurs
     }
   };
-//   const getFile = async (file:string) => {
-//     if (!file) {
-//       console.error("File is undefined");
-//       return;
-//     }
-//     try {
-//       const response = await axios.get( `${import.meta.env.VITE_UPLOADFILES_URL}/files/${file}`,  );
-//       console.log("Upload response:", response.data);
-//       setPreview(response.data);
+  //   const getFile = async (file:string) => {
+  //     if (!file) {
+  //       console.error("File is undefined");
+  //       return;
+  //     }
+  //     try {
+  //       const response = await axios.get( `${import.meta.env.VITE_UPLOADFILES_URL}/files/${file}`,  );
+  //       console.log("Upload response:", response.data);
+  //       setPreview(response.data);
 
-//   } catch (error) {
-//     console.error(error);
-//   }
+  //   } catch (error) {
+  //     console.error(error);
+  //   }
 
-// }
+  // }
   const handleAcknowldged = async (id: string) => {
     try {
       const response = await TicketAPi.acknowledgement(id);
       console.log("acknowledged", response.data);
       getIndividualMemo(id);
       toast({
-        title: "Successfully acknowledged",
-        description:
-          "Your acknowledgement of this memo has  been recorded. Thank you !",
+        title: "Success",
+        description: "Your acknowledgement of this memo has  been recorded",
       });
     } catch (error) {
       console.error(error);
@@ -65,7 +63,6 @@ const ViewIndividualMemo = () => {
     if (id) {
       setIsLoading(true); // Set loading to true before fetching data
       getIndividualMemo(id);
-     
     }
   }, [id]);
   // useEffect(() => {
@@ -73,12 +70,15 @@ const ViewIndividualMemo = () => {
   //     getFile(memos.file);
   //   }
   // }, [memos]);
-console.log("Filename:", memos?.file);
+  console.log("Filename:", memos?.file);
   if (isLoading) {
     return <Loading />; // Show loading component while data is being fetched
   }
   const handleFileDownload = (file: string) => {
-    window.open(`${import.meta.env.VITE_UPLOADFILES_URL}/files/${file}`, "_blank");
+    window.open(
+      `${import.meta.env.VITE_UPLOADFILES_URL}/files/${file}`,
+      "_blank"
+    );
   };
   return (
     <div className="container">
@@ -90,8 +90,15 @@ console.log("Filename:", memos?.file);
             <p className="text-sm">
               Date: {formattedDate(memos?.createdAt || "")}
             </p>
-            <p className="text-sm" >File Attachment:  <span className="text-blue-700 cursor-pointer hover:underline hover:decoration-solid" onClick={()=>handleFileDownload(memos?.file as string)}>{memos?.file}</span> </p>
-           
+            <p className="text-sm">
+              File Attachment:{" "}
+              <span
+                className="text-blue-700 cursor-pointer hover:underline hover:decoration-solid"
+                onClick={() => handleFileDownload(memos?.file as string)}
+              >
+                {memos?.file}
+              </span>{" "}
+            </p>
           </div>
 
           {memos?.acknowledgedby.some((ack) => ack.userId === user?._id) ? (
