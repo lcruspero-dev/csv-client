@@ -15,6 +15,7 @@ import CreateAssign from "./pages/assigns/CreateAssigns";
 import CreateCategory from "./pages/createCategory/CreateCatergory";
 import ExportData from "./pages/exportData/ExportData";
 import ExportDataTime from "./pages/exportData/ExportDataTime";
+import ExportSurveyData from "./pages/exportData/ExportSurveyData";
 import CreateTicket from "./pages/getHelp/CreateTicket";
 import Homepage from "./pages/homePage/Homepage";
 import ViewIndividualMemo from "./pages/memo/ViewIndividualMemo";
@@ -56,6 +57,7 @@ function App() {
             <Route path="/resetuserpassword" element={<AdminResetPassword />} />
             <Route path="/timerecord" element={<AdminTimeRecordEdit />} />
             <Route path="/teammanagement" element={<LeadTeamManagement />} />
+            <Route path="/exportsurveydata" element={<ExportSurveyData />} />
 
             {/* Admin Routes */}
             {/* <Route element={<ProtectedRoute requiresAdmin={true} />}>

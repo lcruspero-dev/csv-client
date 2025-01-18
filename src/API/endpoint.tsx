@@ -109,4 +109,5 @@ export const SurveyAPI = {
   getAllActiveSurveys: () => apiHelper(`/api/surveys/active`, "GET"),
   submitResponse: (id: any, body: object) =>
     apiHelper(`/api/surveys/${id}/respond`, "POST", body),
+  getAllSurveyTitle: () => apiHelper(`/api/surveys/titles`, "GET"),
 };

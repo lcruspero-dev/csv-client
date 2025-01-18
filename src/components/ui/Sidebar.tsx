@@ -18,13 +18,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   const navigate = useNavigate();
 
   const navItems: NavItem[] = [
-    { title: "Memo", path: "/all-memo" },
     { title: "Time Tracker", path: "/timetracker" },
-    { title: "HR Support Request", path: "/request-something" },
-    { title: "IT Support Request", path: "/create-ticket" },
+    { title: "Memo", path: "/all-memo" },
+    // { title: "IT Support Request", path: "/create-ticket" },
     { title: "Manage Tickets", path: "/all-tickets" },
     { title: "Add Ticket Category", path: "/addcategory" },
     { title: "Add Ticket Assignee", path: "/addassign" },
+    { title: "Export Survey Data", path: "/exportsurveydata" },
     { title: "Export tickets Data", path: "/exportdata" },
     { title: "Export Time Tracker Data", path: "/exporttimetracker" },
     { title: "Edit Time Record", path: "/timerecord" },
