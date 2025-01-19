@@ -25,6 +25,7 @@ import AdminResetPassword from "./pages/resetPassword/adminResetPassword";
 import AdminTimeRecordEdit from "./pages/timeTracker/EditTime";
 import LeadTeamManagement from "./pages/timeTracker/TeamManagement";
 import TimeTracker from "./pages/timeTracker/TimeTracker";
+import CreateSurvey from "./pages/survey/CreateSurvey";
 
 function App() {
   return (
@@ -58,6 +59,7 @@ function App() {
             <Route path="/timerecord" element={<AdminTimeRecordEdit />} />
             <Route path="/teammanagement" element={<LeadTeamManagement />} />
             <Route path="/exportsurveydata" element={<ExportSurveyData />} />
+            <Route path="/createsurvey" element={<CreateSurvey />} />
 
             {/* Admin Routes */}
             {/* <Route element={<ProtectedRoute requiresAdmin={true} />}>

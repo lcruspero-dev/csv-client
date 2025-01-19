@@ -20,7 +20,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   const navItems: NavItem[] = [
     { title: "Time Tracker", path: "/timetracker" },
     { title: "Memo", path: "/all-memo" },
-    // { title: "IT Support Request", path: "/create-ticket" },
+    { title: "Create Survey", path: "/createsurvey" },
     { title: "Manage Tickets", path: "/all-tickets" },
     { title: "Add Ticket Category", path: "/addcategory" },
     { title: "Add Ticket Assignee", path: "/addassign" },
@@ -43,12 +43,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         <SheetContent side="left" className="w-64">
           <nav className="flex flex-col space-y-4">
             {navItems.map((item, index) => (
-              <Button
-                key={index}
-                variant="ghost"
-                onClick={() => navigate(item.path)}
-                className="justify-start"
-              >
+              <Button key={index} variant="ghost" onClick={() => navigate(item.path)} className="justify-start">
                 {item.title}
               </Button>
             ))}
@@ -62,17 +57,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
           isOpen ? "w-64" : "w-16"
         } bg-white shadow-lg`}
       >
-        <Button
-          variant="ghost"
-          size="icon"
-          className="self-end m-2"
-          onClick={toggleSidebar}
-        >
-          {isOpen ? (
-            <ChevronLeft className="h-6 w-6" />
-          ) : (
-            <ChevronRight className="h-6 w-6" />
-          )}
+        <Button variant="ghost" size="icon" className="self-end m-2" onClick={toggleSidebar}>
+          {isOpen ? <ChevronLeft className="h-6 w-6" /> : <ChevronRight className="h-6 w-6" />}
         </Button>
         <nav className="flex flex-col space-y-1 p-4">
           {navItems.map((item, index) => (
