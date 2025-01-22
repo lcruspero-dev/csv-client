@@ -1,14 +1,21 @@
-import React, { useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+import { SurveyAPI } from "@/API/endpoint";
+import BackButton from "@/components/kit/BackButton";
+import SurveyList from "@/components/kit/SurveyList";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { AlertCircle } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import SurveyList from "@/components/kit/SurveyList";
-import { SurveyAPI } from "@/API/endpoint";
-import BackButton from "@/components/kit/BackButton";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface SurveyFormData {
   title: string;
@@ -23,6 +30,7 @@ const CreateSurveyForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,15 +55,18 @@ const CreateSurveyForm = () => {
         title: "",
         question: "",
       });
+      navigate("/");
     } catch (error) {
       console.error("Error creating survey:", error);
-      setError(error instanceof Error ? error.message : "Failed to create survey");
+      setError((error as Error).message);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -65,8 +76,8 @@ const CreateSurveyForm = () => {
 
   return (
     <div className="space-y-6 w-full max-w-xl mx-auto pt-1">
-      <div className="absolute top-32 left-[28rem]">
-        <BackButton />{" "}
+      <div className="absolute top-32 left-[10rem] md:top-40 md:left-8 lg:top-32 lg:left-[10rem]">
+        <BackButton />
       </div>
       <Card>
         <CardHeader>
