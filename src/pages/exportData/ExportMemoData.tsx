@@ -1,5 +1,4 @@
 import { TicketAPi } from "@/API/endpoint";
-import { formattedDate } from "@/API/helper";
 import BackButton from "@/components/kit/BackButton";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -45,6 +44,21 @@ interface MemoDetails {
 interface jsPDFWithAutoTable extends jsPDF {
   autoTable: typeof autoTable;
 }
+
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  const formattedDate = date.toLocaleDateString("en-PH", {
+    month: "2-digit",
+    day: "2-digit",
+    year: "numeric",
+  });
+  const formattedTime = date.toLocaleTimeString("en-PH", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+  return `${formattedDate} ${formattedTime}`;
+};
 
 const ExportMemoData = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -224,7 +238,7 @@ const ExportMemoData = () => {
 
       const acknowledgedData = memo.acknowledgedby.map((user) => [
         user.name,
-        formattedDate(user.acknowledgedAt),
+        formatDate(user.acknowledgedAt),
       ]);
 
       autoTable(doc, {

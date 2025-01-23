@@ -26,6 +26,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
     { title: "Add Ticket Assignee", path: "/addassign" },
     { title: "Export Survey Data", path: "/exportsurveydata" },
     { title: "Export tickets Data", path: "/exportdata" },
+    { title: "Export Memo Data", path: "/exportmemo" },
     { title: "Export Time Tracker Data", path: "/exporttimetracker" },
     { title: "Edit Time Record", path: "/timerecord" },
     { title: "Reset User Password", path: "/resetuserpassword" },
