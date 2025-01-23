@@ -47,6 +47,8 @@ export const TicketAPi = {
   getIndividualMemo: (id: any) => apiHelper(`/api/memos/${id}`, "GET"),
   acknowledgement: (id: any) =>
     apiHelper(`/api/memos/${id}/acknowledged`, "PUT"),
+  getUserUnacknowledged: (id: any) =>
+    apiHelper(`/api/memos/unacknowledged/${id}`, "GET"),
 };
 
 export const Category = {
