@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { SurveyAPI } from "@/API/endpoint";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
 import { AlertCircle, Loader2 } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { SurveyAPI } from "@/API/endpoint";
+import { useEffect, useState } from "react";
 
 interface Survey {
   _id: string;
@@ -41,7 +41,10 @@ const SurveyList = () => {
     }
   }, [showList]);
 
-  const handleStatusToggle = async (surveyId: string, currentStatus: string) => {
+  const handleStatusToggle = async (
+    surveyId: string,
+    currentStatus: string
+  ) => {
     try {
       setUpdatingId(surveyId);
       const newStatus = currentStatus === "active" ? "closed" : "active";
@@ -51,7 +54,9 @@ const SurveyList = () => {
       });
 
       setSurveys((prevSurveys) =>
-        prevSurveys.map((survey) => (survey._id === surveyId ? { ...survey, status: newStatus } : survey))
+        prevSurveys.map((survey) =>
+          survey._id === surveyId ? { ...survey, status: newStatus } : survey
+        )
       );
 
       toast({
@@ -73,7 +78,11 @@ const SurveyList = () => {
 
   return (
     <div className="space-y-4">
-      <Button onClick={() => setShowList(!showList)} variant="outline" className="w-full">
+      <Button
+        onClick={() => setShowList(!showList)}
+        variant="outline"
+        className="w-full"
+      >
         {showList ? "Hide Surveys" : "View All Surveys"}
       </Button>
 
@@ -100,20 +109,29 @@ const SurveyList = () => {
             ) : (
               <div className="space-y-4">
                 {surveys.map((survey) => (
-                  <div key={survey._id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div
+                    key={survey._id}
+                    className="flex items-center justify-between p-4 border rounded-lg"
+                  >
                     <div className="flex-1 mr-4">
                       <h3 className="font-medium">{survey.title}</h3>
                       <p className="text-sm text-gray-500">{survey.question}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-500">{survey.status === "active" ? "Active" : "Closed"}</span>
+                      <span className="text-sm text-gray-500">
+                        {survey.status === "active" ? "Active" : "Closed"}
+                      </span>
                       <Switch
                         checked={survey.status === "active"}
-                        onCheckedChange={() => handleStatusToggle(survey._id, survey.status)}
+                        onCheckedChange={() =>
+                          handleStatusToggle(survey._id, survey.status)
+                        }
                         disabled={updatingId === survey._id}
                         className="data-[state=checked]:bg-green-500"
                       />
-                      {updatingId === survey._id && <Loader2 className="h-4 w-4 animate-spin" />}
+                      {updatingId === survey._id && (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      )}
                     </div>
                   </div>
                 ))}
