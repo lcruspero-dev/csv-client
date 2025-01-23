@@ -64,7 +64,7 @@ const Login = () => {
   return (
     <div className="flex w-full justify-end mb-40">
       <form className=" w-1/2 space-y-4" onSubmit={handleSubmit}>
-        <h1 className="text-4xl drop-shadow-lg p-2 text-center font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#1638df] to-[#192fb4]">
+        <h1 className="text-3xl drop-shadow-lg p-2 text-center font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#1638df] to-[#192fb4]">
           Welcome
         </h1>
         <Input
