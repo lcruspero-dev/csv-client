@@ -43,5 +43,5 @@ export const formattedDate = (dateString: string): string => {
   const date = parseISO(dateString);
 
   // Format the date and time
-  return format(date, "EEEE, MMMM d, yyyy 'at' h:mm a");
+  return format(date, "EEEE, MMMM d, yyyy");
 };

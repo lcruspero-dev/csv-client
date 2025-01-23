@@ -139,6 +139,7 @@ function ViewMemo() {
                 </TableCell>
                 <TableCell className="text-center">
                   <Button
+                    className="text-xs"
                     onClick={() => {
                       navigate(`/memo/${memo._id}`);
                     }}

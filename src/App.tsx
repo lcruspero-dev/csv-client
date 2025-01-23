@@ -15,6 +15,7 @@ import CreateAssign from "./pages/assigns/CreateAssigns";
 import CreateCategory from "./pages/createCategory/CreateCatergory";
 import ExportData from "./pages/exportData/ExportData";
 import ExportDataTime from "./pages/exportData/ExportDataTime";
+import ExportMemoData from "./pages/exportData/ExportMemoData";
 import ExportSurveyData from "./pages/exportData/ExportSurveyData";
 import CreateTicket from "./pages/getHelp/CreateTicket";
 import Homepage from "./pages/homePage/Homepage";
@@ -22,10 +23,10 @@ import ViewIndividualMemo from "./pages/memo/ViewIndividualMemo";
 import { ProtectedRoute } from "./pages/ProtectedRoute";
 import Request from "./pages/requestSomething/Request";
 import AdminResetPassword from "./pages/resetPassword/adminResetPassword";
+import CreateSurvey from "./pages/survey/CreateSurvey";
 import AdminTimeRecordEdit from "./pages/timeTracker/EditTime";
 import LeadTeamManagement from "./pages/timeTracker/TeamManagement";
 import TimeTracker from "./pages/timeTracker/TimeTracker";
-import CreateSurvey from "./pages/survey/CreateSurvey";
 
 function App() {
   return (
@@ -60,6 +61,7 @@ function App() {
             <Route path="/teammanagement" element={<LeadTeamManagement />} />
             <Route path="/exportsurveydata" element={<ExportSurveyData />} />
             <Route path="/createsurvey" element={<CreateSurvey />} />
+            <Route path="/exportmemo" element={<ExportMemoData />} />
 
             {/* Admin Routes */}
             {/* <Route element={<ProtectedRoute requiresAdmin={true} />}>
