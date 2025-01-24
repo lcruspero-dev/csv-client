@@ -35,6 +35,15 @@ const Login = () => {
     e.preventDefault();
     try {
       const response = await AuthAPI.login(form);
+      if (response.data.status === "inactive") {
+        toast({
+          title: "Account Deactivated",
+          description:
+            "Your account has been deactivated. Please contact admin.",
+          variant: "destructive",
+        });
+        return;
+      }
       console.log(response.data);
       toast({
         title: "Success",

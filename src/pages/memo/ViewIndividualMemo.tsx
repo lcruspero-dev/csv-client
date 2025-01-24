@@ -101,7 +101,7 @@ const MemoTabs = ({
     totalPages: number,
     setPage: (page: number) => void
   ) => (
-    <Pagination className="mt-4 text-xs">
+    <Pagination className="my-4 text-xs">
       <PaginationContent>
         <PaginationItem>
           <PaginationPrevious

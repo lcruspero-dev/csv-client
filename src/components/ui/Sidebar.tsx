@@ -22,6 +22,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
     { title: "Memo", path: "/all-memo" },
     { title: "Manage Survey", path: "/createsurvey" },
     { title: "Manage Tickets", path: "/all-tickets" },
+    { title: "Manage Users", path: "/resetuserpassword" },
     { title: "Add Ticket Category", path: "/addcategory" },
     { title: "Add Ticket Assignee", path: "/addassign" },
     { title: "Export Survey Data", path: "/exportsurveydata" },
@@ -29,7 +30,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
     { title: "Export Memo Data", path: "/exportmemo" },
     { title: "Export Time Tracker Data", path: "/exporttimetracker" },
     { title: "Edit Time Record", path: "/timerecord" },
-    { title: "Reset User Password", path: "/resetuserpassword" },
   ];
 
   return (

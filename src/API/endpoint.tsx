@@ -113,3 +113,11 @@ export const SurveyAPI = {
     apiHelper(`/api/surveys/${id}/respond`, "POST", body),
   getAllSurveyTitle: () => apiHelper(`/api/surveys/titles`, "GET"),
 };
+
+export const UserAPI = {
+  searchUser: (name: string) =>
+    apiHelper(`/api/users/search?query=${name}`, "GET"),
+  setUserToInactive: (id: string) =>
+    apiHelper(`/api/users/inactive/${id}`, "PUT"),
+  setUserToActive: (id: string) => apiHelper(`/api/users/active/${id}`, "PUT"),
+};
