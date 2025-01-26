@@ -121,3 +121,12 @@ export const UserAPI = {
     apiHelper(`/api/users/inactive/${id}`, "PUT"),
   setUserToActive: (id: string) => apiHelper(`/api/users/active/${id}`, "PUT"),
 };
+
+export const NteAPI = {
+  createNte: (body: object) => apiHelper("/api/ntes", "POST", body),
+  getNtes: () => apiHelper("/api/ntes", "GET"),
+  getNte: (id: any) => apiHelper(`/api/ntes/${id}`, "GET"),
+  updateNte: (id: any, body: object) =>
+    apiHelper(`/api/ntes/${id}`, "PUT", body),
+  deleteNte: (id: any) => apiHelper(`/api/ntes/${id}`, "DELETE"),
+};

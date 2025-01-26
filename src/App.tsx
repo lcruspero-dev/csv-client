@@ -27,6 +27,7 @@ import CreateSurvey from "./pages/survey/CreateSurvey";
 import AdminTimeRecordEdit from "./pages/timeTracker/EditTime";
 import LeadTeamManagement from "./pages/timeTracker/TeamManagement";
 import TimeTracker from "./pages/timeTracker/TimeTracker";
+import CreateNte from "./pages/nte/CreateNte";
 
 function App() {
   return (
@@ -62,6 +63,7 @@ function App() {
             <Route path="/exportsurveydata" element={<ExportSurveyData />} />
             <Route path="/createsurvey" element={<CreateSurvey />} />
             <Route path="/exportmemo" element={<ExportMemoData />} />
+            <Route path="/creatente" element={<CreateNte />} />
 
             {/* Admin Routes */}
             {/* <Route element={<ProtectedRoute requiresAdmin={true} />}>
