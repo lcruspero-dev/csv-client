@@ -129,4 +129,5 @@ export const NteAPI = {
   updateNte: (id: any, body: object) =>
     apiHelper(`/api/ntes/${id}`, "PUT", body),
   deleteNte: (id: any) => apiHelper(`/api/ntes/${id}`, "DELETE"),
+  getNtesByUser: () => apiHelper(`/api/ntes/my/nte`, "GET"),
 };

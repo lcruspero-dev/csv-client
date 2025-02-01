@@ -88,9 +88,12 @@ const UserHome = () => {
           <img src={ticket} alt="tickets" />
           <p className="py-3 font-bold">View My Tickets</p>
         </Card>
-        <Card className="hover:scale-105 ease-in-out duration-200 cursor-pointer hover:border-1 hover:border-[#5a95ff]">
+        <Card
+          className="hover:scale-105 ease-in-out duration-200 cursor-pointer hover:border-1 hover:border-[#5a95ff]"
+          onClick={() => navigate("/nte")}
+        >
           <img src={test} alt="NTE" />
-          <p className="py-3 font-bold">Coming Soon</p>
+          <p className="py-3 font-bold">NTE</p>
         </Card>
       </div>
     </>
