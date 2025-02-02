@@ -1,5 +1,4 @@
 import { NteAPI } from "@/API/endpoint";
-import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -9,28 +8,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import PdfNteViewer from "@/components/ui/viewNteDialog";
-import { FileText } from "lucide-react";
+import { CheckSquare, Eye, MessageSquare } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
-interface EmployeeFeedback {
-  name: string;
-  position: string;
-  responseDate: string;
-  responseDetail: string;
-}
-
-interface NoticeOfDecision {
-  name: string;
-  position: string;
-  nteIssuanceDate: string;
-  writtenExplanationReceiptDate: string;
-  offenseType: string;
-  offenseDescription: string;
-  findings: string;
-  decision: string;
-}
-
-interface Nte {
+interface NteDetails {
   employeeId: string;
   name: string;
   position: string;
@@ -41,16 +22,33 @@ interface Nte {
   file: string | null;
 }
 
+interface employeeFeedbackDetails {
+  name: string;
+  position: string;
+  responseDate: string;
+  responseDetail: string;
+}
+interface NoticeOfDecisionDetails {
+  name: string;
+  position: string;
+  nteIssuanceDate: string;
+  writtenExplanationReceiptDate: string;
+  offenseType: string;
+  offenseDescription: string;
+  findings: string;
+  decision: string;
+}
+
 interface NteData {
+  nte: NteDetails;
+  employeeFeedback: employeeFeedbackDetails;
+  noticeOfDecision: NoticeOfDecisionDetails;
   _id: string;
-  nte: Nte;
-  employeeFeedback?: EmployeeFeedback;
-  noticeOfDecision?: NoticeOfDecision;
-  createdBy?: string;
   status: "PER" | "PNOD" | "PNODA" | "FTHR";
+  createdBy?: string;
   createdAt: string;
   updatedAt: string;
-  __v: string;
+  __v: number;
 }
 
 const NteSummaryTable: React.FC = () => {
@@ -71,6 +69,103 @@ const NteSummaryTable: React.FC = () => {
 
     fetchData();
   }, []);
+
+  const handleView = (item: NteData): void => {
+    setSelectedNte(item);
+    setShowViewDialog(true);
+  };
+
+  const handleRespond = async (id: string) => {
+    try {
+      // Implement your response logic here
+      await NteAPI.respondToNte(id);
+      // Refresh data after response
+      const response = await NteAPI.getNtesByUser();
+      setData(response.data);
+    } catch (error) {
+      console.error("Error responding to NTE:", error);
+    }
+  };
+
+  const handleAcknowledge = async (id: string) => {
+    try {
+      // Implement your acknowledge logic here
+      await NteAPI.acknowledgeDecision(id);
+      // Refresh data after acknowledgment
+      const response = await NteAPI.getNtesByUser();
+      setData(response.data);
+    } catch (error) {
+      console.error("Error acknowledging decision:", error);
+    }
+  };
+
+  const ActionButton: React.FC<{
+    icon: React.ReactNode;
+    label: string;
+    onClick: () => void;
+  }> = ({ icon, label, onClick }) => (
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      className="flex items-center gap-1 px-2 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded transition-colors duration-200"
+    >
+      {icon}
+      <span>{label}</span>
+    </button>
+  );
+
+  const HoverButtons: React.FC<{
+    item: NteData;
+    type: "nte" | "feedback" | "decision";
+  }> = ({ item, type }) => {
+    const buttons = {
+      nte: (
+        <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 flex gap-2 p-2 bg-white shadow-md rounded transition-all duration-200">
+          <ActionButton
+            icon={<Eye size={16} />}
+            label="View"
+            onClick={() => handleView(item)}
+          />
+          {item.status === "PER" && (
+            <ActionButton
+              icon={<MessageSquare size={16} />}
+              label="Respond"
+              onClick={() => handleRespond(item._id)}
+            />
+          )}
+        </div>
+      ),
+      feedback: (
+        <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 p-2 bg-white shadow-md rounded transition-all duration-200">
+          <ActionButton
+            icon={<Eye size={16} />}
+            label="View"
+            onClick={() => handleView(item)}
+          />
+        </div>
+      ),
+      decision: (
+        <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 flex gap-2 p-2 bg-white shadow-md rounded transition-all duration-200">
+          <ActionButton
+            icon={<Eye size={16} />}
+            label="View"
+            onClick={() => handleView(item)}
+          />
+          {item.status === "PNODA" && (
+            <ActionButton
+              icon={<CheckSquare size={16} />}
+              label="Acknowledge"
+              onClick={() => handleAcknowledge(item._id)}
+            />
+          )}
+        </div>
+      ),
+    };
+
+    return buttons[type];
+  };
 
   const formatDate = (dateString: string | undefined): string => {
     if (!dateString) return "-";
@@ -93,10 +188,10 @@ const NteSummaryTable: React.FC = () => {
 
   const getStatusText = (status: NteData["status"]): string => {
     const statusText: Record<NteData["status"], string> = {
-      PER: "Pending Employee Response",
+      PER: "Waiting for your Feedback",
       PNOD: "Pending Notice of Decision",
       PNODA: "Pending NOD Acknowledgment",
-      FTHR: "Filed to HR Records",
+      FTHR: "Forwarded to HR",
     };
     return statusText[status] || status;
   };
@@ -106,13 +201,11 @@ const NteSummaryTable: React.FC = () => {
     return text.length > limit ? `${text.slice(0, limit)}...` : text;
   };
 
-  const handleView = (item: NteData): void => {
-    setSelectedNte(item);
-    setShowViewDialog(true);
-  };
-
   return (
-    <div className="w-full overflow-x-auto">
+    <div className="w-full overflow-x-auto px-6">
+      <div className="text-2xl text-gray-700 text-center py-6">
+        PENDING NOD ACKNOWLEDGEMENT
+      </div>
       <Table>
         <TableHeader>
           <TableRow>
@@ -125,21 +218,15 @@ const NteSummaryTable: React.FC = () => {
             <TableHead className="font-bold bg-gray-800 text-white border-r text-center">
               Notice of Decision
             </TableHead>
-            <TableHead className="font-bold bg-gray-800 text-white border-r text-center">
-              Created By
-            </TableHead>
             <TableHead className="font-bold bg-gray-800 text-white border-r text-center w-32">
               Status
-            </TableHead>
-            <TableHead className="font-bold bg-gray-800 text-white text-center w-24">
-              Action
             </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {data.map((item) => (
-            <TableRow key={item._id}>
-              <TableCell className="align-top">
+            <TableRow key={item._id} className="group">
+              <TableCell className="align-top relative">
                 <div className="space-y-1">
                   <div className="font-medium">{item.nte.name}</div>
                   <div className="text-sm text-gray-500">
@@ -155,8 +242,9 @@ const NteSummaryTable: React.FC = () => {
                     {truncateText(item.nte.offenseDescription, 100)}
                   </div>
                 </div>
+                <HoverButtons item={item} type="nte" />
               </TableCell>
-              <TableCell className="align-top">
+              <TableCell className="align-top relative">
                 {item.employeeFeedback ? (
                   <div className="space-y-1">
                     <div className="text-sm">
@@ -166,12 +254,13 @@ const NteSummaryTable: React.FC = () => {
                     <div className="text-sm text-gray-600">
                       {truncateText(item.employeeFeedback.responseDetail, 100)}
                     </div>
+                    <HoverButtons item={item} type="feedback" />
                   </div>
                 ) : (
                   <span className="text-gray-400">No feedback yet</span>
                 )}
               </TableCell>
-              <TableCell className="align-top">
+              <TableCell className="align-top relative">
                 {item.noticeOfDecision ? (
                   <div className="space-y-1">
                     <div className="text-sm">
@@ -185,35 +274,33 @@ const NteSummaryTable: React.FC = () => {
                     <div className="text-sm text-gray-600">
                       {truncateText(item.noticeOfDecision.decision, 100)}
                     </div>
+                    <HoverButtons item={item} type="decision" />
                   </div>
                 ) : (
                   <span className="text-gray-400">No decision yet</span>
                 )}
               </TableCell>
-              <TableCell className="align-top text-center">
-                {item.createdBy || <span className="text-gray-400">N/A</span>}
-              </TableCell>
               <TableCell
-                className={`align-top text-center ${getStatusColor(
-                  item.status
-                )}`}
+                className={` text-center ${getStatusColor(item.status)}`}
               >
                 {getStatusText(item.status)}
-              </TableCell>
-              <TableCell className="align-top text-center">
-                <Button variant="ghost" onClick={() => handleView(item)}>
-                  <FileText className="h-4 w-4" />
-                </Button>
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
-      {showViewDialog && selectedNte && (
+      {selectedNte && (
         <PdfNteViewer
-          isOpen={showViewDialog}
-          onClose={() => setShowViewDialog(false)}
-          nteData={selectedNte}
+          nteData={{
+            ...selectedNte,
+            nte: {
+              ...selectedNte.nte,
+              employeeSignatureDate: null,
+              authorizedSignatureDate: null,
+            },
+          }}
+          open={showViewDialog}
+          onOpenChange={setShowViewDialog}
         />
       )}
     </div>
