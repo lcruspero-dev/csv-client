@@ -4,7 +4,7 @@ import Page2 from "@/components/ui/page2";
 import Page3 from "@/components/ui/page3";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChevronLeft, ChevronRight, Minus, Plus, Printer } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface NteDetails {
   employeeId: string;
@@ -51,15 +51,22 @@ interface PdfNteViewerProps {
   nteData: NteItem;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialPage: number;
 }
 
 const PdfNteViewer: React.FC<PdfNteViewerProps> = ({
   nteData,
   open,
   onOpenChange,
+  initialPage,
 }) => {
   const [zoom, setZoom] = useState(70);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(initialPage);
+  useEffect(() => {
+    if (open) {
+      setCurrentPage(initialPage);
+    }
+  }, [open, initialPage]);
 
   const formatDate = (dateString: string | number | Date) => {
     return new Date(dateString).toLocaleDateString("en-US", {

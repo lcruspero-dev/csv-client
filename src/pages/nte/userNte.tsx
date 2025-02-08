@@ -1,4 +1,6 @@
 import { NteAPI } from "@/API/endpoint";
+import BackButton from "@/components/kit/BackButton";
+import RespondToNteDialog from "@/components/kit/RespondDialog";
 import {
   Table,
   TableBody,
@@ -8,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import PdfNteViewer from "@/components/ui/viewNteDialog";
-import { CheckSquare, Eye, MessageSquare } from "lucide-react";
+import { CheckSquare, MessageSquare } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
 interface NteDetails {
@@ -55,6 +57,10 @@ const NteSummaryTable: React.FC = () => {
   const [data, setData] = useState<NteData[]>([]);
   const [selectedNte, setSelectedNte] = useState<NteData | null>(null);
   const [showViewDialog, setShowViewDialog] = useState<boolean>(false);
+  const [initialPage, setInitialPage] = useState<number>(1);
+  const [showRespondDialog, setShowRespondDialog] = useState<boolean>(false);
+  const [selectedNteForResponse, setSelectedNteForResponse] =
+    useState<NteData | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -70,28 +76,20 @@ const NteSummaryTable: React.FC = () => {
     fetchData();
   }, []);
 
-  const handleView = (item: NteData): void => {
+  const handleView = (item: NteData, page: number): void => {
     setSelectedNte(item);
+    setInitialPage(page);
     setShowViewDialog(true);
   };
 
-  const handleRespond = async (id: string) => {
-    try {
-      // Implement your response logic here
-      await NteAPI.respondToNte(id);
-      // Refresh data after response
-      const response = await NteAPI.getNtesByUser();
-      setData(response.data);
-    } catch (error) {
-      console.error("Error responding to NTE:", error);
-    }
+  const handleRespond = (item: NteData) => {
+    setSelectedNteForResponse(item);
+    setShowRespondDialog(true);
   };
 
   const handleAcknowledge = async (id: string) => {
     try {
-      // Implement your acknowledge logic here
       await NteAPI.acknowledgeDecision(id);
-      // Refresh data after acknowledgment
       const response = await NteAPI.getNtesByUser();
       setData(response.data);
     } catch (error) {
@@ -103,69 +101,19 @@ const NteSummaryTable: React.FC = () => {
     icon: React.ReactNode;
     label: string;
     onClick: () => void;
-  }> = ({ icon, label, onClick }) => (
+    className?: string;
+  }> = ({ icon, label, onClick, className = "" }) => (
     <button
       onClick={(e) => {
         e.stopPropagation();
         onClick();
       }}
-      className="flex items-center gap-1 px-2 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded transition-colors duration-200"
+      className={`flex items-center gap-1 px-2 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded transition-colors duration-200 ${className}`}
     >
       {icon}
       <span>{label}</span>
     </button>
   );
-
-  const HoverButtons: React.FC<{
-    item: NteData;
-    type: "nte" | "feedback" | "decision";
-  }> = ({ item, type }) => {
-    const buttons = {
-      nte: (
-        <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 flex gap-2 p-2 bg-white shadow-md rounded transition-all duration-200">
-          <ActionButton
-            icon={<Eye size={16} />}
-            label="View"
-            onClick={() => handleView(item)}
-          />
-          {item.status === "PER" && (
-            <ActionButton
-              icon={<MessageSquare size={16} />}
-              label="Respond"
-              onClick={() => handleRespond(item._id)}
-            />
-          )}
-        </div>
-      ),
-      feedback: (
-        <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 p-2 bg-white shadow-md rounded transition-all duration-200">
-          <ActionButton
-            icon={<Eye size={16} />}
-            label="View"
-            onClick={() => handleView(item)}
-          />
-        </div>
-      ),
-      decision: (
-        <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 flex gap-2 p-2 bg-white shadow-md rounded transition-all duration-200">
-          <ActionButton
-            icon={<Eye size={16} />}
-            label="View"
-            onClick={() => handleView(item)}
-          />
-          {item.status === "PNODA" && (
-            <ActionButton
-              icon={<CheckSquare size={16} />}
-              label="Acknowledge"
-              onClick={() => handleAcknowledge(item._id)}
-            />
-          )}
-        </div>
-      ),
-    };
-
-    return buttons[type];
-  };
 
   const formatDate = (dateString: string | undefined): string => {
     if (!dateString) return "-";
@@ -188,102 +136,173 @@ const NteSummaryTable: React.FC = () => {
 
   const getStatusText = (status: NteData["status"]): string => {
     const statusText: Record<NteData["status"], string> = {
-      PER: "Waiting for your Feedback",
-      PNOD: "Pending Notice of Decision",
-      PNODA: "Pending NOD Acknowledgment",
-      FTHR: "Forwarded to HR",
+      PER: "Please click the respond button to submit your feedback",
+      PNOD: "Notice of Decision Pending: A decision has not yet been made, and you will be notified once it is finalized.",
+      PNODA:
+        "Please click the acknowledge button to confirm the decision based on the findings",
+      FTHR: "✔ Forwarded to HR",
     };
     return statusText[status] || status;
   };
 
-  const truncateText = (text: string | undefined, limit: number): string => {
-    if (!text) return "-";
-    return text.length > limit ? `${text.slice(0, limit)}...` : text;
+  const truncateText = (
+    text: string | undefined,
+    limit: number,
+    item: NteData,
+    section: "nte" | "feedback" | "decision"
+  ): JSX.Element => {
+    if (!text) return <span>-</span>;
+    if (text.length <= limit) return <span>{text}</span>;
+
+    const pageMap = {
+      nte: 1,
+      feedback: 2,
+      decision: 3,
+    };
+
+    return (
+      <div>
+        <span>{text.slice(0, limit)}...</span>
+        <button
+          onClick={() => handleView(item, pageMap[section])}
+          className="ml-1 text-blue-600 hover:text-blue-800 text-sm"
+        >
+          Read More
+        </button>
+      </div>
+    );
   };
 
   return (
     <div className="w-full overflow-x-auto px-6">
-      <div className="text-2xl text-gray-700 text-center py-6">
-        PENDING NOD ACKNOWLEDGEMENT
+      <div className="absolute left-36 top-24">
+        <BackButton />
+      </div>
+      <div className="text-2xl text-gray-700 text-center py-4 font-bold">
+        Notice to Explain
       </div>
       <Table>
-        <TableHeader>
+        <TableHeader className="bg-slate-200">
           <TableRow>
-            <TableHead className="font-bold bg-gray-800 text-white border-r text-center">
+            <TableHead className="font-bold text-black border-2 border-slate-300 text-center">
               Notice to Explain
             </TableHead>
-            <TableHead className="font-bold bg-gray-800 text-white border-r text-center">
+            <TableHead className="font-bold text-black border-2 border-slate-300 text-center">
               Employee Feedback
             </TableHead>
-            <TableHead className="font-bold bg-gray-800 text-white border-r text-center">
+            <TableHead className="font-bold text-black border-2 border-slate-300 text-center">
               Notice of Decision
             </TableHead>
-            <TableHead className="font-bold bg-gray-800 text-white border-r text-center w-32">
+            <TableHead className="font-bold text-black text-center w-48 border-2 border-slate-300">
               Status
             </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {data.map((item) => (
-            <TableRow key={item._id} className="group">
-              <TableCell className="align-top relative">
+            <TableRow key={item._id}>
+              <TableCell className="align-top border-2 border-slate-300">
                 <div className="space-y-1">
-                  <div className="font-medium">{item.nte.name}</div>
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm">
+                    <span className="font-bold">Issue Date:</span>{" "}
+                    {formatDate(item.nte.dateIssued)}
+                  </div>
+                  <div className="font-medium">
+                    <span className="font-bold">Name:</span> {item.nte.name}
+                  </div>
+                  <div>
+                    <span className="font-bold">Position:</span>{" "}
                     {item.nte.position}
                   </div>
-                  <div className="text-sm">
-                    Issue Date: {formatDate(item.nte.dateIssued)}
-                  </div>
                   <div className="text-sm font-medium">
+                    <span className="font-bold">Policy:</span>{" "}
                     {item.nte.offenseType}
                   </div>
-                  <div className="text-sm text-gray-600">
-                    {truncateText(item.nte.offenseDescription, 100)}
+                  <div className="text-sm">
+                    <span className="font-bold">Description of Offense/s:</span>{" "}
+                    {truncateText(item.nte.offenseDescription, 70, item, "nte")}
                   </div>
                 </div>
-                <HoverButtons item={item} type="nte" />
               </TableCell>
-              <TableCell className="align-top relative">
+              <TableCell className=" align-top border-2 border-slate-300">
                 {item.employeeFeedback ? (
                   <div className="space-y-1">
                     <div className="text-sm">
-                      Response Date:{" "}
+                      <span className="font-bold">Response Date:</span>{" "}
                       {formatDate(item.employeeFeedback.responseDate)}
                     </div>
-                    <div className="text-sm text-gray-600">
-                      {truncateText(item.employeeFeedback.responseDetail, 100)}
+                    <div className="text-sm">
+                      <span className="font-bold">Feedback:</span>{" "}
+                      {truncateText(
+                        item.employeeFeedback.responseDetail,
+                        70,
+                        item,
+                        "feedback"
+                      )}
                     </div>
-                    <HoverButtons item={item} type="feedback" />
                   </div>
                 ) : (
                   <span className="text-gray-400">No feedback yet</span>
                 )}
               </TableCell>
-              <TableCell className="align-top relative">
+              <TableCell className="align-top border-2 border-slate-300">
                 {item.noticeOfDecision ? (
                   <div className="space-y-1">
                     <div className="text-sm">
-                      Date: {formatDate(item.noticeOfDecision.nteIssuanceDate)}
+                      <span className="font-bold">Date:</span>{" "}
+                      {formatDate(item.noticeOfDecision.nteIssuanceDate)}
                     </div>
-                    <div className="font-medium">Findings:</div>
-                    <div className="text-sm text-gray-600">
-                      {truncateText(item.noticeOfDecision.findings, 100)}
+                    <div className="font-medium">
+                      <span className="font-bold">Decision:</span>{" "}
+                      {truncateText(
+                        item.noticeOfDecision.decision,
+                        70,
+                        item,
+                        "decision"
+                      )}
                     </div>
-                    <div className="font-medium">Decision:</div>
-                    <div className="text-sm text-gray-600">
-                      {truncateText(item.noticeOfDecision.decision, 100)}
+                    <div className="font-medium">
+                      <span className="font-bold">Findings:</span>{" "}
+                      {truncateText(
+                        item.noticeOfDecision.findings,
+                        70,
+                        item,
+                        "decision"
+                      )}
                     </div>
-                    <HoverButtons item={item} type="decision" />
                   </div>
                 ) : (
                   <span className="text-gray-400">No decision yet</span>
                 )}
               </TableCell>
-              <TableCell
-                className={` text-center ${getStatusColor(item.status)}`}
-              >
-                {getStatusText(item.status)}
+              <TableCell className="align-center border-2 border-slate-300">
+                <div className="space-y-2">
+                  <div
+                    className={`text-sm font-medium px-2 py-1 rounded-md ${getStatusColor(
+                      item.status
+                    )}`}
+                  >
+                    {getStatusText(item.status)}
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    {item.status === "PER" && (
+                      <ActionButton
+                        icon={<MessageSquare size={16} />}
+                        label="Respond"
+                        onClick={() => handleRespond(item)}
+                        className="w-auto justify-center bg-gradient-to-r from-green-400 via-green-500 to-green-600 text-white border-2 border-green-800 rounded-lg shadow-lg hover:bg-gradient-to-l hover:from-green-600 hover:via-green-500 hover:to-green-400 transition duration-300 ease-in-out transform hover:scale-105"
+                      />
+                    )}
+                    {item.status === "PNODA" && (
+                      <ActionButton
+                        icon={<CheckSquare size={16} />}
+                        label="Acknowledge"
+                        onClick={() => handleAcknowledge(item._id)}
+                        className="w-auto justify-center bg-gradient-to-r from-green-400 via-green-500 to-green-600 text-white border-2 border-green-800 rounded-lg shadow-lg hover:bg-gradient-to-l hover:from-green-600 hover:via-green-500 hover:to-green-400 transition duration-300 ease-in-out transform hover:scale-105"
+                      />
+                    )}
+                  </div>
+                </div>
               </TableCell>
             </TableRow>
           ))}
@@ -299,8 +318,28 @@ const NteSummaryTable: React.FC = () => {
               authorizedSignatureDate: null,
             },
           }}
+          initialPage={initialPage}
           open={showViewDialog}
           onOpenChange={setShowViewDialog}
+        />
+      )}
+      {selectedNteForResponse && (
+        <RespondToNteDialog
+          open={showRespondDialog}
+          onOpenChange={setShowRespondDialog}
+          nteId={selectedNteForResponse._id}
+          nteData={selectedNteForResponse}
+          onRespondSuccess={() => {
+            const fetchData = async () => {
+              try {
+                const response = await NteAPI.getNtesByUser();
+                setData(response.data);
+              } catch (error) {
+                console.error("Error fetching NTE data:", error);
+              }
+            };
+            fetchData();
+          }}
         />
       )}
     </div>

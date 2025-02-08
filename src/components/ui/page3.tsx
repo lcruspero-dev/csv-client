@@ -1,5 +1,7 @@
 import csvlogo from "@/assets/csvlogo.png";
-import React from "react";
+import SignatureModal from "@/components/kit/SignatureModal";
+import { Button } from "@/components/ui/button";
+import React, { useState } from "react";
 
 interface NoticeOfDecisionProps {
   noticeOfDecision?: {
@@ -15,6 +17,10 @@ interface NoticeOfDecisionProps {
 }
 
 const Page3: React.FC<NoticeOfDecisionProps> = ({ noticeOfDecision }) => {
+  const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
+  const [signature, setSignature] = useState<string>("");
+  const [signatureDate, setSignatureDate] = useState<string>("");
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
@@ -23,11 +29,26 @@ const Page3: React.FC<NoticeOfDecisionProps> = ({ noticeOfDecision }) => {
     });
   };
 
-  // Function to extract the number of days from the decision string
   const extractDaysFromDecision = (decision: string | undefined): string => {
     if (!decision || !decision.includes("Suspension")) return "___";
     const match = decision.match(/\d+/); // Extract the first number in the string
     return match ? match[0] : "___";
+  };
+
+  const handleSignatureSave = (dataUrl: string) => {
+    const formatDateToPH = (date = new Date()) => {
+      const utcDate = new Date(date.toUTCString());
+      const phTime = new Date(utcDate.getTime() + 8 * 60 * 60 * 1000);
+
+      return phTime.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        timeZone: "Asia/Manila",
+      });
+    };
+    setSignature(dataUrl);
+    setSignatureDate(formatDateToPH());
   };
 
   return (
@@ -218,15 +239,39 @@ const Page3: React.FC<NoticeOfDecisionProps> = ({ noticeOfDecision }) => {
         </p>
         <div className="grid grid-cols-2 gap-8 pt-8 text-center">
           <div className="space-y-1">
-            <div className="border-t border-black" />
+            <div className="min-h-[100px] flex flex-col items-center justify-end">
+              {signature ? (
+                <>
+                  <img src={signature} alt="Signature" className="h-16 mb-2" />
+                  <p className="text-sm">{signatureDate}</p>
+                </>
+              ) : (
+                <Button
+                  onClick={() => setIsSignatureModalOpen(true)}
+                  className="mb-4"
+                >
+                  Sign here
+                </Button>
+              )}
+              <div className="border-t border-black w-full mt-2" />
+            </div>
             <p className="text-sm">Employee Signature & Date</p>
           </div>
           <div className="space-y-1">
-            <div className="border-t border-black" />
+            <div className="min-h-[100px] flex flex-col items-center justify-end">
+              <div className="border-t border-black w-full mt-2" />
+            </div>
             <p className="text-sm">Authorized Signatory & Date</p>
           </div>
         </div>
       </div>
+
+      {/* Signature Modal */}
+      <SignatureModal
+        isOpen={isSignatureModalOpen}
+        onClose={() => setIsSignatureModalOpen(false)}
+        onSave={handleSignatureSave}
+      />
 
       {/* Footer */}
       <div className="mt-8 space-y-4 text-xs text-gray-500">
