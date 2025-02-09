@@ -1,4 +1,6 @@
+import { NteAPI } from "@/API/endpoint";
 import csvlogo from "@/assets/csvlogo.png";
+import SignatureModal from "@/components/kit/SignatureModal";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import Page2 from "@/components/ui/page2";
 import Page3 from "@/components/ui/page3";
@@ -15,8 +17,8 @@ interface NteDetails {
   offenseType: string;
   offenseDescription: string;
   file: string | null;
-  employeeSignatureDate: string | null;
-  authorizedSignatureDate: string | null;
+  employeeSignatureDate: string;
+  authorizedSignatureDate: string;
 }
 interface NoticeOfDecision {
   name: string;
@@ -27,6 +29,8 @@ interface NoticeOfDecision {
   offenseDescription: string;
   findings: string;
   decision: string;
+  employeeSignatureDate: string;
+  authorizedSignatureDate: string;
 }
 interface NteItem {
   noticeOfDecision: NoticeOfDecision | undefined;
@@ -36,6 +40,7 @@ interface NteItem {
         position: string;
         responseDate: string;
         responseDetail: string;
+        employeeSignatureDate: string;
       }
     | undefined;
   nte: NteDetails;
@@ -52,6 +57,7 @@ interface PdfNteViewerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialPage: number;
+  onRefresh?: () => void;
 }
 
 const PdfNteViewer: React.FC<PdfNteViewerProps> = ({
@@ -59,14 +65,25 @@ const PdfNteViewer: React.FC<PdfNteViewerProps> = ({
   open,
   onOpenChange,
   initialPage,
+  onRefresh,
 }) => {
   const [zoom, setZoom] = useState(70);
   const [currentPage, setCurrentPage] = useState(initialPage);
+  const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
+  const [, setSignature] = useState<string | null>(null);
+
   useEffect(() => {
     if (open) {
       setCurrentPage(initialPage);
     }
   }, [open, initialPage]);
+
+  const handleOpenChange = (isOpen: boolean) => {
+    onOpenChange(isOpen);
+    if (!isOpen && onRefresh) {
+      onRefresh(); // Call refresh function when modal closes
+    }
+  };
 
   const formatDate = (dateString: string | number | Date) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -81,6 +98,55 @@ const PdfNteViewer: React.FC<PdfNteViewerProps> = ({
       setCurrentPage(currentPage + 1);
     } else if (direction === "prev" && currentPage > 1) {
       setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const handleSignatureSave = async (
+    _signatureData: string,
+    filename: string
+  ) => {
+    const updatedNte = {
+      ...nteData,
+      nte: {
+        ...nteData.nte,
+        employeeSignatureDate: filename, // Use filename directly
+      },
+    };
+
+    try {
+      await NteAPI.updateNte(nteData._id, updatedNte);
+      setSignature(filename); // Update local state after successful API call
+    } catch (error) {
+      console.error("Error updating signature:", error);
+    }
+  };
+  console.log("signature", nteData.nte.employeeSignatureDate);
+  const renderSignatureSection = () => {
+    if (nteData.nte.employeeSignatureDate === null) {
+      return (
+        <div className="space-y-1">
+          <button
+            onClick={() => setIsSignatureModalOpen(true)}
+            className="w-full py-2 px-4 bg-[#534292] text-white rounded hover:bg-[#423376] transition-colors"
+          >
+            Sign Here
+          </button>
+          <p className="text-sm text-center">Employee Signature & Date</p>
+        </div>
+      );
+    } else {
+      return (
+        <div className="space-y-1">
+          <img
+            src={`${import.meta.env.VITE_UPLOADFILES_URL}/form-files/${
+              nteData.nte.employeeSignatureDate
+            }`}
+            alt="Employee Signature"
+            className="w-full h-20 object-contain"
+          />
+          <p className="text-sm text-center">Employee Signature & Date</p>
+        </div>
+      );
     }
   };
 
@@ -540,10 +606,7 @@ const PdfNteViewer: React.FC<PdfNteViewerProps> = ({
               </p>
 
               <div className="grid grid-cols-2 gap-8 pt-8 text-center">
-                <div className="space-y-1">
-                  <div className="border-t border-black" />
-                  <p className="text-sm">Employee Signature & Date</p>
-                </div>
+                {renderSignatureSection()}
                 <div className="space-y-1">
                   <div className="border-t border-black" />
                   <p className="text-sm">Authorized Signatory & Date</p>
@@ -569,68 +632,77 @@ const PdfNteViewer: React.FC<PdfNteViewerProps> = ({
       case 2:
         return <Page2 employeeFeedback={nteData.employeeFeedback} />;
       case 3:
-        return <Page3 noticeOfDecision={nteData.noticeOfDecision} />;
+        return (
+          <Page3 noticeOfDecision={nteData.noticeOfDecision} id={nteData._id} />
+        );
       default:
         return null;
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl p-0 gap-0">
-        {/* PDF Viewer Toolbar */}
-        <div className="flex items-center justify-between p-2 bg-gray-100 border-b">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <button
-                className="p-1 hover:bg-gray-200 rounded"
-                onClick={() => handlePageChange("prev")}
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </button>
-              <span className="text-sm">
-                Page {currentPage} of {getTotalPages()}
-              </span>
-              <button
-                className="p-1 hover:bg-gray-200 rounded"
-                onClick={() => handlePageChange("next")}
-              >
-                <ChevronRight className="h-5 w-5" />
-              </button>
+    <>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent className="max-w-6xl p-0 gap-0">
+          {/* PDF Viewer Toolbar */}
+          <div className="flex items-center justify-between p-2 bg-gray-100 border-b">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <button
+                  className="p-1 hover:bg-gray-200 rounded"
+                  onClick={() => handlePageChange("prev")}
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                <span className="text-sm">
+                  Page {currentPage} of {getTotalPages()}
+                </span>
+                <button
+                  className="p-1 hover:bg-gray-200 rounded"
+                  onClick={() => handlePageChange("next")}
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  className="p-1 hover:bg-gray-200 rounded"
+                  onClick={() => setZoom(Math.max(50, zoom - 10))}
+                >
+                  <Minus className="h-5 w-5" />
+                </button>
+                <span className="text-sm w-16 text-center">{zoom}%</span>
+                <button
+                  className="p-1 hover:bg-gray-200 rounded"
+                  onClick={() => setZoom(Math.min(200, zoom + 10))}
+                >
+                  <Plus className="h-5 w-5" />
+                </button>
+              </div>
             </div>
             <div className="flex items-center gap-2">
-              <button
-                className="p-1 hover:bg-gray-200 rounded"
-                onClick={() => setZoom(Math.max(50, zoom - 10))}
-              >
-                <Minus className="h-5 w-5" />
-              </button>
-              <span className="text-sm w-16 text-center">{zoom}%</span>
-              <button
-                className="p-1 hover:bg-gray-200 rounded"
-                onClick={() => setZoom(Math.min(200, zoom + 10))}
-              >
-                <Plus className="h-5 w-5" />
+              <button className="p-1 hover:bg-gray-200 rounded mr-10">
+                <Printer className="h-5 w-5" />
               </button>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button className="p-1 hover:bg-gray-200 rounded mr-10">
-              <Printer className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
 
-        {/* PDF Content Area */}
-        <div className="bg-gray-800 p-8">
-          <ScrollArea className="h-[80vh]">
-            <div className="mx-auto" style={{ maxWidth: `${zoom}%` }}>
-              {renderPage()}
-            </div>
-          </ScrollArea>
-        </div>
-      </DialogContent>
-    </Dialog>
+          {/* PDF Content Area */}
+          <div className="bg-gray-800 p-8">
+            <ScrollArea className="h-[80vh]">
+              <div className="mx-auto" style={{ maxWidth: `${zoom}%` }}>
+                {renderPage()}
+              </div>
+            </ScrollArea>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <SignatureModal
+        isOpen={isSignatureModalOpen}
+        onClose={() => setIsSignatureModalOpen(false)}
+        onSave={handleSignatureSave}
+      />
+    </>
   );
 };
 

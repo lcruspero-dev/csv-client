@@ -43,7 +43,8 @@ const RespondToNteDialog: React.FC<RespondToNteDialogProps> = ({
   const [isConfirmed, setIsConfirmed] = useState<boolean>(false);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [signature, setSignature] = useState<string>("");
-  const [signatureDate, setSignatureDate] = useState<string>("");
+  // const [signatureDate, setSignatureDate] = useState<string>("");
+  const [signatureFilename, setSignatureFilename] = useState<string>("");
   const [errors, setErrors] = useState<{
     responseDetail?: string;
     signature?: string;
@@ -51,9 +52,9 @@ const RespondToNteDialog: React.FC<RespondToNteDialogProps> = ({
   }>({});
   const { toast } = useToast();
 
-  const handleSignatureSave = (dataUrl: string, date: string) => {
+  const handleSignatureSave = (dataUrl: string, filename: string) => {
     setSignature(dataUrl);
-    setSignatureDate(date);
+    setSignatureFilename(filename);
     setErrors((prev) => ({ ...prev, signature: undefined }));
   };
 
@@ -89,8 +90,8 @@ const RespondToNteDialog: React.FC<RespondToNteDialogProps> = ({
         position: nteData.nte.position,
         responseDate: responseDate,
         responseDetail: responseDetail,
-        signature: signature,
-        signatureDate: signatureDate,
+        employeeSignatureDate: signatureFilename,
+        // signatureDate: signatureDate,
       };
 
       await NteAPI.updateNte(nteId, {
@@ -203,7 +204,7 @@ const RespondToNteDialog: React.FC<RespondToNteDialogProps> = ({
                       alt="Signature"
                       className="h-16 mb-2"
                     />
-                    <p className="text-sm">{signatureDate}</p>
+                    {/* <p className="text-sm">{signatureDate}</p> */}
                     <div className="border-t border-black w-full" />
                   </div>
                 ) : (

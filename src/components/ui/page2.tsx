@@ -7,6 +7,8 @@ interface EmployeeFeedbackProps {
     position: string;
     responseDate: string;
     responseDetail: string;
+    employeeSignatureDate?: string | null;
+    signatureFilename?: string | null;
   };
 }
 
@@ -96,11 +98,23 @@ const Page2: React.FC<EmployeeFeedbackProps> = ({ employeeFeedback }) => {
 
         <div className="grid grid-cols-2 gap-8 pt-8 text-center">
           <div className="space-y-1">
+            {employeeFeedback?.employeeSignatureDate && (
+              <div className="space-y-2">
+                <img
+                  src={`${import.meta.env.VITE_UPLOADFILES_URL}/form-files/${
+                    employeeFeedback.employeeSignatureDate
+                  }`}
+                  alt="Employee Signature"
+                  className="mx-auto h-24 object-contain"
+                />
+              </div>
+            )}
             <div className="border-t border-black" />
             <p className="text-sm">Employee Signature & Date</p>
           </div>
         </div>
       </div>
+
       {/* Footer */}
       <div className="mt-8 space-y-4 text-xs text-gray-500">
         <p>

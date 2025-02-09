@@ -1,3 +1,4 @@
+import { NteAPI } from "@/API/endpoint";
 import csvlogo from "@/assets/csvlogo.png";
 import SignatureModal from "@/components/kit/SignatureModal";
 import { Button } from "@/components/ui/button";
@@ -13,13 +14,20 @@ interface NoticeOfDecisionProps {
     offenseDescription: string;
     findings: string;
     decision: string;
+    authorizedSignatureDate: string;
+    employeeSignatureDate?: string | null;
   };
+  id?: string;
+  onRefresh?: () => void;
 }
 
-const Page3: React.FC<NoticeOfDecisionProps> = ({ noticeOfDecision }) => {
+const Page3: React.FC<NoticeOfDecisionProps> = ({
+  noticeOfDecision,
+  id,
+  onRefresh,
+}) => {
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [signature, setSignature] = useState<string>("");
-  const [signatureDate, setSignatureDate] = useState<string>("");
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -35,20 +43,41 @@ const Page3: React.FC<NoticeOfDecisionProps> = ({ noticeOfDecision }) => {
     return match ? match[0] : "___";
   };
 
-  const handleSignatureSave = (dataUrl: string) => {
-    const formatDateToPH = (date = new Date()) => {
-      const utcDate = new Date(date.toUTCString());
-      const phTime = new Date(utcDate.getTime() + 8 * 60 * 60 * 1000);
+  const handleSignatureSave = async (
+    _signatureData: string,
+    filename: string
+  ) => {
+    console.log("ID in handleSignatureSave:", id); // Debugging
+    if (!id) return;
 
-      return phTime.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        timeZone: "Asia/Manila",
-      });
-    };
-    setSignature(dataUrl);
-    setSignatureDate(formatDateToPH());
+    try {
+      // First get the current NTE data
+      const response = await NteAPI.getNte(id);
+      const updatedData = {
+        ...response.data,
+        noticeOfDecision: {
+          ...response.data.noticeOfDecision,
+          employeeSignatureDate: filename,
+        },
+      };
+      // Send the updated data back to the server
+      await NteAPI.updateNte(id, updatedData);
+      setSignature(_signatureData);
+
+      setIsSignatureModalOpen(false);
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (error) {
+      console.error("Error saving signature:", error);
+    }
+  };
+
+  const handleModalClose = () => {
+    setIsSignatureModalOpen(false);
+    if (onRefresh) {
+      onRefresh();
+    }
   };
 
   return (
@@ -240,12 +269,26 @@ const Page3: React.FC<NoticeOfDecisionProps> = ({ noticeOfDecision }) => {
         <div className="grid grid-cols-2 gap-8 pt-8 text-center">
           <div className="space-y-1">
             <div className="min-h-[100px] flex flex-col items-center justify-end">
-              {signature ? (
+              {noticeOfDecision?.employeeSignatureDate ? (
+                // Display stored signature from API
+                <div className="space-y-2">
+                  <img
+                    src={`${import.meta.env.VITE_UPLOADFILES_URL}/form-files/${
+                      noticeOfDecision.employeeSignatureDate
+                    }`}
+                    alt="Employee Signature"
+                    className="mx-auto h-16 object-contain mb-2"
+                  />
+                  {/* {noticeOfDecision.employeeSignatureDate} */}
+                </div>
+              ) : signature ? (
+                // Display locally created signature
                 <>
                   <img src={signature} alt="Signature" className="h-16 mb-2" />
-                  <p className="text-sm">{signatureDate}</p>
+                  {/* <p className="text-sm">{signatureDate}</p> */}
                 </>
               ) : (
+                // Show sign here button if no signature exists
                 <Button
                   onClick={() => setIsSignatureModalOpen(true)}
                   className="mb-4"
@@ -269,8 +312,9 @@ const Page3: React.FC<NoticeOfDecisionProps> = ({ noticeOfDecision }) => {
       {/* Signature Modal */}
       <SignatureModal
         isOpen={isSignatureModalOpen}
-        onClose={() => setIsSignatureModalOpen(false)}
+        // onClose={() => setIsSignatureModalOpen(false)}
         onSave={handleSignatureSave}
+        onClose={handleModalClose}
       />
 
       {/* Footer */}
