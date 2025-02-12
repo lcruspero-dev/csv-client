@@ -14,18 +14,13 @@ interface NoticeOfDecisionProps {
     offenseDescription: string;
     findings: string;
     decision: string;
-    authorizedSignatureDate: string;
+    authorizedSignatureDate?: string;
     employeeSignatureDate?: string | null;
   };
   id?: string;
-  onRefresh?: () => void;
 }
 
-const Page3: React.FC<NoticeOfDecisionProps> = ({
-  noticeOfDecision,
-  id,
-  onRefresh,
-}) => {
+const Page3: React.FC<NoticeOfDecisionProps> = ({ noticeOfDecision, id }) => {
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [signature, setSignature] = useState<string>("");
 
@@ -55,6 +50,7 @@ const Page3: React.FC<NoticeOfDecisionProps> = ({
       const response = await NteAPI.getNte(id);
       const updatedData = {
         ...response.data,
+        status: "FTHR", // Add status update to FTHR
         noticeOfDecision: {
           ...response.data.noticeOfDecision,
           employeeSignatureDate: filename,
@@ -65,9 +61,6 @@ const Page3: React.FC<NoticeOfDecisionProps> = ({
       setSignature(_signatureData);
 
       setIsSignatureModalOpen(false);
-      if (onRefresh) {
-        onRefresh();
-      }
     } catch (error) {
       console.error("Error saving signature:", error);
     }
@@ -75,9 +68,6 @@ const Page3: React.FC<NoticeOfDecisionProps> = ({
 
   const handleModalClose = () => {
     setIsSignatureModalOpen(false);
-    if (onRefresh) {
-      onRefresh();
-    }
   };
 
   return (
@@ -269,8 +259,13 @@ const Page3: React.FC<NoticeOfDecisionProps> = ({
         <div className="grid grid-cols-2 gap-8 pt-8 text-center">
           <div className="space-y-1">
             <div className="min-h-[100px] flex flex-col items-center justify-end">
-              {noticeOfDecision?.employeeSignatureDate ? (
-                // Display stored signature from API
+              {signature ? (
+                // Display the newly saved signature in state (persists until refresh)
+                <>
+                  <img src={signature} alt="Signature" className="h-16 mb-2" />
+                </>
+              ) : noticeOfDecision?.employeeSignatureDate ? (
+                // If no local signature but there is a saved one from API, show it
                 <div className="space-y-2">
                   <img
                     src={`${import.meta.env.VITE_UPLOADFILES_URL}/form-files/${
@@ -279,16 +274,9 @@ const Page3: React.FC<NoticeOfDecisionProps> = ({
                     alt="Employee Signature"
                     className="mx-auto h-16 object-contain mb-2"
                   />
-                  {/* {noticeOfDecision.employeeSignatureDate} */}
                 </div>
-              ) : signature ? (
-                // Display locally created signature
-                <>
-                  <img src={signature} alt="Signature" className="h-16 mb-2" />
-                  {/* <p className="text-sm">{signatureDate}</p> */}
-                </>
               ) : (
-                // Show sign here button if no signature exists
+                // Show the "Sign here" button if no signature is available
                 <Button
                   onClick={() => setIsSignatureModalOpen(true)}
                   className="mb-4"
@@ -298,6 +286,7 @@ const Page3: React.FC<NoticeOfDecisionProps> = ({
               )}
               <div className="border-t border-black w-full mt-2" />
             </div>
+
             <p className="text-sm">Employee Signature & Date</p>
           </div>
           <div className="space-y-1">

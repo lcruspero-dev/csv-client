@@ -1,6 +1,7 @@
 import { NteAPI } from "@/API/endpoint";
 import csvlogo from "@/assets/csvlogo.png";
 import SignatureModal from "@/components/kit/SignatureModal";
+import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import Page2 from "@/components/ui/page2";
 import Page3 from "@/components/ui/page3";
@@ -29,8 +30,8 @@ interface NoticeOfDecision {
   offenseDescription: string;
   findings: string;
   decision: string;
-  employeeSignatureDate: string;
-  authorizedSignatureDate: string;
+  employeeSignatureDate?: string; // Make optional with ?
+  authorizedSignatureDate?: string; // Make optional with ?
 }
 interface NteItem {
   noticeOfDecision: NoticeOfDecision | undefined;
@@ -40,7 +41,7 @@ interface NteItem {
         position: string;
         responseDate: string;
         responseDetail: string;
-        employeeSignatureDate: string;
+        employeeSignatureDate?: string;
       }
     | undefined;
   nte: NteDetails;
@@ -57,7 +58,6 @@ interface PdfNteViewerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialPage: number;
-  onRefresh?: () => void;
 }
 
 const PdfNteViewer: React.FC<PdfNteViewerProps> = ({
@@ -65,12 +65,11 @@ const PdfNteViewer: React.FC<PdfNteViewerProps> = ({
   open,
   onOpenChange,
   initialPage,
-  onRefresh,
 }) => {
   const [zoom, setZoom] = useState(70);
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
-  const [, setSignature] = useState<string | null>(null);
+  const [signature, setSignature] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -80,9 +79,6 @@ const PdfNteViewer: React.FC<PdfNteViewerProps> = ({
 
   const handleOpenChange = (isOpen: boolean) => {
     onOpenChange(isOpen);
-    if (!isOpen && onRefresh) {
-      onRefresh(); // Call refresh function when modal closes
-    }
   };
 
   const formatDate = (dateString: string | number | Date) => {
@@ -115,40 +111,13 @@ const PdfNteViewer: React.FC<PdfNteViewerProps> = ({
 
     try {
       await NteAPI.updateNte(nteData._id, updatedNte);
-      setSignature(filename); // Update local state after successful API call
+      setSignature(_signatureData); // Update local state after successful API call
+      setIsSignatureModalOpen(false);
     } catch (error) {
       console.error("Error updating signature:", error);
     }
   };
   console.log("signature", nteData.nte.employeeSignatureDate);
-  const renderSignatureSection = () => {
-    if (nteData.nte.employeeSignatureDate === null) {
-      return (
-        <div className="space-y-1">
-          <button
-            onClick={() => setIsSignatureModalOpen(true)}
-            className="w-full py-2 px-4 bg-[#534292] text-white rounded hover:bg-[#423376] transition-colors"
-          >
-            Sign Here
-          </button>
-          <p className="text-sm text-center">Employee Signature & Date</p>
-        </div>
-      );
-    } else {
-      return (
-        <div className="space-y-1">
-          <img
-            src={`${import.meta.env.VITE_UPLOADFILES_URL}/form-files/${
-              nteData.nte.employeeSignatureDate
-            }`}
-            alt="Employee Signature"
-            className="w-full h-20 object-contain"
-          />
-          <p className="text-sm text-center">Employee Signature & Date</p>
-        </div>
-      );
-    }
-  };
 
   const getTotalPages = () => {
     switch (nteData.status) {
@@ -604,11 +573,47 @@ const PdfNteViewer: React.FC<PdfNteViewerProps> = ({
                 I have received the above Notice to Explain, and read and
                 understood the contents thereof.
               </p>
-
-              <div className="grid grid-cols-2 gap-8 pt-8 text-center">
-                {renderSignatureSection()}
+              <div className="grid grid-cols-2 gap-8 pt-2 text-center">
                 <div className="space-y-1">
-                  <div className="border-t border-black" />
+                  <div className="min-h-[100px] flex flex-col items-center justify-end">
+                    {signature ? (
+                      // Display the newly saved signature in state (persists until refresh)
+                      <>
+                        <img
+                          src={signature}
+                          alt="Signature"
+                          className="h-16 mb-2"
+                        />
+                      </>
+                    ) : nteData.nte.employeeSignatureDate ? (
+                      // If no local signature but there is a saved one from API, show it
+                      <div className="space-y-2">
+                        <img
+                          src={`${
+                            import.meta.env.VITE_UPLOADFILES_URL
+                          }/form-files/${nteData.nte.employeeSignatureDate}`}
+                          alt="Employee Signature"
+                          className="mx-auto h-16 object-contain mb-2"
+                        />
+                      </div>
+                    ) : (
+                      // Show the "Sign here" button if no signature is available
+                      <Button
+                        onClick={() => setIsSignatureModalOpen(true)}
+                        className="mb-4"
+                      >
+                        Sign here
+                      </Button>
+                    )}
+                    <div className="border-t border-black w-full mt-2" />
+                  </div>
+
+                  <p className="text-sm">Employee Signature & Date</p>
+                </div>
+                <div className="space-y-1">
+                  <div className="min-h-[100px] flex flex-col items-center justify-end">
+                    <div className="border-t border-black w-full mt-2" />
+                  </div>
                   <p className="text-sm">Authorized Signatory & Date</p>
                 </div>
               </div>

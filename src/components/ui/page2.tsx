@@ -105,7 +105,7 @@ const Page2: React.FC<EmployeeFeedbackProps> = ({ employeeFeedback }) => {
                     employeeFeedback.employeeSignatureDate
                   }`}
                   alt="Employee Signature"
-                  className="mx-auto h-24 object-contain"
+                  className="mx-auto h-16 object-contain mb-2"
                 />
               </div>
             )}

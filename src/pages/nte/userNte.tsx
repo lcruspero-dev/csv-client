@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import PdfNteViewer from "@/components/ui/viewNteDialog";
-import { CheckSquare, MessageSquare } from "lucide-react";
+import { CheckSquare, ClipboardCheck, MessageSquare } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
 interface NteDetails {
@@ -22,6 +22,8 @@ interface NteDetails {
   offenseType: string;
   offenseDescription: string;
   file: string | null;
+  employeeSignatureDate: string;
+  authorizedSignatureDate: string;
 }
 
 interface employeeFeedbackDetails {
@@ -29,7 +31,9 @@ interface employeeFeedbackDetails {
   position: string;
   responseDate: string;
   responseDetail: string;
+  employeeSignatureDate?: string;
 }
+
 interface NoticeOfDecisionDetails {
   name: string;
   position: string;
@@ -39,6 +43,8 @@ interface NoticeOfDecisionDetails {
   offenseDescription: string;
   findings: string;
   decision: string;
+  employeeSignatureDate: string;
+  authorizedSignatureDate: string;
 }
 
 interface NteData {
@@ -62,24 +68,29 @@ const NteSummaryTable: React.FC = () => {
   const [selectedNteForResponse, setSelectedNteForResponse] =
     useState<NteData | null>(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await NteAPI.getNtesByUser();
-        const result = response.data;
-        setData(result);
-      } catch (error) {
-        console.error("Error fetching NTE data:", error);
-      }
-    };
+  const fetchData = async () => {
+    try {
+      const response = await NteAPI.getNtesByUser();
+      setData(response.data);
+    } catch (error) {
+      console.error("Error fetching NTE data:", error);
+    }
+  };
 
+  useEffect(() => {
     fetchData();
   }, []);
 
-  const handleView = (item: NteData, page: number): void => {
+  const handleView = async (item: NteData, page: number): Promise<void> => {
     setSelectedNte(item);
     setInitialPage(page);
     setShowViewDialog(true);
+  };
+
+  const handleViewDialogClose = () => {
+    setShowViewDialog(false);
+    setSelectedNte(null);
+    fetchData(); // Fetch fresh data when the view dialog closes
   };
 
   const handleRespond = (item: NteData) => {
@@ -87,11 +98,23 @@ const NteSummaryTable: React.FC = () => {
     setShowRespondDialog(true);
   };
 
-  const handleAcknowledge = async (id: string) => {
+  const handleRespondDialogClose = () => {
+    setShowRespondDialog(false);
+    setSelectedNteForResponse(null);
+    fetchData(); // Fetch fresh data when the respond dialog closes
+  };
+
+  const handleAcknowledge = async (_id: string, item: NteData) => {
     try {
-      await NteAPI.acknowledgeDecision(id);
-      const response = await NteAPI.getNtesByUser();
-      setData(response.data);
+      await handleView(item, 3);
+    } catch (error) {
+      console.error("Error acknowledging decision:", error);
+    }
+  };
+
+  const handleConfirmReceipt = async (_id: string, item: NteData) => {
+    try {
+      await handleView(item, 1);
     } catch (error) {
       console.error("Error acknowledging decision:", error);
     }
@@ -126,7 +149,7 @@ const NteSummaryTable: React.FC = () => {
 
   const getStatusColor = (status: NteData["status"]): string => {
     const statusColors: Record<NteData["status"], string> = {
-      PER: "bg-yellow-100 text-yellow-800",
+      PER: "bg-purple-100 text-purple-800",
       PNOD: "bg-blue-100 text-blue-800",
       PNODA: "bg-purple-100 text-purple-800",
       FTHR: "bg-green-100 text-green-800",
@@ -134,13 +157,16 @@ const NteSummaryTable: React.FC = () => {
     return statusColors[status] || "bg-gray-100 text-gray-800";
   };
 
-  const getStatusText = (status: NteData["status"]): string => {
+  const getStatusText = (status: NteData["status"], item?: NteData): string => {
     const statusText: Record<NteData["status"], string> = {
-      PER: "Please click the respond button to submit your feedback",
+      PER:
+        item?.nte.employeeSignatureDate === null
+          ? "Click the button to confirm the receipt of this NTE"
+          : "Please click the respond button to submit your feedback",
       PNOD: "Notice of Decision Pending: A decision has not yet been made, and you will be notified once it is finalized.",
       PNODA:
-        "Please click the acknowledge button to confirm the decision based on the findings",
-      FTHR: "✔ Forwarded to HR",
+        "Please click the 'Agree & Sign' button to confirm the decision based on the findings.",
+      FTHR: "✔ The document has been forwarded to the HR department",
     };
     return statusText[status] || status;
   };
@@ -174,7 +200,7 @@ const NteSummaryTable: React.FC = () => {
   };
 
   return (
-    <div className="w-full overflow-x-auto px-6">
+    <div className="w-full overflow-x-auto px-24">
       <div className="absolute left-36 top-24">
         <BackButton />
       </div>
@@ -224,7 +250,7 @@ const NteSummaryTable: React.FC = () => {
                   </div>
                 </div>
               </TableCell>
-              <TableCell className=" align-top border-2 border-slate-300">
+              <TableCell className="align-top border-2 border-slate-300">
                 {item.employeeFeedback ? (
                   <div className="space-y-1">
                     <div className="text-sm">
@@ -282,22 +308,33 @@ const NteSummaryTable: React.FC = () => {
                       item.status
                     )}`}
                   >
-                    {getStatusText(item.status)}
+                    {getStatusText(item.status, item)}
                   </div>
                   <div className="flex flex-col gap-1">
                     {item.status === "PER" && (
-                      <ActionButton
-                        icon={<MessageSquare size={16} />}
-                        label="Respond"
-                        onClick={() => handleRespond(item)}
-                        className="w-auto justify-center bg-gradient-to-r from-green-400 via-green-500 to-green-600 text-white border-2 border-green-800 rounded-lg shadow-lg hover:bg-gradient-to-l hover:from-green-600 hover:via-green-500 hover:to-green-400 transition duration-300 ease-in-out transform hover:scale-105"
-                      />
+                      <>
+                        {item.nte.employeeSignatureDate === null ? (
+                          <ActionButton
+                            icon={<ClipboardCheck size={16} />}
+                            label="Confirm Receipt"
+                            onClick={() => handleConfirmReceipt(item._id, item)}
+                            className="w-auto justify-center bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 text-white border-2 border-blue-800 rounded-lg shadow-lg hover:bg-gradient-to-l hover:from-blue-600 hover:via-blue-500 hover:to-blue-400 transition duration-300 ease-in-out transform hover:scale-105"
+                          />
+                        ) : (
+                          <ActionButton
+                            icon={<MessageSquare size={16} />}
+                            label="Respond"
+                            onClick={() => handleRespond(item)}
+                            className="w-auto justify-center bg-gradient-to-r from-green-400 via-green-500 to-green-600 text-white border-2 border-green-800 rounded-lg shadow-lg hover:bg-gradient-to-l hover:from-green-600 hover:via-green-500 hover:to-green-400 transition duration-300 ease-in-out transform hover:scale-105"
+                          />
+                        )}
+                      </>
                     )}
                     {item.status === "PNODA" && (
                       <ActionButton
                         icon={<CheckSquare size={16} />}
-                        label="Acknowledge"
-                        onClick={() => handleAcknowledge(item._id)}
+                        label="Agree & Sign"
+                        onClick={() => handleAcknowledge(item._id, item)}
                         className="w-auto justify-center bg-gradient-to-r from-green-400 via-green-500 to-green-600 text-white border-2 border-green-800 rounded-lg shadow-lg hover:bg-gradient-to-l hover:from-green-600 hover:via-green-500 hover:to-green-400 transition duration-300 ease-in-out transform hover:scale-105"
                       />
                     )}
@@ -314,32 +351,22 @@ const NteSummaryTable: React.FC = () => {
             ...selectedNte,
             nte: {
               ...selectedNte.nte,
-              employeeSignatureDate: null,
-              authorizedSignatureDate: null,
+              employeeSignatureDate: selectedNte.nte.employeeSignatureDate,
+              authorizedSignatureDate: selectedNte.nte.authorizedSignatureDate,
             },
           }}
           initialPage={initialPage}
           open={showViewDialog}
-          onOpenChange={setShowViewDialog}
+          onOpenChange={handleViewDialogClose} // Updated to use new handler
         />
       )}
       {selectedNteForResponse && (
         <RespondToNteDialog
           open={showRespondDialog}
-          onOpenChange={setShowRespondDialog}
+          onOpenChange={handleRespondDialogClose} // Updated to use new handler
           nteId={selectedNteForResponse._id}
           nteData={selectedNteForResponse}
-          onRespondSuccess={() => {
-            const fetchData = async () => {
-              try {
-                const response = await NteAPI.getNtesByUser();
-                setData(response.data);
-              } catch (error) {
-                console.error("Error fetching NTE data:", error);
-              }
-            };
-            fetchData();
-          }}
+          onRespondSuccess={fetchData}
         />
       )}
     </div>
