@@ -61,7 +61,7 @@ function App() {
             <Route path="/exportsurveydata" element={<ExportSurveyData />} />
             <Route path="/createsurvey" element={<CreateSurvey />} />
             <Route path="/exportmemo" element={<ExportMemoData />} />
-            <Route path="/nte" element={<UserNte data={[]} />} />
+            <Route path="/nte" element={<UserNte />} />
 
             {/* Admin Routes */}
             {/* <Route element={<ProtectedRoute requiresAdmin={true} />}>
