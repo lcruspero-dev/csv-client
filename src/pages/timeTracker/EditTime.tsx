@@ -22,8 +22,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
-import { Pencil, Search, Trash2 } from "lucide-react";
-import React, {  useState } from "react";
+import { EyeIcon, EyeOffIcon, Pencil, Search, Trash2 } from "lucide-react";
+import React, { useState } from "react";
 
 interface TimeRecord {
   _id: string;
@@ -38,20 +38,23 @@ interface TimeRecord {
   breakStart?: string | null;
   breakEnd?: string | null;
   totalBreakTime?: string | null;
+  secretKey?: string | null;
 }
 
-const calculateTotalHours = (record: TimeRecord): { totalHours: string; totalBreakTime: string } => {
+const calculateTotalHours = (
+  record: TimeRecord
+): { totalHours: string; totalBreakTime: string } => {
   // Guard clause for invalid or incomplete data
   if (!record.timeIn || !record.timeOut) {
     return {
       totalHours: "0.00",
-      totalBreakTime: "0.00"
+      totalBreakTime: "0.00",
     };
   }
 
   const parseTime = (time: string | null | undefined) => {
     if (!time) return { hours: 0, minutes: 0, seconds: 0 };
-    
+
     const [timePart, modifier] = time.split(" ");
     let [hours, minutes, seconds] = timePart.split(":").map(Number);
     if (modifier === "PM" && hours !== 12) hours += 12;
@@ -73,7 +76,7 @@ const calculateTotalHours = (record: TimeRecord): { totalHours: string; totalBre
   if (inTotalSeconds === 0 || outTotalSeconds === 0) {
     return {
       totalHours: "0.00",
-      totalBreakTime: "0.00"
+      totalBreakTime: "0.00",
     };
   }
 
@@ -106,7 +109,7 @@ const calculateTotalHours = (record: TimeRecord): { totalHours: string; totalBre
 
   return {
     totalHours,
-    totalBreakTime
+    totalBreakTime,
   };
 };
 
@@ -115,11 +118,23 @@ const AdminTimeRecordEdit: React.FC = () => {
   const [searchDate, setSearchDate] = useState("");
   const [timeRecords, setTimeRecords] = useState<TimeRecord[]>([]);
   const [editingRecord, setEditingRecord] = useState<TimeRecord | null>(null);
+  const [secretKey, setSecretKey] = useState("");
+  const [secretKeyError, setSecretKeyError] = useState("");
+  const [showSecretKey, setShowSecretKey] = useState(false);
   const { toast } = useToast();
 
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+  };
+
+  const validateSecretKey = () => {
+    if (!secretKey) {
+      setSecretKeyError("Key is required");
+      return false;
+    }
+    setSecretKeyError("");
+    return true;
   };
 
   const handleSearch = async () => {
@@ -155,44 +170,60 @@ const AdminTimeRecordEdit: React.FC = () => {
       });
     }
   };
- 
+
   const handleEdit = (record: TimeRecord) => {
     setEditingRecord(record);
+    setSecretKey("");
+    setSecretKeyError("");
   };
 
   const handleUpdate = async () => {
     if (!editingRecord) return;
-  
+
+    if (!validateSecretKey()) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter the secret key",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       // Calculate updated total hours and break time before saving
       const { totalHours, totalBreakTime } = calculateTotalHours(editingRecord);
-      
+
       // Create the complete updated record with all fields
       const updatedRecord = {
         ...editingRecord,
         breakStart: editingRecord.breakStart || null,
         breakEnd: editingRecord.breakEnd || null,
         totalHours,
-        totalBreakTime
+        totalBreakTime,
       };
-      console.log("updatedRecord", updatedRecord);
-      // Make the API call with the complete record
-      await TimeRecordAPI.updateTimeRecord(updatedRecord._id, updatedRecord);
-  
+
+      // Make the API call with the complete record and secret key
+      await TimeRecordAPI.updateTimeRecord(updatedRecord._id, {
+        ...updatedRecord,
+        secretKey,
+      });
+
       // Update the local state with the new record
       setTimeRecords((prev) =>
         prev.map((record) =>
           record._id === updatedRecord._id ? updatedRecord : record
         )
       );
-  
+
       toast({
         title: "Success",
         description: "Time record updated successfully",
         variant: "default",
       });
-  
+
       setEditingRecord(null);
+      setSecretKey("");
+      setSecretKeyError("");
     } catch (error) {
       console.error("Update failed", error);
       toast({
@@ -230,25 +261,29 @@ const AdminTimeRecordEdit: React.FC = () => {
   ) => {
     const updatedRecord = {
       ...record,
-      [field]: value || null
+      [field]: value || null,
     };
-    
+
     const { totalHours, totalBreakTime } = calculateTotalHours(updatedRecord);
     setEditingRecord({
       ...updatedRecord,
       totalHours,
-      totalBreakTime
+      totalBreakTime,
     });
   };
- 
+
+  const toggleSecretKeyVisibility = () => {
+    setShowSecretKey(!showSecretKey);
+  };
+
   return (
-    <div className="container mx-auto p-4">
+    <div className="min-h-screen flex items-start justify-center bg-gray-100 p-4 pt-16">
       <div className="mb-2">
         <BackButton />
       </div>
-      <Card className="w-full max-w-5xl mx-auto">
+      <Card className="w-full max-w-5xl">
         <CardHeader>
-          <CardTitle>Time Record Management</CardTitle>
+          <CardTitle className="text-center">Time Record Management</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex space-x-4 mb-6">
@@ -287,46 +322,82 @@ const AdminTimeRecordEdit: React.FC = () => {
                     <Input
                       type="text"
                       value={editingRecord.date}
-                      onChange={(e) => handleTimeInputChange('date', e.target.value, editingRecord)}
+                      onChange={(e) =>
+                        handleTimeInputChange(
+                          "date",
+                          e.target.value,
+                          editingRecord
+                        )
+                      }
                     />
                   </div>
                   <div>
                     <Label>Shift</Label>
                     <Input
-                      value={editingRecord.shift || ''}
-                      onChange={(e) => handleTimeInputChange('shift', e.target.value, editingRecord)}
+                      value={editingRecord.shift || ""}
+                      onChange={(e) =>
+                        handleTimeInputChange(
+                          "shift",
+                          e.target.value,
+                          editingRecord
+                        )
+                      }
                     />
                   </div>
                   <div>
                     <Label>Time In</Label>
                     <Input
                       type="text"
-                      value={editingRecord.timeIn || ''}
-                      onChange={(e) => handleTimeInputChange('timeIn', e.target.value, editingRecord)}
+                      value={editingRecord.timeIn || ""}
+                      onChange={(e) =>
+                        handleTimeInputChange(
+                          "timeIn",
+                          e.target.value,
+                          editingRecord
+                        )
+                      }
                     />
                   </div>
                   <div>
                     <Label>Time Out</Label>
                     <Input
                       type="text"
-                      value={editingRecord.timeOut || ''}
-                      onChange={(e) => handleTimeInputChange('timeOut', e.target.value, editingRecord)}
+                      value={editingRecord.timeOut || ""}
+                      onChange={(e) =>
+                        handleTimeInputChange(
+                          "timeOut",
+                          e.target.value,
+                          editingRecord
+                        )
+                      }
                     />
                   </div>
                   <div>
                     <Label>Break Start</Label>
                     <Input
                       type="text"
-                      value={editingRecord.breakStart || ''}
-                      onChange={(e) => handleTimeInputChange('breakStart', e.target.value, editingRecord)}
+                      value={editingRecord.breakStart || ""}
+                      onChange={(e) =>
+                        handleTimeInputChange(
+                          "breakStart",
+                          e.target.value,
+                          editingRecord
+                        )
+                      }
                     />
                   </div>
                   <div>
                     <Label>Break End</Label>
                     <Input
                       type="text"
-                      value={editingRecord.breakEnd || ''}
-                      onChange={(e) => handleTimeInputChange('breakEnd', e.target.value, editingRecord)}
+                      value={editingRecord.breakEnd || ""}
+                      onChange={(e) =>
+                        handleTimeInputChange(
+                          "breakEnd",
+                          e.target.value,
+                          editingRecord
+                        )
+                      }
                     />
                   </div>
                   <div>
@@ -341,24 +412,58 @@ const AdminTimeRecordEdit: React.FC = () => {
                     <Label>Total Break Time</Label>
                     <Input
                       type="text"
-                      value={editingRecord.totalBreakTime || '0.00'}
+                      value={editingRecord.totalBreakTime || "0.00"}
                       readOnly
                     />
                   </div>
-                  
                   <div>
                     <Label>Notes</Label>
                     <Input
                       type="text"
-                      value={editingRecord.notes || ''}
-                      onChange={(e) => handleTimeInputChange('notes', e.target.value, editingRecord)}
+                      value={editingRecord.notes || ""}
+                      onChange={(e) =>
+                        handleTimeInputChange(
+                          "notes",
+                          e.target.value,
+                          editingRecord
+                        )
+                      }
                     />
+                  </div>
+                  <div className="relative">
+                    <Label>Key</Label>
+                    <Input
+                      type={showSecretKey ? "text" : "password"}
+                      value={secretKey}
+                      onChange={(e) => setSecretKey(e.target.value)}
+                      className={secretKeyError ? "border-red-500" : ""}
+                    />
+                    <button
+                      type="button"
+                      onClick={toggleSecretKeyVisibility}
+                      className="absolute right-3 top-8 text-gray-500"
+                    >
+                      {showSecretKey ? (
+                        <EyeOffIcon size={20} />
+                      ) : (
+                        <EyeIcon size={20} />
+                      )}
+                    </button>
+                    {secretKeyError && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {secretKeyError}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="flex justify-end space-x-2 mt-4">
                   <Button
                     variant="outline"
-                    onClick={() => setEditingRecord(null)}
+                    onClick={() => {
+                      setEditingRecord(null);
+                      setSecretKey("");
+                      setSecretKeyError("");
+                    }}
                   >
                     Cancel
                   </Button>
@@ -388,12 +493,12 @@ const AdminTimeRecordEdit: React.FC = () => {
                   <TableRow key={record._id}>
                     <TableCell>{record.employeeName}</TableCell>
                     <TableCell>{record.date}</TableCell>
-                    <TableCell>{record.timeIn || '-'}</TableCell>
-                    <TableCell>{record.timeOut || '-'}</TableCell>
+                    <TableCell>{record.timeIn || "-"}</TableCell>
+                    <TableCell>{record.timeOut || "-"}</TableCell>
                     <TableCell>{record.totalHours}</TableCell>
-                    <TableCell>{record.totalBreakTime || '0.00'}</TableCell>
-                    <TableCell>{record.shift || '-'}</TableCell>
-                    <TableCell>{record.notes || '-'}</TableCell>
+                    <TableCell>{record.totalBreakTime || "0.00"}</TableCell>
+                    <TableCell>{record.shift || "-"}</TableCell>
+                    <TableCell>{record.notes || "-"}</TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
                         <Button
@@ -413,7 +518,9 @@ const AdminTimeRecordEdit: React.FC = () => {
                             <DialogHeader>
                               <DialogTitle>Confirm Deletion</DialogTitle>
                             </DialogHeader>
-                            <p>Are you sure you want to delete this time record?</p>
+                            <p>
+                              Are you sure you want to delete this time record?
+                            </p>
                             <div className="flex justify-end space-x-2">
                               <DialogClose asChild>
                                 <Button variant="outline">Cancel</Button>
