@@ -277,12 +277,12 @@ const AdminTimeRecordEdit: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-start justify-center bg-gray-100 p-4 pt-16">
-      <div className="mb-2">
-        <BackButton />
-      </div>
+    <div className="min-h-screen flex items-start justify-center bg-gray-100 p-4">
       <Card className="w-full max-w-5xl">
         <CardHeader>
+          <div>
+            <BackButton />
+          </div>
           <CardTitle className="text-center">Time Record Management</CardTitle>
         </CardHeader>
         <CardContent>

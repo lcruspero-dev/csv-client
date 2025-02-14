@@ -66,7 +66,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         <Button
           variant="ghost"
           size="icon"
-          className="self-end m-2"
+          className="self-end mx-2"
           onClick={toggleSidebar}
         >
           {isOpen ? (
@@ -75,7 +75,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
             <ChevronRight className="h-6 w-6" />
           )}
         </Button>
-        <nav className="flex flex-col space-y-1 p-4">
+        <nav className="flex flex-col  px-4">
           {navItems.map((item, index) => (
             <Button
               key={index}
