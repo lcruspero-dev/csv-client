@@ -46,7 +46,7 @@ const SignatureModal: React.FC<SignatureModalProps> = ({
     if (!ctx) return;
 
     // Format the date from YYYY-MM-DD to a more readable format
-    const formattedDate = new Date(selectedDate).toLocaleDateString();
+    const formattedDate = selectedDate;
 
     // Save the current context state
     ctx.save();

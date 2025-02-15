@@ -14,11 +14,27 @@ interface EmployeeFeedbackProps {
 
 const Page2: React.FC<EmployeeFeedbackProps> = ({ employeeFeedback }) => {
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
+    // Split YYYY-MM-DD into parts
+    const [year, month, day] = dateString.split("-").map(Number);
+
+    // Custom month names mapping
+    const months = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+
+    // Format as "Month DD, YYYY"
+    return `${months[month - 1]} ${day}, ${year}`;
   };
 
   return (

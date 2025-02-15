@@ -138,13 +138,28 @@ const NteSummaryTable: React.FC = () => {
     </button>
   );
 
-  const formatDate = (dateString: string | undefined): string => {
-    if (!dateString) return "-";
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
+  const formatDate = (dateString: string) => {
+    // Split YYYY-MM-DD into parts
+    const [year, month, day] = dateString.split("-").map(Number);
+
+    // Custom month names mapping
+    const months = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+
+    // Format as "Month DD, YYYY"
+    return `${months[month - 1]} ${day}, ${year}`;
   };
 
   const getStatusColor = (status: NteData["status"]): string => {
