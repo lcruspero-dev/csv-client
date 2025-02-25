@@ -115,13 +115,16 @@ export const AttendanceTracker: React.FC = () => {
     try {
       const response = await timer.getAttendanceEntries();
       setAttendanceEntries(response.data);
-
-      // Check if response is an empty array
-      if (Array.isArray(response.data) && response.data.length === 0) {
-        return; // Do nothing if empty
-      }
     } catch (error) {
       console.error("Error getting attendance entries:", error);
+      // Check if the error message is "Employee time not found" and prevent showing the toast
+      if (typeof error === "object" && error !== null && "message" in error) {
+        if (
+          (error as { message: string }).message === "Employee time not found"
+        ) {
+          return; // Don't show the toast for this specific error
+        }
+      }
       toast({
         title: "Error",
         description:
