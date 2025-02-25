@@ -58,8 +58,8 @@ const Login = () => {
       login({ isAuthenticated: true, isAdmin: response.data.isAdmin });
       navigate(from, { replace: true });
     } catch (error: any) {
-      // Handle different error scenarios
-      if (error.response?.data?.message === "Invalid credentials") {
+      // The error message is directly in error.message
+      if (error.message === "Invalid credentials") {
         toast({
           title: "Invalid Account",
           description: "Your email or password is incorrect.",
@@ -76,7 +76,7 @@ const Login = () => {
         toast({
           title: "Error",
           description:
-            error.response?.data?.message ||
+            error.message ||
             "An error occurred during login. Please try again.",
           variant: "destructive",
         });
