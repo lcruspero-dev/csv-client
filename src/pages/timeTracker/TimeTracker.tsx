@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import LoadingComponent from "@/components/ui/loading";
 import {
   Pagination,
   PaginationContent,
@@ -35,7 +36,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
-// import { time } from "console";
 
 import { Clock, Coffee, LogIn, LogOut } from "lucide-react";
 import React, { useEffect, useState } from "react";
@@ -62,7 +62,6 @@ interface CurrentTimeResponse {
 
 export const AttendanceTracker: React.FC = () => {
   const [isTimeIn, setIsTimeIn] = useState(false);
-  // const [isTimeIn2, setIsTimeIn2] = useState(false);
   const [attendanceEntries, setAttendanceEntries] = useState<AttendanceEntry[]>(
     []
   );
@@ -78,9 +77,14 @@ export const AttendanceTracker: React.FC = () => {
       time: "",
     });
   const [selectedShift, setSelectedShift] = useState<string | null>(null);
-  // const [isBreakTime, setIsBreakTime] = useState(false);
-  // const [breakStartTime, setBreakStartTime] = useState<number | null>(null);
-  // const [totalBreakTime, setTotalBreakTime] = useState(0);
+
+  // Loading states
+  const [isLoadingInitial, setIsLoadingInitial] = useState(true);
+  const [isLoadingTimeIn, setIsLoadingTimeIn] = useState(false);
+  const [isLoadingTimeOut, setIsLoadingTimeOut] = useState(false);
+  const [isLoadingBreakStart, setIsLoadingBreakStart] = useState(false);
+  const [isLoadingBreakEnd, setIsLoadingBreakEnd] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
   const entriesPerPage = 10;
   const SHIFT_OPTIONS = ["Shift 1", "Shift 2", "Shift 3", "Staff"];
@@ -104,11 +108,20 @@ export const AttendanceTracker: React.FC = () => {
   };
 
   const getAttendance = async () => {
+    setIsLoadingHistory(true);
     try {
       const response = await timer.getAttendanceEntries();
       setAttendanceEntries(response.data);
     } catch (error) {
       console.error("Error getting attendance entries:", error);
+      toast({
+        title: "Error",
+        description:
+          "Failed to load attendance history. Please try refreshing.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingHistory(false);
     }
   };
 
@@ -128,19 +141,30 @@ export const AttendanceTracker: React.FC = () => {
   };
 
   useEffect(() => {
-    getAttendance();
-    getCurrentTimeFromAPI();
-    getCurrentTime();
+    const initializeData = async () => {
+      setIsLoadingInitial(true);
+      try {
+        await Promise.all([
+          getAttendance(),
+          getCurrentTimeFromAPI(),
+          getCurrentTime(),
+        ]);
+      } catch (error) {
+        console.error("Error initializing data:", error);
+      } finally {
+        setIsLoadingInitial(false);
+      }
+    };
+
+    initializeData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  console.log("currentEntry", currentEntry);
+
   useEffect(() => {
     let startTime: number;
     let timeInstartTime: number;
     let intervalId: NodeJS.Timeout;
     let timeOffset = 0;
-    // const breakTimeInMilliseconds = currentEntry.totalBreakTime
-    //     ? Number(currentEntry.totalBreakTime) * 3600 * 1000
-    //     : 0;
 
     const breakStart = new Date(
       `${currentEntry.dateBreakStart} ${currentEntry.breakStart}`
@@ -187,7 +211,6 @@ export const AttendanceTracker: React.FC = () => {
           diffMs = currentTime - startTime;
         } else {
           // Convert totalBreakTime from hours to seconds before applying
-
           diffMs = currentTime - timeInstartTime - breakDurationMs;
         }
 
@@ -215,10 +238,8 @@ export const AttendanceTracker: React.FC = () => {
       const currentTimeData = response.data[0];
       if (currentTimeData.timeOut) {
         setIsTimeIn(false);
-        // setIsTimeIn2(false);
       } else {
         setIsTimeIn(true);
-        // setIsTimeIn2(true);
       }
       setCurrentEntry(currentTimeData);
     } catch (error) {
@@ -227,6 +248,7 @@ export const AttendanceTracker: React.FC = () => {
   };
 
   const handleTimeIn = async () => {
+    setIsLoadingTimeIn(true);
     try {
       const currentTimeData = await getCurrentTimeFromAPI();
 
@@ -240,7 +262,6 @@ export const AttendanceTracker: React.FC = () => {
       const response = await timer.timeIn(entry);
       setCurrentEntry(response.data);
       getAttendance();
-      // setIsTimeIn2(true);
       setIsTimeIn(true);
       setElapsedTime(0);
       toast({
@@ -250,18 +271,19 @@ export const AttendanceTracker: React.FC = () => {
       });
     } catch (error) {
       console.error("Error logging time:", error);
-
-      // Error toast notification
       toast({
         title: "Error",
         description:
           "Failed to log time. Please try again. If the issue persists, contact IT support.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoadingTimeIn(false);
     }
   };
 
   const handleTimeOut = async ({ notes }: { notes?: string }) => {
+    setIsLoadingTimeOut(true);
     try {
       const currentTimeData = await getCurrentTimeFromAPI();
 
@@ -297,18 +319,15 @@ export const AttendanceTracker: React.FC = () => {
         timeOut: currentTimeData.time,
         totalHours: Number(totalHours.toFixed(2)),
         notes: notes,
-        // totalBreakTime:totalBreakTime/ (1000 * 60),
       };
 
       await timer.timeOut(updatedEntry);
       setCurrentEntry(updatedEntry);
       getAttendance();
       setIsTimeIn(false);
-      // setIsTimeIn2(false);
       setDialogOpen(false);
       setElapsedTime(0);
       setSelectedShift(null);
-      // Success toast notification
       toast({
         title: "Success",
         description: "Time-out logged successfully!",
@@ -316,18 +335,19 @@ export const AttendanceTracker: React.FC = () => {
       });
     } catch (error) {
       console.error("Error logging timeout:", error);
-
-      // Error toast notification
       toast({
         title: "Error",
         description:
           "Failed to log time-out. Please try again. If the issue persists, contact IT support.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoadingTimeOut(false);
     }
   };
 
   const handleBreakStart = async () => {
+    setIsLoadingBreakStart(true);
     try {
       const currentTimeData = await getCurrentTimeFromAPI();
 
@@ -339,10 +359,7 @@ export const AttendanceTracker: React.FC = () => {
 
       const response = await timer.updateBreakStart(updatedEntry);
       setCurrentEntry(response.data);
-      // setIsBreakTime(true);
-      // setIsTimeIn2(false);
       setElapsedTime(0);
-      // Success toast notification
       toast({
         title: "Success",
         description: "Break started successfully!",
@@ -350,59 +367,19 @@ export const AttendanceTracker: React.FC = () => {
       });
     } catch (error) {
       console.error("Error starting break:", error);
-
-      // Error toast notification
       toast({
         title: "Error",
         description:
-          "Failed to start break Please try again. If the issue persists, contact IT support.",
+          "Failed to start break. Please try again. If the issue persists, contact IT support.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoadingBreakStart(false);
     }
   };
 
-  // const handleBreakEnd = async () => {
-  //   try {
-  //   const currentTimeData = await getCurrentTimeFromAPI();
-
-  //   const breakStart = new Date(
-  //     `${currentEntry.date} ${currentEntry.breakStart}`
-  //   );
-  //   const breakEnd = new Date(
-  //     `${currentTimeData.date} ${currentTimeData.time}`
-  //     );
-  //   const totalBreakTime  = currentEntry.totalBreakTime
-  //     ?breakEnd.getTime() - breakStart.getTime():0;
-
-  //   const diffMs =
-  //   breakEnd.getTime() - breakStart.getTime() - totalBreakTime;
-  //   const totalBreakTimeCount = diffMs / (1000 * 60 * 60);
-
-  //   const updatedEntry = {
-  //     ...currentEntry,
-  //     breakEnd: currentTimeData.time,
-  //     totalBreakTime: Number(totalBreakTimeCount.toFixed(2)),
-
-  //   };
-  //   // try {
-  //   //   const currentTimeData = await getCurrentTimeFromAPI();
-
-  //   //     const updatedEntry = {
-  //   //       ...currentEntry,
-  //   //       breakEnd: currentTimeData.time,
-  //   //      totalBreakTime: (new Date(`${currentEntry.date} ${currentTimeData.time}`).getTime() - new Date(`${currentEntry.date} ${currentEntry.breakStart}`).getTime()) / 1000,
-  //   //     };
-
-  //     const response = await timer.updateBreakEnd(updatedEntry);
-  //     setCurrentEntry(response.data);
-  //       // setIsBreakTime(false);
-  //       // setIsTimeIn2(true);
-
-  //   } catch (error) {
-  //     console.error("Error ending break:", error);
-  //   }
-  // };
   const handleBreakEnd = async () => {
+    setIsLoadingBreakEnd(true);
     try {
       const currentTimeData = await getCurrentTimeFromAPI();
 
@@ -431,13 +408,11 @@ export const AttendanceTracker: React.FC = () => {
         ...currentEntry,
         breakEnd: currentTimeData.time,
         dateBreakEnd: currentTimeData.date,
-
         totalBreakTime: Number(totalBreakTimeHours.toFixed(2)),
       };
 
       const response = await timer.updateBreakEnd(updatedEntry);
       setCurrentEntry(response.data);
-      // Success toast notification
       toast({
         title: "Success",
         description: "End break logged successfully!",
@@ -445,15 +420,24 @@ export const AttendanceTracker: React.FC = () => {
       });
     } catch (error) {
       console.error("Error ending break:", error);
-
-      // Error toast notification
       toast({
         title: "Error",
         description: "Failed to log end break. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoadingBreakEnd(false);
     }
   };
+
+  if (isLoadingInitial) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <LoadingComponent />
+      </div>
+    );
+  }
+
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
@@ -487,12 +471,7 @@ export const AttendanceTracker: React.FC = () => {
                 </Select>
               </div>
             )}
-            {/* 
-            {currentEntry.timeIn !== null     && (
-              <div className="text-4xl font-bold  text-red-600 tracking-tighter text-center">
-                {formatElapsedTime(elapsedTime)}
-              </div>
-            )} */}
+
             {currentEntry.breakStart !== null &&
             currentEntry.breakEnd === null ? (
               <div className="text-4xl font-bold tracking-tighter text-red-600 text-center">
@@ -516,9 +495,14 @@ export const AttendanceTracker: React.FC = () => {
                 <Button
                   onClick={handleTimeIn}
                   className="flex items-center"
-                  disabled={!selectedShift}
+                  disabled={!selectedShift || isLoadingTimeIn}
                 >
-                  <LogIn className="mr-2 h-4 w-4" /> Time In
+                  {isLoadingTimeIn ? (
+                    <LoadingComponent />
+                  ) : (
+                    <LogIn className="mr-2 h-4 w-4" />
+                  )}
+                  Time In
                 </Button>
               ) : (
                 <>
@@ -528,9 +512,16 @@ export const AttendanceTracker: React.FC = () => {
                         onClick={handleBreakStart}
                         variant="default"
                         className="flex items-center"
-                        disabled={currentEntry.totalBreakTime !== null}
+                        disabled={
+                          currentEntry.totalBreakTime !== null ||
+                          isLoadingBreakStart
+                        }
                       >
-                        <Coffee className="mr-1 h-4 w-4" />
+                        {isLoadingBreakStart ? (
+                          <LoadingComponent />
+                        ) : (
+                          <Coffee className="mr-1 h-4 w-4" />
+                        )}
                         Start Break
                       </Button>
                     ) : (
@@ -539,11 +530,17 @@ export const AttendanceTracker: React.FC = () => {
                         variant="default"
                         className="flex items-center"
                         disabled={
-                          currentEntry.breakStart !== null &&
-                          currentEntry.breakEnd !== null
+                          (currentEntry.breakStart !== null &&
+                            currentEntry.breakEnd !== null) ||
+                          isLoadingBreakEnd
                         }
                       >
-                        <Coffee className="mr-2 h-4 w-4" /> End Break
+                        {isLoadingBreakEnd ? (
+                          <LoadingComponent />
+                        ) : (
+                          <Coffee className="mr-2 h-4 w-4" />
+                        )}
+                        End Break
                       </Button>
                     ))}
                   <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -552,11 +549,17 @@ export const AttendanceTracker: React.FC = () => {
                         variant="destructive"
                         className="flex items-center"
                         disabled={
-                          currentEntry.breakStart !== null &&
-                          currentEntry.breakEnd === null
+                          (currentEntry.breakStart !== null &&
+                            currentEntry.breakEnd === null) ||
+                          isLoadingTimeOut
                         }
                       >
-                        <LogOut className="mr-2 h-4 w-4" /> Time Out
+                        {isLoadingTimeOut ? (
+                          <LoadingComponent />
+                        ) : (
+                          <LogOut className="mr-2 h-4 w-4" />
+                        )}
+                        Time Out
                       </Button>
                     </DialogTrigger>
                     <DialogContent>
@@ -584,7 +587,9 @@ export const AttendanceTracker: React.FC = () => {
                                 notes: notesInput?.value,
                               });
                             }}
+                            disabled={isLoadingTimeOut}
                           >
+                            {isLoadingTimeOut ? <LoadingComponent /> : null}
                             Confirm Time Out
                           </Button>
                         </div>
@@ -622,83 +627,107 @@ export const AttendanceTracker: React.FC = () => {
               <CardTitle>Time Tracker History</CardTitle>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Time In</TableHead>
-                    <TableHead>Time Out</TableHead>
-                    <TableHead>Total Hours</TableHead>
-                    {attendanceEntries.some(
-                      (entry) => entry.shift === "Staff"
-                    ) && <TableHead>Break Time</TableHead>}
-                    <TableHead>Shift</TableHead>
-                    <TableHead>Notes</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {currentEntries.map((entry) => (
-                    <TableRow key={entry.id}>
-                      <TableCell>{entry.date}</TableCell>
-                      <TableCell>{entry.timeIn}</TableCell>
-                      <TableCell>{entry.timeOut || "In Progress"}</TableCell>
-                      <TableCell>{entry.totalHours || "N/A"}</TableCell>
-                      {attendanceEntries.some((e) => e.shift === "Staff") && (
-                        <TableCell>
-                          {entry.shift === "Staff"
-                            ? entry.totalBreakTime
-                              ? `${Math.round(entry.totalBreakTime * 60)} min.`
-                              : "-"
-                            : "-"}
-                        </TableCell>
+              {isLoadingHistory ? (
+                <div className="flex justify-center py-8">
+                  <LoadingComponent />
+                </div>
+              ) : (
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Time In</TableHead>
+                        <TableHead>Time Out</TableHead>
+                        <TableHead>Total Hours</TableHead>
+                        {attendanceEntries.some(
+                          (entry) => entry.shift === "Staff"
+                        ) && <TableHead>Break Time</TableHead>}
+                        <TableHead>Shift</TableHead>
+                        <TableHead>Notes</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {currentEntries.length > 0 ? (
+                        currentEntries.map((entry) => (
+                          <TableRow key={entry.id}>
+                            <TableCell>{entry.date}</TableCell>
+                            <TableCell>{entry.timeIn}</TableCell>
+                            <TableCell>
+                              {entry.timeOut || "In Progress"}
+                            </TableCell>
+                            <TableCell>{entry.totalHours || "N/A"}</TableCell>
+                            {attendanceEntries.some(
+                              (e) => e.shift === "Staff"
+                            ) && (
+                              <TableCell>
+                                {entry.shift === "Staff"
+                                  ? entry.totalBreakTime
+                                    ? `${Math.round(
+                                        entry.totalBreakTime * 60
+                                      )} min.`
+                                    : "-"
+                                  : "-"}
+                              </TableCell>
+                            )}
+                            <TableCell>{entry.shift}</TableCell>
+                            <TableCell>{entry.notes || "-"}</TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center py-4">
+                            No attendance records found
+                          </TableCell>
+                        </TableRow>
                       )}
-                      <TableCell>{entry.shift}</TableCell>
-                      <TableCell>{entry.notes || "-"}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                    </TableBody>
+                  </Table>
 
-              {/* Pagination (unchanged) */}
-              <div className="mt-4 flex justify-end items-end text-xs">
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        className={
-                          currentPage === 1
-                            ? "pointer-events-none opacity-50"
-                            : "cursor-pointer"
-                        }
-                      />
-                    </PaginationItem>
+                  {/* Pagination */}
+                  {totalPages > 0 && (
+                    <div className="mt-4 flex justify-end items-end text-xs">
+                      <Pagination>
+                        <PaginationContent>
+                          <PaginationItem>
+                            <PaginationPrevious
+                              onClick={() => handlePageChange(currentPage - 1)}
+                              className={
+                                currentPage === 1
+                                  ? "pointer-events-none opacity-50"
+                                  : "cursor-pointer"
+                              }
+                            />
+                          </PaginationItem>
 
-                    {getPageNumbers().map((pageNumber) => (
-                      <PaginationItem key={pageNumber}>
-                        <PaginationLink
-                          onClick={() => handlePageChange(pageNumber)}
-                          isActive={currentPage === pageNumber}
-                          className="cursor-pointer text-xs"
-                        >
-                          {pageNumber}
-                        </PaginationLink>
-                      </PaginationItem>
-                    ))}
+                          {getPageNumbers().map((pageNumber) => (
+                            <PaginationItem key={pageNumber}>
+                              <PaginationLink
+                                onClick={() => handlePageChange(pageNumber)}
+                                isActive={currentPage === pageNumber}
+                                className="cursor-pointer text-xs"
+                              >
+                                {pageNumber}
+                              </PaginationLink>
+                            </PaginationItem>
+                          ))}
 
-                    <PaginationItem>
-                      <PaginationNext
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        className={
-                          currentPage === totalPages
-                            ? "pointer-events-none opacity-50"
-                            : "cursor-pointer"
-                        }
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              </div>
+                          <PaginationItem>
+                            <PaginationNext
+                              onClick={() => handlePageChange(currentPage + 1)}
+                              className={
+                                currentPage === totalPages
+                                  ? "pointer-events-none opacity-50"
+                                  : "cursor-pointer"
+                              }
+                            />
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+                    </div>
+                  )}
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
