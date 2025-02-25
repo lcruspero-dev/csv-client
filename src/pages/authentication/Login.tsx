@@ -58,8 +58,13 @@ const Login = () => {
       login({ isAuthenticated: true, isAdmin: response.data.isAdmin });
       navigate(from, { replace: true });
     } catch (error: any) {
-      // The error message is directly in error.message
-      if (error.message === "Invalid credentials") {
+      console.log("Login error:", error);
+
+      // Check for 401 status code which indicates invalid credentials
+      if (
+        error.response?.status === 401 ||
+        error.message.includes("Invalid credentials")
+      ) {
         toast({
           title: "Invalid Account",
           description: "Your email or password is incorrect.",
