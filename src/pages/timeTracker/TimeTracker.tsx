@@ -36,8 +36,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
-
-import { Clock, Coffee, LogIn, LogOut } from "lucide-react";
+import { Clock, Coffee, Loader2, LogIn, LogOut } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
 interface AttendanceEntry {
@@ -94,6 +93,10 @@ export const AttendanceTracker: React.FC = () => {
   const endIndex = startIndex + entriesPerPage;
   const currentEntries = attendanceEntries.slice(startIndex, endIndex);
   const { toast } = useToast();
+
+  const LoadingSpinner = () => (
+    <Loader2 className="animate-spin h-4 w-4 ml-2" />
+  );
 
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
@@ -498,7 +501,7 @@ export const AttendanceTracker: React.FC = () => {
                   disabled={!selectedShift || isLoadingTimeIn}
                 >
                   {isLoadingTimeIn ? (
-                    <LoadingComponent />
+                    <LoadingSpinner />
                   ) : (
                     <LogIn className="mr-2 h-4 w-4" />
                   )}
@@ -518,7 +521,7 @@ export const AttendanceTracker: React.FC = () => {
                         }
                       >
                         {isLoadingBreakStart ? (
-                          <LoadingComponent />
+                          <LoadingSpinner />
                         ) : (
                           <Coffee className="mr-1 h-4 w-4" />
                         )}
@@ -536,7 +539,7 @@ export const AttendanceTracker: React.FC = () => {
                         }
                       >
                         {isLoadingBreakEnd ? (
-                          <LoadingComponent />
+                          <LoadingSpinner />
                         ) : (
                           <Coffee className="mr-2 h-4 w-4" />
                         )}
@@ -555,7 +558,7 @@ export const AttendanceTracker: React.FC = () => {
                         }
                       >
                         {isLoadingTimeOut ? (
-                          <LoadingComponent />
+                          <LoadingSpinner />
                         ) : (
                           <LogOut className="mr-2 h-4 w-4" />
                         )}
@@ -589,7 +592,7 @@ export const AttendanceTracker: React.FC = () => {
                             }}
                             disabled={isLoadingTimeOut}
                           >
-                            {isLoadingTimeOut ? <LoadingComponent /> : null}
+                            {isLoadingTimeOut ? <LoadingSpinner /> : null}
                             Confirm Time Out
                           </Button>
                         </div>
@@ -629,7 +632,7 @@ export const AttendanceTracker: React.FC = () => {
             <CardContent>
               {isLoadingHistory ? (
                 <div className="flex justify-center py-8">
-                  <LoadingComponent />
+                  <LoadingSpinner />
                 </div>
               ) : (
                 <>
