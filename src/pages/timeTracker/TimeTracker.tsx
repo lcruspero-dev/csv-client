@@ -435,7 +435,7 @@ export const AttendanceTracker: React.FC = () => {
 
   if (isLoadingInitial) {
     return (
-      <div className="flex items-start w-full mt-4">
+      <div className="flex justify-center items-start w-full pt-4">
         <LoadingComponent />
       </div>
     );
