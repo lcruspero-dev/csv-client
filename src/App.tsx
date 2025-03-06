@@ -24,6 +24,7 @@ import UserNte from "./pages/nte/userNte";
 import { ProtectedRoute } from "./pages/ProtectedRoute";
 import Request from "./pages/requestSomething/Request";
 import AdminResetPassword from "./pages/resetPassword/adminResetPassword";
+import ChangePassword from "./pages/resetPassword/changePassword";
 import CreateSurvey from "./pages/survey/CreateSurvey";
 import AdminTimeRecordEdit from "./pages/timeTracker/EditTime";
 import TimeTracker from "./pages/timeTracker/TimeTracker";
@@ -62,6 +63,10 @@ function App() {
             <Route path="/createsurvey" element={<CreateSurvey />} />
             <Route path="/exportmemo" element={<ExportMemoData />} />
             <Route path="/nte" element={<UserNte />} />
+            <Route
+              path="/profile/change-password"
+              element={<ChangePassword />}
+            />
 
             {/* Admin Routes */}
             {/* <Route element={<ProtectedRoute requiresAdmin={true} />}>
