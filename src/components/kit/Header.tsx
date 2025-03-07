@@ -112,7 +112,7 @@ const Header: React.FC = () => {
                       className="cursor-pointer"
                     >
                       <User className="mr-2 h-4 w-4" />
-                      <span>Edit Profile</span>
+                      <span>Profile Settings</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={handleChangePassword}
@@ -123,13 +123,21 @@ const Header: React.FC = () => {
                     </DropdownMenuItem>
                     {user?.isAdmin && (
                       <DropdownMenuItem
-                        onClick={() => navigate("/admin")}
+                        onClick={() => {
+                          localStorage.setItem(
+                            "viewAsUser",
+                            JSON.stringify(false)
+                          ); // Ensure admin mode
+                          navigate("/"); // Navigate to AdminHome
+                          window.location.reload(); // Force update (if needed)
+                        }}
                         className="cursor-pointer"
                       >
                         <UserCog className="mr-2 h-4 w-4" />
                         <span>Admin Dashboard</span>
                       </DropdownMenuItem>
                     )}
+
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onClick={handleLogout}

@@ -13,6 +13,7 @@ import ViewAllTicket from "./pages/allTicket/ViewAllTicket";
 import ViewIndividualTicket from "./pages/allTicket/ViewIndividualTicket";
 import CreateAssign from "./pages/assigns/CreateAssigns";
 import CreateCategory from "./pages/createCategory/CreateCatergory";
+import EditProfileForm from "./pages/editProfile/editProfileForm";
 import ExportData from "./pages/exportData/ExportData";
 import ExportDataTime from "./pages/exportData/ExportDataTime";
 import ExportMemoData from "./pages/exportData/ExportMemoData";
@@ -67,6 +68,7 @@ function App() {
               path="/profile/change-password"
               element={<ChangePassword />}
             />
+            <Route path="/profile/edit" element={<EditProfileForm />} />
 
             {/* Admin Routes */}
             {/* <Route element={<ProtectedRoute requiresAdmin={true} />}>
