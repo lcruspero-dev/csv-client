@@ -1,19 +1,16 @@
 import { Route, Routes } from "react-router-dom";
 import Header from "./components/kit/Header";
-
 import { Toaster } from "./components/ui/toaster";
 import "./index.css";
-import Layout from "./pages/authentication/Layout";
-import Login from "./pages/authentication/Login";
-import Registration from "./pages/authentication/Registration";
-import ViewMemo from "./pages/memo/ViewMemo";
-
 import ViewAllRaisedTickets from "./pages/allTicket/AdminViewAllTicket";
 import ViewAllTicket from "./pages/allTicket/ViewAllTicket";
 import ViewIndividualTicket from "./pages/allTicket/ViewIndividualTicket";
 import CreateAssign from "./pages/assigns/CreateAssigns";
+import Layout from "./pages/authentication/Layout";
+import Login from "./pages/authentication/Login";
+import Registration from "./pages/authentication/Registration";
 import CreateCategory from "./pages/createCategory/CreateCatergory";
-import EditProfileForm from "./pages/editProfile/editProfileForm";
+import ProfilePage from "./pages/editProfile/ProfilePage";
 import ExportData from "./pages/exportData/ExportData";
 import ExportDataTime from "./pages/exportData/ExportDataTime";
 import ExportMemoData from "./pages/exportData/ExportMemoData";
@@ -21,6 +18,7 @@ import ExportSurveyData from "./pages/exportData/ExportSurveyData";
 import CreateTicket from "./pages/getHelp/CreateTicket";
 import Homepage from "./pages/homePage/Homepage";
 import ViewIndividualMemo from "./pages/memo/ViewIndividualMemo";
+import ViewMemo from "./pages/memo/ViewMemo";
 import UserNte from "./pages/nte/userNte";
 import { ProtectedRoute } from "./pages/ProtectedRoute";
 import Request from "./pages/requestSomething/Request";
@@ -68,12 +66,7 @@ function App() {
               path="/profile/change-password"
               element={<ChangePassword />}
             />
-            <Route path="/profile/edit" element={<EditProfileForm />} />
-
-            {/* Admin Routes */}
-            {/* <Route element={<ProtectedRoute requiresAdmin={true} />}>
-              <Route path="/admin" element={<AdminDashboard />} />
-            </Route> */}
+            <Route path="profile/edit" element={<ProfilePage />} />
           </Route>
         </Routes>
       </div>

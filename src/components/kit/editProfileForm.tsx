@@ -1,4 +1,4 @@
-import BackButton from "@/components/kit/BackButton";
+import { UserProfileAPI } from "@/API/endpoint";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -25,11 +25,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Camera, Edit, Upload, User } from "lucide-react";
+import { Camera, Upload, User } from "lucide-react";
 import { useState } from "react";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import { useForm } from "react-hook-form";
 
-// Define the form data type - all changed to string
 interface ProfileFormData {
   firstName: string;
   lastName: string;
@@ -53,240 +54,105 @@ interface ProfileFormData {
   sssNo: string;
   tinNo: string;
 }
+interface EditProfileFormProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  userData?: any; // Optional
+  onCancel?: () => void; // Optional
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onSave?: (updatedData: any) => void; // Optional
+}
 
-// Primary ProfilePage component that manages the view state
-export function ProfilePage() {
-  const [isEditing, setIsEditing] = useState(false);
+export default function EditProfileForm({
+  userData,
+  onCancel,
+  onSave,
+}: EditProfileFormProps) {
+  const [avatar, setAvatar] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState("");
+  const [birthdate, setBirthdate] = useState<Date | null>(
+    userData?.dateOfBirth ? new Date(userData.dateOfBirth) : null
+  );
 
-  // Example user data - replace with API call in production
-  const userData = {
-    firstName: "John",
-    lastName: "Doe",
-    middleName: "Smith",
-    streetAddress: "123 Main Street, Apt 4B",
-    barangay: "Barangay 123",
-    cityMunicipality: "Makati City",
-    province: "Metro Manila",
-    zipCode: "1234",
-    personalEmail: "john.doe@example.com",
-    contactNumber: "+63 912 345 6789",
-    dateOfBirth: "01/15/1990",
-    age: "35",
-    gender: "Male",
-    civilStatus: "Married",
-    pagibigNo: "1234-5678-9012",
-    philhealthNo: "98-765432100-1",
-    sssNo: "33-1234567-8",
-    tinNo: "123-456-789-000",
-    emergencyContactPerson: "Jane Doe",
-    emergencyContactNumber: "+63 943 210 9876",
-    relationship: "Spouse",
+  const handleBirthdateChange = (date: Date | null) => {
+    setBirthdate(date);
+    if (date) {
+      const age = calculateAge(date);
+      form.setValue("dateOfBirth", date.toISOString().split("T")[0]);
+      form.setValue("age", age.toString());
+    } else {
+      form.setValue("dateOfBirth", "");
+      form.setValue("age", "");
+    }
   };
 
-  return (
-    <div className="container mx-auto py-3">
-      {isEditing ? (
-        <EditProfileForm
-          userData={userData}
-          onCancel={() => setIsEditing(false)}
-          onSave={() => setIsEditing(false)}
-        />
-      ) : (
-        <ViewProfile userData={userData} onEdit={() => setIsEditing(true)} />
-      )}
-    </div>
-  );
-}
-
-// ViewProfile component for displaying user information
-function ViewProfile({ userData, onEdit }) {
-  // Helper function to create info items with consistent styling
-  const InfoItem = ({ label, value }) => (
-    <div className="py-1">
-      <p className="text-sm font-medium text-gray-500">{label}</p>
-      <p className="text-sm font-medium text-gray-900">{value || "—"}</p>
-    </div>
-  );
-
-  return (
-    <div className="flex flex-col md:flex-row gap-3">
-      {/* Profile Photo Card */}
-      <Card className="w-full md:w-1/3 lg:w-1/4 bg-white shadow-md rounded-lg overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3">
-          <CardTitle className="text-sm font-bold">Profile Picture</CardTitle>
-          <CardDescription className="text-blue-100 text-sm">
-            Your professional picture
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-3 flex flex-col items-center justify-center">
-          <div className="absolute left-8 top-24 text-xs mt-3">
-            <BackButton />
-          </div>
-          <div className="mb-3 flex flex-col items-center space-y-2">
-            <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-blue-200 shadow-lg">
-              <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                <User className="h-16 w-16 text-gray-400" />
-              </div>
-            </div>
-
-            <div className="text-center">
-              <h3 className="font-medium text-gray-800 text-sm mb-1">
-                {userData.firstName} {userData.lastName}
-              </h3>
-              <p className="text-gray-500 text-sm">{userData.personalEmail}</p>
-            </div>
-
-            <Button
-              onClick={onEdit}
-              className="inline-flex items-center gap-2 mt-2 text-sm py-2 px-4 h-10"
-            >
-              <Edit className="h-3 w-3" />
-              Edit Profile
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Profile Details Card */}
-      <Card className="w-full md:w-2/3 lg:w-3/4 bg-white shadow-md rounded-lg overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3">
-          <CardTitle className="text-sm font-bold">My Profile</CardTitle>
-          <CardDescription className="text-blue-100 text-sm">
-            Your personal information
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-3">
-          <div className="space-y-4">
-            {/* Personal Information Section */}
-            <div>
-              <h3 className="text-sm font-bold flex items-center mb-2">
-                <span className="bg-blue-100 text-blue-800 p-1 rounded-md mr-2 text-sm text-bold">
-                  01
-                </span>
-                Personal Information
-              </h3>
-              <Separator className="mb-1" />
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-x-2 gap-y-0 text-sm">
-                <InfoItem label="First Name" value={userData.firstName} />
-                <InfoItem label="Last Name" value={userData.lastName} />
-                <InfoItem label="Middle Name" value={userData.middleName} />
-                <InfoItem label="Gender" value={userData.gender} />
-                <InfoItem label="Date of Birth" value={userData.dateOfBirth} />
-                <InfoItem label="Age" value={userData.age} />
-                <InfoItem label="Civil Status" value={userData.civilStatus} />
-                <InfoItem
-                  label="Personal Email"
-                  value={userData.personalEmail}
-                />
-                <InfoItem
-                  label="Contact Number"
-                  value={userData.contactNumber}
-                />
-                <InfoItem
-                  label="Street Address"
-                  value={userData.streetAddress}
-                />
-                <InfoItem label="Barangay" value={userData.barangay} />
-                <InfoItem
-                  label="City/Municipality"
-                  value={userData.cityMunicipality}
-                />
-                <InfoItem label="Province" value={userData.province} />
-                <InfoItem label="ZIP Code" value={userData.zipCode} />
-              </div>
-            </div>
-
-            {/* Government Benefits Section */}
-            <div>
-              <h3 className="text-sm font-bold flex items-center mb-2">
-                <span className="bg-blue-100 text-blue-800 p-1 rounded-md mr-2 text-sm">
-                  02
-                </span>
-                Government Benefits
-              </h3>
-              <Separator className="mb-1" />
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-x-2 gap-y-0">
-                <InfoItem label="PAGIBIG No." value={userData.pagibigNo} />
-                <InfoItem
-                  label="PhilHealth No."
-                  value={userData.philhealthNo}
-                />
-                <InfoItem label="SSS No." value={userData.sssNo} />
-                <InfoItem label="TIN No." value={userData.tinNo} />
-              </div>
-            </div>
-
-            {/* Emergency Contact Section */}
-            <div>
-              <h3 className="text-sm font-bold flex items-center mb-2">
-                <span className="bg-blue-100 text-blue-800 p-1 rounded-md mr-2 text-sm">
-                  03
-                </span>
-                Emergency Contact
-              </h3>
-              <Separator className="mb-1" />
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-x-2 gap-y-0">
-                <InfoItem
-                  label="Emergency Contact Person"
-                  value={userData.emergencyContactPerson}
-                />
-                <InfoItem label="Relationship" value={userData.relationship} />
-                <InfoItem
-                  label="Emergency Contact Number"
-                  value={userData.emergencyContactNumber}
-                />
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-// EditProfileForm component for modifying user information
-function EditProfileForm({ userData, onCancel, onSave }) {
-  const [avatar, setAvatar] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState("");
+  const calculateAge = (birthdate: Date): number => {
+    const today = new Date();
+    let age = today.getFullYear() - birthdate.getFullYear();
+    const monthDifference = today.getMonth() - birthdate.getMonth();
+    if (
+      monthDifference < 0 ||
+      (monthDifference === 0 && today.getDate() < birthdate.getDate())
+    ) {
+      age--;
+    }
+    return age;
+  };
 
   const form = useForm<ProfileFormData>({
     defaultValues: {
-      firstName: userData.firstName || "",
-      lastName: userData.lastName || "",
-      middleName: userData.middleName || "",
-      streetAddress: userData.streetAddress || "",
-      barangay: userData.barangay || "",
-      cityMunicipality: userData.cityMunicipality || "",
-      province: userData.province || "",
-      zipCode: userData.zipCode || "",
-      personalEmail: userData.personalEmail || "",
-      contactNumber: userData.contactNumber || "",
-      dateOfBirth: userData.dateOfBirth || "",
-      age: userData.age || "",
-      emergencyContactPerson: userData.emergencyContactPerson || "",
-      emergencyContactNumber: userData.emergencyContactNumber || "",
-      relationship: userData.relationship || "",
-      civilStatus: userData.civilStatus?.toLowerCase() || "",
-      gender: userData.gender?.toLowerCase() || "",
-      pagibigNo: userData.pagibigNo || "",
-      philhealthNo: userData.philhealthNo || "",
-      sssNo: userData.sssNo || "",
-      tinNo: userData.tinNo || "",
+      firstName: userData?.firstName ?? "",
+      lastName: userData?.lastName ?? "",
+      middleName: userData?.middleName ?? "",
+      streetAddress: userData?.streetAddress ?? "",
+      barangay: userData?.barangay ?? "",
+      cityMunicipality: userData?.cityMunicipality ?? "",
+      province: userData?.province ?? "",
+      zipCode: userData?.zipCode ?? "",
+      personalEmail: userData?.personalEmail ?? "",
+      contactNumber: userData?.contactNumber ?? "",
+      dateOfBirth: userData?.dateOfBirth ?? "",
+      age: userData?.age ?? "",
+      emergencyContactPerson: userData?.emergencyContactPerson ?? "",
+      emergencyContactNumber: userData?.emergencyContactNumber ?? "",
+      relationship: userData?.relationship ?? "",
+      civilStatus: userData?.civilStatus?.toLowerCase() ?? "",
+      gender: userData?.gender?.toLowerCase() ?? "",
+      pagibigNo: userData?.pagibigNo ?? "",
+      philhealthNo: userData?.philhealthNo ?? "",
+      sssNo: userData?.sssNo ?? "",
+      tinNo: userData?.tinNo ?? "",
     },
   });
 
-  const onSubmit = (data: ProfileFormData) => {
-    console.log(data);
-    console.log("Avatar:", avatar);
-    // Here you would make an API call to update the user data
+  const onSubmit = async (data: ProfileFormData) => {
+    try {
+      console.log("Submitting data:", data);
+      console.log("Avatar:", avatar);
 
-    // Call the onSave prop to switch back to view mode
-    if (onSave) onSave();
+      // Prepare the form data
+      const formData = new FormData();
+      Object.entries(data).forEach(([key, value]) => {
+        formData.append(key, value);
+      });
+
+      // If avatar is selected, add it to the formData
+      if (avatar) {
+        formData.append("avatar", avatar);
+      }
+
+      // Call API to create/update the profile
+      const response = await UserProfileAPI.createProfile(formData);
+      console.log("Profile created successfully:", response.data);
+
+      // Call onSave prop to switch back to view mode after successful submission
+      if (onSave) onSave(response.data);
+    } catch (error) {
+      console.error("Error creating profile:", error);
+    }
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleAvatarChange = (e: { target: { files: any[] } }) => {
-    const file = e.target.files[0];
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (file) {
       setAvatar(file);
       const reader = new FileReader();
@@ -470,19 +336,24 @@ function EditProfileForm({ userData, onCancel, onSave }) {
                       <FormField
                         control={form.control}
                         name="dateOfBirth"
-                        render={({ field }) => (
+                        // eslint-disable-next-line no-empty-pattern
+                        render={({}) => (
                           <FormItem className="space-y-1">
                             <FormLabel className="text-sm">
-                              Date of Birth{" "}
+                              Date of Birth
                               <span className="text-red-500"> *</span>
                             </FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="mm/dd/yyyy"
-                                {...field}
-                                className="rounded-md h-10 text-sm py-2"
-                              />
-                            </FormControl>
+                            <div>
+                              <FormControl>
+                                <DatePicker
+                                  selected={birthdate}
+                                  onChange={handleBirthdateChange}
+                                  dateFormat="MM/dd/yyyy"
+                                  placeholderText="mm/dd/yyyy"
+                                  className="rounded-md h-10 text-sm py-2 border border-gray-300 px-3"
+                                />
+                              </FormControl>
+                            </div>
                             <FormMessage className="text-sm" />
                           </FormItem>
                         )}
@@ -500,6 +371,7 @@ function EditProfileForm({ userData, onCancel, onSave }) {
                                 placeholder="Age"
                                 {...field}
                                 className="rounded-md h-10 text-sm py-2"
+                                readOnly
                               />
                             </FormControl>
                             <FormMessage className="text-sm" />
@@ -913,5 +785,3 @@ function EditProfileForm({ userData, onCancel, onSave }) {
     </div>
   );
 }
-
-export default ProfilePage;

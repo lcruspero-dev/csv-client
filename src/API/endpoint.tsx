@@ -94,7 +94,7 @@ export const ResetPassword = {
 
 export const ChangePasswordAPI = {
   updatePassword: (body: object) =>
-    apiHelper("/api/users/update-password", "PUT", body),
+    apiHelper("/api/users/change-password", "PUT", body),
 };
 
 export const TimeRecordAPI = {
@@ -135,4 +135,11 @@ export const NteAPI = {
     apiHelper(`/api/ntes/${id}`, "PUT", body),
   deleteNte: (id: any) => apiHelper(`/api/ntes/${id}`, "DELETE"),
   getNtesByUser: () => apiHelper(`/api/ntes/my/nte`, "GET"),
+};
+
+export const UserProfileAPI = {
+  createProfile: (body: object) => apiHelper("/api/userprofiles", "POST", body),
+  getProfile: () => apiHelper("/api/userprofiles", "GET"),
+  updateProfile: (body: object) => apiHelper("/api/userprofiles", "PUT", body),
+  deleteProfile: () => apiHelper("/api/userprofiles", "DELETE"),
 };

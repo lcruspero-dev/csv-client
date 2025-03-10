@@ -42,7 +42,7 @@ const Registration = () => {
     if (!form.email.endsWith("@csvnow.com")) {
       toast({
         title: "Invalid email domain",
-        description: "Please use an email address ending with @csvnow.com",
+        description: "Please use your company email address",
         variant: "destructive",
       });
       return;
@@ -87,7 +87,7 @@ const Registration = () => {
           Create Account
         </h1>
         <Input
-          placeholder="Full Name"
+          placeholder="First Name and Last Name"
           name="name"
           type="text"
           className="w-full"

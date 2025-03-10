@@ -88,7 +88,11 @@ const ChangePassword: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             {Object.entries(formData).map(([key, value]) => (
               <div className="relative" key={key}>
-                <Label htmlFor={key}>{key.replace(/([A-Z])/g, " $1")}</Label>
+                <Label htmlFor={key}>
+                  {key
+                    .replace(/([A-Z])/g, " $1")
+                    .replace(/^./, (str) => str.toUpperCase())}
+                </Label>
                 <Input
                   type={
                     showPassword[key as keyof typeof formData]
