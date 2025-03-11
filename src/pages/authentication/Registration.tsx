@@ -33,6 +33,18 @@ const Registration = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    // Password validation - must be at least 12 characters with alphanumeric + special characters
+    if (form.password.length < 12) {
+      toast({
+        title: "Password too short",
+        description:
+          "Password must be at least 12 characters long and include alphanumeric and special characters.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (form.password !== form.confirm_password) {
       toast({ title: "Passwords do not match" });
       return;
@@ -87,7 +99,7 @@ const Registration = () => {
           Create Account
         </h1>
         <Input
-          placeholder="First Name and Last Name"
+          placeholder="Full Name (e.g., Juan Dela Cruz)"
           name="name"
           type="text"
           className="w-full"

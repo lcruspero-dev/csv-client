@@ -70,6 +70,11 @@ export default function ViewProfile({
   const formattedDateOfBirth = formatDate(userData?.dateOfBirth);
   const computedAge = calculateAge(userData?.dateOfBirth);
 
+  // Construct the avatar URL if it exists
+  const avatarUrl = userData?.avatar
+    ? `${import.meta.env.VITE_UPLOADFILES_URL}/avatars/${userData.avatar}`
+    : null;
+
   return (
     <div className="flex flex-col md:flex-row gap-3">
       {/* Profile Photo Card */}
@@ -86,9 +91,17 @@ export default function ViewProfile({
           </div>
           <div className="mb-3 flex flex-col items-center space-y-2">
             <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-blue-200 shadow-lg">
-              <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                <User className="h-16 w-16 text-gray-400" />
-              </div>
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt="Profile Avatar"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                  <User className="h-16 w-16 text-gray-400" />
+                </div>
+              )}
             </div>
 
             <div className="text-center">

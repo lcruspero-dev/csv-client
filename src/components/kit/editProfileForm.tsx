@@ -25,8 +25,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/components/ui/use-toast";
 import { Camera, Upload, User } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useForm } from "react-hook-form";
@@ -52,6 +53,7 @@ interface ProfileFormData {
   philhealthNo: string;
   sssNo: string;
   tinNo: string;
+  avatar?: string;
 }
 
 interface EditProfileFormProps {
@@ -72,6 +74,15 @@ export default function EditProfileForm({
   const [birthdate, setBirthdate] = useState<Date | null>(
     userData?.dateOfBirth ? new Date(userData.dateOfBirth) : null
   );
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (userData?.avatar) {
+      setPreviewUrl(
+        `${import.meta.env.VITE_UPLOADFILES_URL}/avatars/${userData.avatar}`
+      );
+    }
+  }, [userData]);
 
   const handleBirthdateChange = (date: Date | null) => {
     setBirthdate(date);
@@ -109,24 +120,86 @@ export default function EditProfileForm({
 
   const onSubmit = async (data: ProfileFormData) => {
     try {
-      console.log("Submitting data:", data);
-      console.log("Avatar:", avatar);
+      let avatarFilename = data.avatar; // Use existing avatar by default
 
-      const formData = new FormData();
-      Object.entries(data).forEach(([key, value]) => {
-        formData.append(key, value);
-      });
-
+      // Upload avatar if it exists
       if (avatar) {
+        // Validate file type
+        const validImageTypes = [
+          "image/jpeg",
+          "image/png",
+          "image/gif",
+          "image/webp",
+        ];
+        if (!validImageTypes.includes(avatar.type)) {
+          toast({
+            variant: "destructive",
+            title: "Invalid file type",
+            description:
+              "Please upload a valid image file (JPEG, PNG, GIF, or WEBP)",
+          });
+          return;
+        }
+
+        // Validate file size (10MB = 10 * 1024 * 1024 bytes)
+        const maxSize = 10 * 1024 * 1024;
+        if (avatar.size > maxSize) {
+          toast({
+            variant: "destructive",
+            title: "File too large",
+            description: "Image size should not exceed 10MB",
+          });
+          return;
+        }
+
+        const formData = new FormData();
         formData.append("avatar", avatar);
+
+        const uploadResponse = await fetch(
+          `${import.meta.env.VITE_UPLOADFILES_URL}/upload-avatar`,
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+
+        if (!uploadResponse.ok) {
+          toast({
+            variant: "destructive",
+            title: "Upload failed",
+            description: "Failed to upload avatar",
+          });
+          return;
+        }
+
+        const uploadResult = await uploadResponse.json();
+        avatarFilename = uploadResult.filename; // Update with new avatar if uploaded
       }
 
-      const response = await UserProfileAPI.createProfile(formData);
+      // Save profile data with avatar filename
+      const profileData = { ...data, avatar: avatarFilename };
+      const response = await UserProfileAPI.createProfile(profileData);
       console.log("Profile created successfully:", response.data);
+
+      // Show success notification
+      toast({
+        title: "Success",
+        description: "Profile updated successfully",
+      });
 
       if (onSave) onSave(response.data);
     } catch (error) {
       console.error("Error creating profile:", error);
+
+      // Show error notification with the specific error message
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description:
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred",
+      });
     }
   };
 

@@ -1,3 +1,4 @@
+import { UserProfileAPI } from "@/API/endpoint";
 import logo from "@/assets/logo.webp";
 import NotificationBell from "@/components/kit/NotificationBell";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -10,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/context/useAuth";
 import { Key, LogOut, User, UserCog } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../ui/button";
 
@@ -28,9 +30,33 @@ const Header: React.FC = () => {
   const { logout } = useAuth();
   const user: User = JSON.parse(localStorage.getItem("user")!);
   const { isAuthenticated } = useAuth();
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  // Fetch user profile data (including avatar filename) when the component mounts
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await UserProfileAPI.getProfile();
+        if (response.data?.avatar) {
+          // Construct the avatar URL using the filename from the API response
+          const avatarFilename = response.data.avatar;
+          setAvatarUrl(
+            `${import.meta.env.VITE_UPLOADFILES_URL}/avatars/${avatarFilename}`
+          );
+        }
+      } catch (error) {
+        console.error("Failed to fetch profile data:", error);
+      }
+    };
+
+    if (isAuthenticated.isAuthenticated) {
+      fetchProfile();
+    }
+  }, [isAuthenticated.isAuthenticated]);
 
   const handleLogout = () => {
     localStorage.clear();
+    setAvatarUrl(null);
     logout();
     navigate("/sign-in");
   };
@@ -82,7 +108,10 @@ const Header: React.FC = () => {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Avatar className="h-10 w-10 cursor-pointer border-2 border-white hover:border-blue-300 transition-all">
-                      <AvatarImage src={user?.profileImage} alt={user?.name} />
+                      <AvatarImage
+                        src={avatarUrl || undefined}
+                        alt={user?.name}
+                      />
                       <AvatarFallback className="bg-blue-600 text-white">
                         {getInitials(user?.name)}
                       </AvatarFallback>
@@ -92,7 +121,7 @@ const Header: React.FC = () => {
                     <div className="flex items-center justify-start gap-2 p-2">
                       <Avatar className="h-8 w-8">
                         <AvatarImage
-                          src={user?.profileImage}
+                          src={avatarUrl || undefined}
                           alt={user?.name}
                         />
                         <AvatarFallback className="bg-blue-600 text-white text-xs">
