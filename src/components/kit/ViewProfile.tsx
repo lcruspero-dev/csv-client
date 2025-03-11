@@ -15,6 +15,7 @@ interface ViewProfileProps {
   userData?: any; // Make it optional to prevent errors
   onEdit: () => void;
 }
+
 interface UserType {
   _id: string;
   name: string;
@@ -30,12 +31,44 @@ const InfoItem = ({ label, value }: { label: string; value?: string }) => (
   </div>
 );
 
+// Utility function to format date as mm/dd/yyyy
+const formatDate = (dateString?: string): string => {
+  if (!dateString) return "—";
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return "—"; // Handle invalid dates
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${month}/${day}/${year}`;
+};
+
+// Utility function to calculate age from date of birth
+const calculateAge = (dateOfBirth?: string): string => {
+  if (!dateOfBirth) return "—";
+  const birthDate = new Date(dateOfBirth);
+  if (isNaN(birthDate.getTime())) return "—"; // Handle invalid dates
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDifference = today.getMonth() - birthDate.getMonth();
+  if (
+    monthDifference < 0 ||
+    (monthDifference === 0 && today.getDate() < birthDate.getDate())
+  ) {
+    age--;
+  }
+  return age.toString();
+};
+
 export default function ViewProfile({
   userData = {},
   onEdit,
 }: ViewProfileProps) {
   const storedUser = localStorage.getItem("user");
   const user: UserType | null = storedUser ? JSON.parse(storedUser) : null;
+
+  // Format date of birth and compute age
+  const formattedDateOfBirth = formatDate(userData?.dateOfBirth);
+  const computedAge = calculateAge(userData?.dateOfBirth);
 
   return (
     <div className="flex flex-col md:flex-row gap-3">
@@ -100,8 +133,8 @@ export default function ViewProfile({
                 <InfoItem label="Last Name" value={userData?.lastName} />
                 <InfoItem label="Middle Name" value={userData?.middleName} />
                 <InfoItem label="Gender" value={userData?.gender} />
-                <InfoItem label="Date of Birth" value={userData?.dateOfBirth} />
-                <InfoItem label="Age" value={userData?.age} />
+                <InfoItem label="Date of Birth" value={formattedDateOfBirth} />
+                <InfoItem label="Age" value={computedAge} />
                 <InfoItem label="Civil Status" value={userData?.civilStatus} />
                 <InfoItem
                   label="Personal Email"

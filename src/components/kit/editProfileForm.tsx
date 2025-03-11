@@ -43,7 +43,6 @@ interface ProfileFormData {
   personalEmail: string;
   contactNumber: string;
   dateOfBirth: string;
-  age: string;
   emergencyContactPerson: string;
   emergencyContactNumber: string;
   relationship: string;
@@ -54,12 +53,13 @@ interface ProfileFormData {
   sssNo: string;
   tinNo: string;
 }
+
 interface EditProfileFormProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  userData?: any; // Optional
-  onCancel?: () => void; // Optional
+  userData?: any;
+  onCancel?: () => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onSave?: (updatedData: any) => void; // Optional
+  onSave?: (updatedData: any) => void;
 }
 
 export default function EditProfileForm({
@@ -76,26 +76,10 @@ export default function EditProfileForm({
   const handleBirthdateChange = (date: Date | null) => {
     setBirthdate(date);
     if (date) {
-      const age = calculateAge(date);
       form.setValue("dateOfBirth", date.toISOString().split("T")[0]);
-      form.setValue("age", age.toString());
     } else {
       form.setValue("dateOfBirth", "");
-      form.setValue("age", "");
     }
-  };
-
-  const calculateAge = (birthdate: Date): number => {
-    const today = new Date();
-    let age = today.getFullYear() - birthdate.getFullYear();
-    const monthDifference = today.getMonth() - birthdate.getMonth();
-    if (
-      monthDifference < 0 ||
-      (monthDifference === 0 && today.getDate() < birthdate.getDate())
-    ) {
-      age--;
-    }
-    return age;
   };
 
   const form = useForm<ProfileFormData>({
@@ -111,7 +95,6 @@ export default function EditProfileForm({
       personalEmail: userData?.personalEmail ?? "",
       contactNumber: userData?.contactNumber ?? "",
       dateOfBirth: userData?.dateOfBirth ?? "",
-      age: userData?.age ?? "",
       emergencyContactPerson: userData?.emergencyContactPerson ?? "",
       emergencyContactNumber: userData?.emergencyContactNumber ?? "",
       relationship: userData?.relationship ?? "",
@@ -129,22 +112,18 @@ export default function EditProfileForm({
       console.log("Submitting data:", data);
       console.log("Avatar:", avatar);
 
-      // Prepare the form data
       const formData = new FormData();
       Object.entries(data).forEach(([key, value]) => {
         formData.append(key, value);
       });
 
-      // If avatar is selected, add it to the formData
       if (avatar) {
         formData.append("avatar", avatar);
       }
 
-      // Call API to create/update the profile
       const response = await UserProfileAPI.createProfile(formData);
       console.log("Profile created successfully:", response.data);
 
-      // Call onSave prop to switch back to view mode after successful submission
       if (onSave) onSave(response.data);
     } catch (error) {
       console.error("Error creating profile:", error);
@@ -312,66 +291,43 @@ export default function EditProfileForm({
                       />
                     </div>
 
-                    <FormField
-                      control={form.control}
-                      name="middleName"
-                      render={({ field }) => (
-                        <FormItem className="space-y-1">
-                          <FormLabel className="text-sm">
-                            Middle Name<span className="text-red-500"> *</span>
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="Middle Name"
-                              {...field}
-                              className="rounded-md h-10 text-sm py-2 w-1/2"
-                            />
-                          </FormControl>
-                          <FormMessage className="text-sm" />
-                        </FormItem>
-                      )}
-                    />
-
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                       <FormField
                         control={form.control}
-                        name="dateOfBirth"
-                        // eslint-disable-next-line no-empty-pattern
-                        render={({}) => (
+                        name="middleName"
+                        render={({ field }) => (
                           <FormItem className="space-y-1">
                             <FormLabel className="text-sm">
-                              Date of Birth
+                              Middle Name
                               <span className="text-red-500"> *</span>
                             </FormLabel>
-                            <div>
-                              <FormControl>
-                                <DatePicker
-                                  selected={birthdate}
-                                  onChange={handleBirthdateChange}
-                                  dateFormat="MM/dd/yyyy"
-                                  placeholderText="mm/dd/yyyy"
-                                  className="rounded-md h-10 text-sm py-2 border border-gray-300 px-3"
-                                />
-                              </FormControl>
-                            </div>
+                            <FormControl>
+                              <Input
+                                placeholder="Middle Name"
+                                {...field}
+                                className="rounded-md h-10 text-sm py-2"
+                              />
+                            </FormControl>
                             <FormMessage className="text-sm" />
                           </FormItem>
                         )}
                       />
                       <FormField
                         control={form.control}
-                        name="age"
-                        render={({ field }) => (
-                          <FormItem className="space-y-1">
-                            <FormLabel className="text-sm">
-                              Age <span className="text-red-500"> *</span>
+                        name="dateOfBirth"
+                        render={() => (
+                          <FormItem className="space-y-1 mt-6">
+                            <FormLabel className="text-sm ml-2 mr-4">
+                              Date of Birth
+                              <span className="text-red-500"> *</span>
                             </FormLabel>
                             <FormControl>
-                              <Input
-                                placeholder="Age"
-                                {...field}
-                                className="rounded-md h-10 text-sm py-2"
-                                readOnly
+                              <DatePicker
+                                selected={birthdate}
+                                onChange={handleBirthdateChange}
+                                dateFormat="MM/dd/yyyy"
+                                placeholderText="mm/dd/yyyy"
+                                className="rounded-md h-10 text-sm py-2 border border-gray-300 px-3"
                               />
                             </FormControl>
                             <FormMessage className="text-sm" />
