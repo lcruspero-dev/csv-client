@@ -1,6 +1,8 @@
-import { ResetPassword, UserAPI } from "@/API/endpoint";
+import { ResetPassword, UserAPI, UserProfileAPI } from "@/API/endpoint";
+import UserDetails from "@/components/kit/UserDetails"; // Import the UserDetails component
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -26,6 +28,34 @@ interface User {
   role: string;
 }
 
+interface UserProfile {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  middleName: string;
+  streetAddress: string;
+  barangay: string;
+  cityMunicipality: string;
+  province: string;
+  zipCode: string;
+  personalEmail: string;
+  contactNumber: string;
+  dateOfBirth: string;
+  emergencyContactPerson: string;
+  emergencyContactNumber: string;
+  relationship: string;
+  civilStatus: string;
+  gender: string;
+  pagibigNo: string;
+  philhealthNo: string;
+  sssNo: string;
+  tinNo: string;
+  _id: string;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+}
+
 const UserManagement: React.FC = () => {
   const [formData, setFormData] = useState<ResetPasswordFormData>({
     email: "",
@@ -36,6 +66,10 @@ const UserManagement: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedUserProfile, setSelectedUserProfile] =
+    useState<UserProfile | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState({
     password: false,
@@ -162,6 +196,24 @@ const UserManagement: React.FC = () => {
       ...prev,
       [field]: !prev[field],
     }));
+  };
+
+  const viewUserDetails = async (userId: string) => {
+    setLoadingProfile(true);
+    try {
+      const response = await UserProfileAPI.getProfileById(userId);
+      setSelectedUserProfile(response.data);
+      setModalOpen(true);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      toast({
+        title: "Failed to Load Profile",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingProfile(false);
+    }
   };
 
   return (
@@ -302,19 +354,30 @@ const UserManagement: React.FC = () => {
                         <p className="text-xs text-gray-400">
                           Status: {user.status}
                         </p>
+                        <Button
+                          size="sm"
+                          variant="link"
+                          onClick={() => viewUserDetails(user._id)}
+                          disabled={loadingProfile}
+                          className="text-xs text-blue-600 p-0 m-0"
+                        >
+                          View Details
+                        </Button>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Label htmlFor={`user-status-${user._id}`}>
-                          {user.status === "active" ? "Active" : "Inactive"}
-                        </Label>
-                        <Switch
-                          id={`user-status-${user._id}`}
-                          checked={user.status === "active"}
-                          onCheckedChange={() =>
-                            handleStatusToggle(user._id, user.status)
-                          }
-                          className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-gray-200"
-                        />
+                        <div className="flex items-center space-x-2">
+                          <Label htmlFor={`user-status-${user._id}`}>
+                            {user.status === "active" ? "Active" : "Inactive"}
+                          </Label>
+                          <Switch
+                            id={`user-status-${user._id}`}
+                            checked={user.status === "active"}
+                            onCheckedChange={() =>
+                              handleStatusToggle(user._id, user.status)
+                            }
+                            className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-gray-200"
+                          />
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -324,6 +387,27 @@ const UserManagement: React.FC = () => {
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* User Profile Modal */}
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          {/* <DialogHeader>
+            <DialogTitle>User Profile Details</DialogTitle>
+            <DialogDescription>
+              Complete profile information for this user.
+            </DialogDescription>
+          </DialogHeader> */}
+
+          {selectedUserProfile && (
+            <UserDetails
+              userData={selectedUserProfile}
+              onEdit={() => {
+                // Handle edit functionality here
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

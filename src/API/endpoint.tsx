@@ -142,4 +142,5 @@ export const UserProfileAPI = {
   getProfile: () => apiHelper("/api/userprofiles", "GET"),
   updateProfile: (body: object) => apiHelper("/api/userprofiles", "PUT", body),
   deleteProfile: () => apiHelper("/api/userprofiles", "DELETE"),
+  getProfileById: (id: any) => apiHelper(`/api/userprofiles/${id}`, "GET"),
 };
