@@ -26,6 +26,7 @@ import AdminResetPassword from "./pages/resetPassword/adminResetPassword";
 import ChangePassword from "./pages/resetPassword/changePassword";
 import CreateSurvey from "./pages/survey/CreateSurvey";
 import AdminTimeRecordEdit from "./pages/timeTracker/EditTime";
+import ScheduleAndAttendance from "./pages/timeTracker/ScheduleAndAttendance";
 import TimeTracker from "./pages/timeTracker/TimeTracker";
 
 function App() {
@@ -67,6 +68,10 @@ function App() {
               element={<ChangePassword />}
             />
             <Route path="profile/edit" element={<ProfilePage />} />
+            <Route
+              path="/schedule-and-attendance"
+              element={<ScheduleAndAttendance />}
+            />
           </Route>
         </Routes>
       </div>
