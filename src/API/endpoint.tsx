@@ -144,3 +144,36 @@ export const UserProfileAPI = {
   deleteProfile: () => apiHelper("/api/userprofiles", "DELETE"),
   getProfileById: (id: any) => apiHelper(`/api/userprofiles/${id}`, "GET"),
 };
+
+export const ScheduleAndAttendanceAPI = {
+  // Schedule Entries
+  getScheduleEntries: () =>
+    apiHelper("/api/ScheduleAndAttendanceRoutes/schedule-entries", "GET"),
+  createScheduleEntry: (body: object) =>
+    apiHelper(
+      "/api/ScheduleAndAttendanceRoutes/schedule-entries",
+      "POST",
+      body
+    ),
+  updateScheduleEntry: (id: string, body: object) =>
+    apiHelper(
+      `/api/ScheduleAndAttendanceRoutes/schedule-entries/${id}`,
+      "PUT",
+      body
+    ),
+  // Attendance Entries
+  getAttendanceEntries: () =>
+    apiHelper("/api/ScheduleAndAttendanceRoutes/attendance-entries", "GET"),
+  createAttendanceEntry: (body: object) =>
+    apiHelper(
+      "/api/ScheduleAndAttendanceRoutes/attendance-entries",
+      "POST",
+      body
+    ),
+  updateAttendanceEntry: (id: string, body: object) =>
+    apiHelper(
+      `/api/ScheduleAndAttendanceRoutes/attendance-entries/${id}`,
+      "PUT",
+      body
+    ),
+};

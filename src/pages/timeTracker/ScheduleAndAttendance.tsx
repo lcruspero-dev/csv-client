@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import React, { useState } from "react";
 
+import AddEmployee from "@/components/kit/AddEmployee";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -287,6 +288,20 @@ const ScheduleAndAttendance: React.FC = () => {
     useState<ShiftType>("morning");
   const [selectedAttendanceStatus, setSelectedAttendanceStatus] =
     useState<AttendanceStatus>("present");
+  const [employees, setEmployees] = useState<Employee[]>([
+    {
+      id: "1",
+      name: "Jane Smith",
+      department: "CSR",
+      avatarUrl: "https://i.pravatar.cc/150?img=1",
+    },
+    {
+      id: "2",
+      name: "John Doe",
+      department: "HR",
+      avatarUrl: "https://i.pravatar.cc/150?img=2",
+    },
+  ]);
 
   // Filter employees by department
   const filteredEmployees =
@@ -724,14 +739,12 @@ const ScheduleAndAttendance: React.FC = () => {
                                         <p>Status: {attendanceEntry.status}</p>
                                         {attendanceEntry.checkinTime && (
                                           <p>
-                                            Check-in:{" "}
-                                            {attendanceEntry.checkinTime}
+                                            In: {attendanceEntry.checkinTime}
                                           </p>
                                         )}
                                         {attendanceEntry.checkoutTime && (
                                           <p>
-                                            Check-out:{" "}
-                                            {attendanceEntry.checkoutTime}
+                                            Out: {attendanceEntry.checkoutTime}
                                           </p>
                                         )}
                                       </>
@@ -756,7 +769,10 @@ const ScheduleAndAttendance: React.FC = () => {
           </div>
           <div className="flex gap-2 text-xs">
             <Button variant="outline">Export Data</Button>
-            <Button>Add Employee</Button>
+            {/* <Button>Add Employee</Button> */}
+            <AddEmployee
+              onAdd={(employee) => setEmployees([...employees, employee])}
+            />
           </div>
         </CardFooter>
       </Card>
