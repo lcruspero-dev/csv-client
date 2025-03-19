@@ -27,6 +27,11 @@ interface Employee {
   avatarUrl?: string;
 }
 
+interface TeamLeader {
+  _id: string;
+  teamLeader: string; // Use the `teamLeader` field for display and value
+}
+
 interface AddEmployeeProps {
   onAdd: (employee: Employee) => void;
 }
@@ -39,7 +44,14 @@ const AddEmployee: React.FC<AddEmployeeProps> = ({ onAdd }) => {
     null
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedDepartment, setSelectedDepartment] = useState<string>("");
+  const [teamLeaders, setTeamLeaders] = useState<TeamLeader[]>([]);
+  const [selectedTeamLeader, setSelectedTeamLeader] = useState<string>("");
+  const [selectedPosition, setSelectedPosition] = useState<string>("");
+  const [showConfirmation, setShowConfirmation] = useState(false); // State for confirmation dialog
+  const [existingEntry, setExistingEntry] = useState<{
+    employeeName: string;
+    teamLeader: string;
+  } | null>(null); // Store existing entry details
 
   useEffect(() => {
     const searchEmployees = async () => {
@@ -67,31 +79,47 @@ const AddEmployee: React.FC<AddEmployeeProps> = ({ onAdd }) => {
     return () => clearTimeout(debounceTimeout);
   }, [searchQuery]);
 
+  useEffect(() => {
+    const fetchTeamLeaders = async () => {
+      try {
+        const response = await ScheduleAndAttendanceAPI.getTeamLeader();
+        setTeamLeaders(response.data); // Set the team leaders from the API response
+      } catch (error) {
+        console.error("Error fetching team leaders", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch team leaders. Please try again.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchTeamLeaders();
+  }, []);
+
   const handleAddEmployee = async () => {
-    if (!selectedEmployee) return;
+    if (!selectedEmployee || !selectedTeamLeader || !selectedPosition) return;
 
     setIsSubmitting(true);
     try {
-      // Send the selected employee data to the schedule entry API
-      await ScheduleAndAttendanceAPI.createScheduleEntry({
-        employeeId: selectedEmployee._id,
-        employeeName: selectedEmployee.name,
-        department: selectedDepartment,
-      });
+      // Check if the employee is already a member of the team leader
+      const existingEntryResponse =
+        await ScheduleAndAttendanceAPI.checkExistingEntry({
+          employeeId: selectedEmployee._id,
+        });
 
-      // Call the onAdd callback to update the parent component
-      onAdd(selectedEmployee);
+      if (existingEntryResponse.data.exists) {
+        // Show confirmation dialog
+        setExistingEntry({
+          employeeName: existingEntryResponse.data.employeeName,
+          teamLeader: existingEntryResponse.data.teamLeader,
+        });
+        setShowConfirmation(true);
+        return; // Stop further execution until user confirms
+      }
 
-      // Show success message
-      toast({
-        title: "Success",
-        description: `${selectedEmployee.name} has been added to the schedule.`,
-      });
-
-      // Reset and close the dialog
-      setIsOpen(false);
-      setSearchQuery("");
-      setSelectedEmployee(null);
+      // If no existing entry or user confirms, proceed to create/update
+      await proceedWithAddEmployee();
     } catch (error) {
       console.error("Error creating schedule entry", error);
       toast({
@@ -104,10 +132,52 @@ const AddEmployee: React.FC<AddEmployeeProps> = ({ onAdd }) => {
     }
   };
 
+  const proceedWithAddEmployee = async () => {
+    try {
+      // Send the selected employee data to the schedule entry API
+      await ScheduleAndAttendanceAPI.createScheduleEntry({
+        employeeId: selectedEmployee?._id,
+        employeeName: selectedEmployee?.name,
+        teamLeader: selectedTeamLeader,
+        position: selectedPosition,
+      });
+
+      // Call the onAdd callback to update the parent component
+      if (selectedEmployee) {
+        onAdd(selectedEmployee);
+      }
+
+      // Show success message
+      toast({
+        title: "Success",
+        description: `${selectedEmployee?.name} has been added.`,
+      });
+
+      // Reset and close the dialog
+      resetForm();
+    } catch (error) {
+      console.error("Error creating schedule entry", error);
+      toast({
+        title: "Error",
+        description: "Failed to add employee to schedule. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleSelectEmployee = (emp: Employee) => {
     setSelectedEmployee(emp);
     setSearchQuery(emp.name); // Update search input with the selected name
-    setSelectedDepartment(emp.department); // Set the initial department value
+  };
+
+  const resetForm = () => {
+    setIsOpen(false);
+    setSearchQuery("");
+    setSelectedEmployee(null);
+    setSelectedTeamLeader("");
+    setSelectedPosition("");
+    setShowConfirmation(false); // Close confirmation dialog
+    setExistingEntry(null); // Clear existing entry details
   };
 
   return (
@@ -151,10 +221,6 @@ const AddEmployee: React.FC<AddEmployeeProps> = ({ onAdd }) => {
                           )}
                           <div>
                             <span className="font-medium">{emp.name}</span>
-                            <span className="text-gray-500">
-                              {" "}
-                              - {emp.position} ({emp.department})
-                            </span>
                           </div>
                         </div>
                       ))}
@@ -168,9 +234,6 @@ const AddEmployee: React.FC<AddEmployeeProps> = ({ onAdd }) => {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm">{selectedEmployee.name}</p>
-                        <p className="text-xs text-gray-600">
-                          {selectedEmployee.position}
-                        </p>
                       </div>
                       <Button
                         variant="ghost"
@@ -186,22 +249,62 @@ const AddEmployee: React.FC<AddEmployeeProps> = ({ onAdd }) => {
                     </div>
                   </div>
 
-                  {/* Department selection */}
+                  {/* Position selection */}
                   <div className="mt-4 mb-2">
-                    <Label>Department</Label>
+                    <Label>Position</Label>
                     <Select
-                      value={selectedDepartment}
-                      onValueChange={setSelectedDepartment}
+                      value={selectedPosition}
+                      onValueChange={setSelectedPosition}
                     >
                       <SelectTrigger className="w-full mt-1">
-                        <SelectValue placeholder="Department" />
+                        <SelectValue placeholder="Select Position" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">All Departments</SelectItem>
-                        <SelectItem value="Engineering">Engineering</SelectItem>
-                        <SelectItem value="Design">Design</SelectItem>
-                        <SelectItem value="Marketing">Marketing</SelectItem>
-                        <SelectItem value="HR">HR</SelectItem>
+                        <SelectItem value="Customer Service Representative">
+                          Customer Service Representative
+                        </SelectItem>
+                        <SelectItem value="Human Resources">
+                          Human Resources
+                        </SelectItem>
+                        <SelectItem value="IT Specialist">
+                          IT Specialist
+                        </SelectItem>
+                        <SelectItem value="Team Manager">
+                          Team Manager
+                        </SelectItem>
+                        <SelectItem value="Team Leader">Team Leader</SelectItem>
+                        <SelectItem value="Executive Assistant">
+                          Executive Assistant
+                        </SelectItem>
+                        <SelectItem value="Corporate Recruiter">
+                          Corporate Recruiter
+                        </SelectItem>
+                        <SelectItem value="Operation Manager">
+                          Operation Manager
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Team Leader selection */}
+                  <div className="mt-4 mb-2">
+                    <Label>Team Leader</Label>
+                    <Select
+                      value={selectedTeamLeader}
+                      onValueChange={setSelectedTeamLeader}
+                    >
+                      <SelectTrigger className="w-full mt-1">
+                        <SelectValue placeholder="Select Team Leader" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {teamLeaders.map((leader) => (
+                          <SelectItem
+                            key={leader._id}
+                            value={leader.teamLeader}
+                          >
+                            {leader.teamLeader}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -213,7 +316,7 @@ const AddEmployee: React.FC<AddEmployeeProps> = ({ onAdd }) => {
           <DialogFooter className="text-xs">
             <Button
               variant="outline"
-              onClick={() => setIsOpen(false)}
+              onClick={resetForm} // Clear all states on cancel
               disabled={isSubmitting}
             >
               Cancel
@@ -221,9 +324,45 @@ const AddEmployee: React.FC<AddEmployeeProps> = ({ onAdd }) => {
             <Button
               className="w-24"
               onClick={handleAddEmployee}
-              disabled={!selectedEmployee || isSubmitting}
+              disabled={
+                !selectedEmployee ||
+                isSubmitting ||
+                !selectedTeamLeader ||
+                !selectedPosition
+              }
             >
               {isSubmitting ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmation Dialog */}
+      <Dialog open={showConfirmation} onOpenChange={setShowConfirmation}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Changes</DialogTitle>
+          </DialogHeader>
+          <p>
+            {existingEntry?.employeeName} is already a member of{" "}
+            {existingEntry?.teamLeader}. Do you want to continue the changes?
+          </p>
+          <DialogFooter>
+            <Button
+              className="text-xs w-16"
+              variant="outline"
+              onClick={() => setShowConfirmation(false)}
+            >
+              No
+            </Button>
+            <Button
+              className="text-xs w-16"
+              onClick={() => {
+                setShowConfirmation(false);
+                proceedWithAddEmployee();
+              }}
+            >
+              Yes
             </Button>
           </DialogFooter>
         </DialogContent>

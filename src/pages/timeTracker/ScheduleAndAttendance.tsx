@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   addDays,
   eachDayOfInterval,
@@ -10,19 +11,20 @@ import {
   startOfWeek,
 } from "date-fns";
 import {
-  Calendar,
   CheckCircle,
   ChevronLeft,
   ChevronRight,
   Clock,
   XCircle,
 } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
+import { ScheduleAndAttendanceAPI } from "@/API/endpoint";
 import AddEmployee from "@/components/kit/AddEmployee";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Card,
   CardContent,
@@ -61,7 +63,9 @@ type Employee = {
   id: string;
   name: string;
   department: string;
+  teamLeader: string;
   avatarUrl?: string;
+  schedule: { date: string; shiftType: string }[];
 };
 
 type ShiftType = "morning" | "afternoon" | "night" | "off";
@@ -69,9 +73,19 @@ type ShiftType = "morning" | "afternoon" | "night" | "off";
 type AttendanceStatus = "present" | "absent" | "late" | "holiday" | "pending";
 
 type ScheduleEntry = {
-  employeeId: string;
-  date: Date;
+  date: string;
   shiftType: ShiftType;
+  _id: string;
+  employeeId: string;
+  employeeName: string;
+  teamLeader: string;
+  position: string;
+  schedule: {
+    date: string;
+    shiftType: string;
+    _id: string;
+  }[];
+  __v: number;
 };
 
 type AttendanceEntry = {
@@ -83,137 +97,6 @@ type AttendanceEntry = {
 };
 
 type ViewMode = "weekly" | "monthly";
-
-// Sample data
-const employees: Employee[] = [
-  {
-    id: "1",
-    name: "Jane Smith",
-    department: "CSR",
-    avatarUrl: "https://i.pravatar.cc/150?img=1",
-  },
-  {
-    id: "2",
-    name: "John Doe",
-    department: "HR",
-    avatarUrl: "https://i.pravatar.cc/150?img=2",
-  },
-  {
-    id: "3",
-    name: "Alice Johnson",
-    department: "CSR",
-    avatarUrl: "https://i.pravatar.cc/150?img=3",
-  },
-  {
-    id: "4",
-    name: "Bob Wilson",
-    department: "IT",
-    avatarUrl: "https://i.pravatar.cc/150?img=4",
-  },
-  {
-    id: "5",
-    name: "Carol Brown",
-    department: "HR",
-    avatarUrl: "https://i.pravatar.cc/150?img=5",
-  },
-  {
-    id: "6",
-    name: "Carol Brown",
-    department: "HR",
-    avatarUrl: "https://i.pravatar.cc/150?img=5",
-  },
-];
-
-// Generate sample schedule data
-const generateSampleSchedule = (): ScheduleEntry[] => {
-  const today = new Date();
-  const startDate = startOfWeek(today);
-  const endDate = endOfMonth(today);
-
-  const schedule: ScheduleEntry[] = [];
-  const shiftTypes: ShiftType[] = ["morning", "afternoon", "night", "off"];
-
-  employees.forEach((employee) => {
-    let currentDate = startDate;
-
-    while (currentDate <= endDate) {
-      // Assign a random shift type for each day
-      const randomShiftIndex = Math.floor(Math.random() * shiftTypes.length);
-
-      schedule.push({
-        employeeId: employee.id,
-        date: new Date(currentDate),
-        shiftType: shiftTypes[randomShiftIndex],
-      });
-
-      currentDate = addDays(currentDate, 1);
-    }
-  });
-
-  return schedule;
-};
-
-// Generate sample attendance data
-const generateSampleAttendance = (): AttendanceEntry[] => {
-  const today = new Date();
-  const startDate = startOfWeek(today);
-  const endDate = endOfMonth(today);
-
-  const attendance: AttendanceEntry[] = [];
-  const statuses: AttendanceStatus[] = [
-    "present",
-    "absent",
-    "late",
-    "holiday",
-    "pending",
-  ];
-
-  employees.forEach((employee) => {
-    let currentDate = startDate;
-
-    while (currentDate <= endDate) {
-      // Don't generate attendance data for future dates
-      if (currentDate <= today) {
-        const randomStatusIndex = Math.floor(
-          Math.random() * (statuses.length - 1)
-        ); // Exclude 'pending' for past dates
-
-        attendance.push({
-          employeeId: employee.id,
-          date: new Date(currentDate),
-          status: statuses[randomStatusIndex],
-          checkinTime:
-            statuses[randomStatusIndex] !== "absent"
-              ? `0${7 + Math.floor(Math.random() * 3)}:${Math.floor(
-                  Math.random() * 60
-                )
-                  .toString()
-                  .padStart(2, "0")}`
-              : undefined,
-          checkoutTime:
-            statuses[randomStatusIndex] !== "absent"
-              ? `${16 + Math.floor(Math.random() * 3)}:${Math.floor(
-                  Math.random() * 60
-                )
-                  .toString()
-                  .padStart(2, "0")}`
-              : undefined,
-        });
-      } else {
-        // Future dates are always 'pending'
-        attendance.push({
-          employeeId: employee.id,
-          date: new Date(currentDate),
-          status: "pending",
-        });
-      }
-
-      currentDate = addDays(currentDate, 1);
-    }
-  });
-
-  return attendance;
-};
 
 // Helper to get shift color
 const getShiftColor = (shiftType: ShiftType): string => {
@@ -273,12 +156,8 @@ const ScheduleAndAttendance: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>("weekly");
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
-  const [schedule, setSchedule] = useState<ScheduleEntry[]>(
-    generateSampleSchedule()
-  );
-  const [attendance, setAttendance] = useState<AttendanceEntry[]>(
-    generateSampleAttendance()
-  );
+  const [schedule, setSchedule] = useState<ScheduleEntry[]>([]);
+  const [attendance, setAttendance] = useState<AttendanceEntry[]>([]);
   const [isAddShiftOpen, setIsAddShiftOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
     null
@@ -288,78 +167,109 @@ const ScheduleAndAttendance: React.FC = () => {
     useState<ShiftType>("morning");
   const [selectedAttendanceStatus, setSelectedAttendanceStatus] =
     useState<AttendanceStatus>("present");
-  const [employees, setEmployees] = useState<Employee[]>([
-    {
-      id: "1",
-      name: "Jane Smith",
-      department: "CSR",
-      avatarUrl: "https://i.pravatar.cc/150?img=1",
-    },
-    {
-      id: "2",
-      name: "John Doe",
-      department: "HR",
-      avatarUrl: "https://i.pravatar.cc/150?img=2",
-    },
-  ]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [repeatDays, setRepeatDays] = useState<number>(1);
+  // Add new state variable to track active tab
+  const [activeTab, setActiveTab] = useState("schedule");
 
-  // Filter employees by department
+  const resetDialogState = () => {
+    setSelectedEmployee(null);
+    setSelectedDate(null);
+    setSelectedShiftType("morning");
+    setSelectedAttendanceStatus("present");
+    setRepeatDays(1);
+  };
+
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      try {
+        setLoading(true);
+        const response = await ScheduleAndAttendanceAPI.getScheduleEntries();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const formattedEmployees = response.data.map((entry: any) => ({
+          id: entry.employeeId,
+          name: entry.employeeName,
+          department: entry.position,
+          teamLeader: entry.teamLeader,
+          avatarUrl: `https://i.pravatar.cc/150?u=${entry.employeeId}`,
+          schedule: entry.schedule || [],
+        }));
+        setEmployees(formattedEmployees);
+
+        // Flatten the schedule array
+        const flattenedSchedule = response.data.flatMap(
+          (entry: ScheduleEntry) =>
+            entry.schedule.map((sched) => ({
+              ...sched,
+              employeeId: entry.employeeId,
+              employeeName: entry.employeeName,
+              teamLeader: entry.teamLeader,
+              position: entry.position,
+            }))
+        );
+        setSchedule(flattenedSchedule);
+      } catch (err) {
+        setError("Failed to fetch employee data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEmployees();
+  }, []);
+
   const filteredEmployees =
     selectedDepartment === "all"
       ? employees
       : employees.filter((emp) => emp.department === selectedDepartment);
 
-  // Get days based on view mode
+  if (loading) return <p>Loading employees...</p>;
+  if (error) return <p className="text-red-500">{error}</p>;
+
   const getDaysInView = () => {
-    if (viewMode === "weekly") {
-      const start = startOfWeek(currentDate);
-      const end = endOfWeek(currentDate);
-      return eachDayOfInterval({ start, end });
-    } else {
-      const start = startOfMonth(currentDate);
-      const end = endOfMonth(currentDate);
-      return eachDayOfInterval({ start, end });
-    }
+    const start =
+      viewMode === "weekly"
+        ? startOfWeek(currentDate)
+        : startOfMonth(currentDate);
+    const end =
+      viewMode === "weekly" ? endOfWeek(currentDate) : endOfMonth(currentDate);
+    return eachDayOfInterval({ start, end });
   };
 
   const days = getDaysInView();
 
-  // Navigation functions
   const goToPreviousPeriod = () => {
-    if (viewMode === "weekly") {
-      setCurrentDate((prevDate) => addDays(prevDate, -7));
-    } else {
-      const prevMonth = new Date(currentDate);
-      prevMonth.setMonth(prevMonth.getMonth() - 1);
-      setCurrentDate(prevMonth);
-    }
+    setCurrentDate((prevDate) =>
+      viewMode === "weekly"
+        ? addDays(prevDate, -7)
+        : new Date(prevDate.setMonth(prevDate.getMonth() - 1))
+    );
   };
 
   const goToNextPeriod = () => {
-    if (viewMode === "weekly") {
-      setCurrentDate((prevDate) => addDays(prevDate, 7));
-    } else {
-      const nextMonth = new Date(currentDate);
-      nextMonth.setMonth(nextMonth.getMonth() + 1);
-      setCurrentDate(nextMonth);
-    }
+    setCurrentDate((prevDate) =>
+      viewMode === "weekly"
+        ? addDays(prevDate, 7)
+        : new Date(prevDate.setMonth(prevDate.getMonth() + 1))
+    );
   };
 
   const goToToday = () => {
     setCurrentDate(new Date());
   };
 
-  // Find schedule entry for an employee on a specific day
   const findScheduleEntry = (
     employeeId: string,
     date: Date
   ): ScheduleEntry | undefined => {
     return schedule.find(
-      (entry) => entry.employeeId === employeeId && isSameDay(entry.date, date)
+      (entry) =>
+        entry.employeeId === employeeId && isSameDay(new Date(entry.date), date)
     );
   };
 
-  // Find attendance entry for an employee on a specific day
   const findAttendanceEntry = (
     employeeId: string,
     date: Date
@@ -369,93 +279,143 @@ const ScheduleAndAttendance: React.FC = () => {
     );
   };
 
-  // Update schedule
-  const updateSchedule = (
+  const updateSchedule = async (
     employeeId: string,
     date: Date,
     shiftType: ShiftType
   ) => {
-    const updatedSchedule = [...schedule];
-    const existingEntryIndex = updatedSchedule.findIndex(
-      (entry) => entry.employeeId === employeeId && isSameDay(entry.date, date)
-    );
+    try {
+      const formattedDate = `${date.getFullYear()}-${String(
+        date.getMonth() + 1
+      ).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
-    if (existingEntryIndex !== -1) {
-      updatedSchedule[existingEntryIndex].shiftType = shiftType;
-    } else {
-      updatedSchedule.push({
-        employeeId,
-        date,
+      // Call the API to update the schedule
+      await ScheduleAndAttendanceAPI.updateScheduleEntry(employeeId, {
+        date: formattedDate,
         shiftType,
       });
-    }
 
-    setSchedule(updatedSchedule);
+      // Find the existing schedule entry for the employee and date
+      const existingEntryIndex = schedule.findIndex(
+        (entry) =>
+          entry.employeeId === employeeId &&
+          isSameDay(new Date(entry.date), date) // Convert entry.date to Date
+      );
+
+      if (existingEntryIndex !== -1) {
+        // If an entry exists, update it
+        const updatedSchedule = [...schedule];
+        updatedSchedule[existingEntryIndex] = {
+          ...updatedSchedule[existingEntryIndex],
+          shiftType,
+        };
+        setSchedule(updatedSchedule);
+      } else {
+        // If no entry exists, create a new one
+        const newEntry: ScheduleEntry = {
+          date: formattedDate,
+          shiftType,
+          _id: Date.now().toString(), // Generate a unique ID (temporary)
+          employeeId,
+          employeeName: selectedEmployee?.name || "",
+          teamLeader: selectedEmployee?.teamLeader || "",
+          position: selectedEmployee?.department || "",
+          schedule: [],
+          __v: 0,
+        };
+        setSchedule([...schedule, newEntry]);
+      }
+    } catch (error) {
+      console.error("Error updating schedule:", error);
+    }
   };
 
-  // Update attendance
   const updateAttendance = (
     employeeId: string,
     date: Date,
     status: AttendanceStatus
   ) => {
-    const updatedAttendance = [...attendance];
-    const existingEntryIndex = updatedAttendance.findIndex(
-      (entry) => entry.employeeId === employeeId && isSameDay(entry.date, date)
+    const updatedAttendance = attendance.map((entry) =>
+      entry.employeeId === employeeId && isSameDay(entry.date, date)
+        ? { ...entry, status }
+        : entry
     );
-
-    if (existingEntryIndex !== -1) {
-      updatedAttendance[existingEntryIndex].status = status;
-    } else {
-      updatedAttendance.push({
-        employeeId,
-        date,
-        status,
-      });
-    }
-
     setAttendance(updatedAttendance);
   };
 
-  // Handle adding a new shift
-  const handleAddShift = () => {
+  const handleAddShift = async () => {
     if (selectedEmployee && selectedDate) {
-      updateSchedule(selectedEmployee.id, selectedDate, selectedShiftType);
+      const updatedSchedule = [...schedule]; // Create a copy of the current schedule
+
+      for (let i = 0; i < repeatDays; i++) {
+        const currentDate = addDays(selectedDate, i);
+        const formattedDate = `${currentDate.getFullYear()}-${String(
+          currentDate.getMonth() + 1
+        ).padStart(2, "0")}-${String(currentDate.getDate()).padStart(2, "0")}`;
+
+        // Find the existing schedule entry for the employee and date
+        const existingEntryIndex = updatedSchedule.findIndex(
+          (entry) =>
+            entry.employeeId === selectedEmployee.id &&
+            isSameDay(new Date(entry.date), currentDate)
+        );
+
+        if (existingEntryIndex !== -1) {
+          // If an entry exists, update it
+          updatedSchedule[existingEntryIndex] = {
+            ...updatedSchedule[existingEntryIndex],
+            shiftType: selectedShiftType,
+          };
+        } else {
+          // If no entry exists, create a new one
+          const newEntry: ScheduleEntry = {
+            date: formattedDate,
+            shiftType: selectedShiftType,
+            _id: Date.now().toString(), // Generate a unique ID (temporary)
+            employeeId: selectedEmployee.id,
+            employeeName: selectedEmployee.name,
+            teamLeader: selectedEmployee.teamLeader,
+            position: selectedEmployee.department,
+            schedule: [],
+            __v: 0,
+          };
+          updatedSchedule.push(newEntry);
+        }
+
+        // Call the API to update the schedule for each repeated day
+        await ScheduleAndAttendanceAPI.updateScheduleEntry(
+          selectedEmployee.id,
+          {
+            date: formattedDate,
+            shiftType: selectedShiftType,
+          }
+        );
+      }
+
+      // Update the state once with all the changes
+      setSchedule(updatedSchedule);
       setIsAddShiftOpen(false);
+      setRepeatDays(1); // Reset repeatDays to default value
     }
   };
 
-  // Handle click on a schedule cell
   const handleScheduleCellClick = (employee: Employee, date: Date) => {
     setSelectedEmployee(employee);
     setSelectedDate(date);
     const entry = findScheduleEntry(employee.id, date);
-    if (entry) {
-      setSelectedShiftType(entry.shiftType);
-    } else {
-      setSelectedShiftType("morning");
-    }
+    setSelectedShiftType(entry ? entry.shiftType : "morning");
     setIsAddShiftOpen(true);
   };
 
-  // Handle click on an attendance cell
   const handleAttendanceCellClick = (employee: Employee, date: Date) => {
-    // Only allow updating attendance for current or past dates
     if (date > new Date()) return;
-
     setSelectedEmployee(employee);
     setSelectedDate(date);
     const entry = findAttendanceEntry(employee.id, date);
-    if (entry) {
-      setSelectedAttendanceStatus(entry.status);
-    } else {
-      setSelectedAttendanceStatus("present");
-    }
+    setSelectedAttendanceStatus(entry ? entry.status : "present");
     setIsAddShiftOpen(true);
   };
 
-  // Handle confirmation of attendance status update
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleUpdateAttendance = () => {
     if (selectedEmployee && selectedDate) {
       updateAttendance(
@@ -468,7 +428,7 @@ const ScheduleAndAttendance: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto p-1">
       <Card className="w-full">
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -507,7 +467,6 @@ const ScheduleAndAttendance: React.FC = () => {
                   <SelectItem value="HR">HR</SelectItem>
                 </SelectContent>
               </Select>
-
               <Tabs
                 value={viewMode}
                 onValueChange={(value) => setViewMode(value as ViewMode)}
@@ -528,12 +487,11 @@ const ScheduleAndAttendance: React.FC = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="schedule">
+          <Tabs defaultValue="schedule" onValueChange={setActiveTab}>
             <TabsList className="mb-4">
               <TabsTrigger value="schedule">Schedule</TabsTrigger>
               <TabsTrigger value="attendance">Attendance</TabsTrigger>
             </TabsList>
-
             <TabsContent value="schedule" className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead>
@@ -571,7 +529,7 @@ const ScheduleAndAttendance: React.FC = () => {
                         <div className="flex items-center">
                           <Avatar className="h-8 w-8 mr-2 rounded-full overflow-hidden border-2 border-blue-200">
                             <AvatarImage
-                              src="/api/placeholder/32/32"
+                              src={employee.avatarUrl}
                               alt={employee.name}
                             />
                             <AvatarFallback>
@@ -596,7 +554,7 @@ const ScheduleAndAttendance: React.FC = () => {
                         return (
                           <td
                             key={day.toString()}
-                            className={`p-2 border text-center cursor-pointer hover:bg-gray-50 ${
+                            className={`p-2 border text-center cursor-pointer hover:bg-blue-100 ${
                               isToday(day) ? "bg-blue-50" : ""
                             }`}
                             onClick={() =>
@@ -633,7 +591,6 @@ const ScheduleAndAttendance: React.FC = () => {
                 </tbody>
               </table>
             </TabsContent>
-
             <TabsContent value="attendance" className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead>
@@ -671,7 +628,7 @@ const ScheduleAndAttendance: React.FC = () => {
                         <div className="flex items-center">
                           <Avatar className="h-8 w-8 mr-2 rounded-full overflow-hidden border-2 border-blue-200">
                             <AvatarImage
-                              src="/api/placeholder/32/32"
+                              src={employee.avatarUrl}
                               alt={employee.name}
                             />
                             <AvatarFallback>
@@ -679,12 +636,10 @@ const ScheduleAndAttendance: React.FC = () => {
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <div className="font-bold text-sm">
-                              {employee.name}
-                            </div>
-                            <div className="text-xs text-gray-500">
+                            <p className="font-bold text-sm">{employee.name}</p>
+                            <p className="text-xs text-gray-500">
                               {employee.department}
-                            </div>
+                            </p>
                           </div>
                         </div>
                       </td>
@@ -696,7 +651,7 @@ const ScheduleAndAttendance: React.FC = () => {
                         return (
                           <td
                             key={day.toString()}
-                            className={`p-2 border text-center cursor-pointer hover:bg-gray-50 ${
+                            className={`p-2 border text-center cursor-pointer hover:bg-blue-100 ${
                               isToday(day) ? "bg-blue-50" : ""
                             }`}
                             onClick={() =>
@@ -769,16 +724,21 @@ const ScheduleAndAttendance: React.FC = () => {
           </div>
           <div className="flex gap-2 text-xs">
             <Button variant="outline">Export Data</Button>
-            {/* <Button>Add Employee</Button> */}
             <AddEmployee
-              onAdd={(employee) => setEmployees([...employees, employee])}
+              onAdd={(employee) =>
+                setEmployees([...employees, employee as unknown as Employee])
+              }
             />
           </div>
         </CardFooter>
       </Card>
-
-      {/* Dialog for adding or updating shift/attendance */}
-      <Dialog open={isAddShiftOpen} onOpenChange={setIsAddShiftOpen}>
+      <Dialog
+        open={isAddShiftOpen}
+        onOpenChange={(open) => {
+          setIsAddShiftOpen(open);
+          if (!open) resetDialogState();
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
@@ -795,13 +755,13 @@ const ScheduleAndAttendance: React.FC = () => {
               Select shift type or attendance status to update
             </DialogDescription>
           </DialogHeader>
-
-          <Tabs defaultValue="shift">
+          <Tabs
+            defaultValue={activeTab === "schedule" ? "shift" : "attendance"}
+          >
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="shift">Shift Schedule</TabsTrigger>
               <TabsTrigger value="attendance">Attendance</TabsTrigger>
             </TabsList>
-
             <TabsContent value="shift">
               <div className="space-y-4 mt-4">
                 <Label htmlFor="shift-type">Shift Type</Label>
@@ -826,12 +786,39 @@ const ScheduleAndAttendance: React.FC = () => {
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="off" id="off" />
-                    <Label htmlFor="off">Day Off</Label>
+                    <Label htmlFor="off">Rest Day</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="PTO" id="PTO" />
+                    <Label htmlFor="PTO">Paid Time Off</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="Leave" id="Leave" />
+                    <Label htmlFor="Leave">Plan Leave</Label>
                   </div>
                 </RadioGroup>
+                <div className="flex items-center space-x-2 text-sm">
+                  <span>Repeat for</span>
+                  <Select
+                    value={repeatDays.toString()}
+                    onValueChange={(value) => setRepeatDays(parseInt(value))}
+                  >
+                    <SelectTrigger className="w-40 text-sm">
+                      <SelectValue placeholder="Repeat days" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1 day</SelectItem>
+                      <SelectItem value="2">2 days</SelectItem>
+                      <SelectItem value="3">3 days</SelectItem>
+                      <SelectItem value="4">4 days</SelectItem>
+                      <SelectItem value="5">5 days</SelectItem>
+                      <SelectItem value="6">6 days</SelectItem>
+                      <SelectItem value="7">7 days</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </TabsContent>
-
             <TabsContent value="attendance">
               <div className="space-y-4 mt-4">
                 <Label htmlFor="attendance-status">Attendance Status</Label>
@@ -862,12 +849,25 @@ const ScheduleAndAttendance: React.FC = () => {
               </div>
             </TabsContent>
           </Tabs>
-
           <DialogFooter className="text-xs">
-            <Button variant="outline" onClick={() => setIsAddShiftOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                resetDialogState(); // Reset all state data
+                setIsAddShiftOpen(false); // Close the dialog
+              }}
+            >
               Cancel
             </Button>
-            <Button onClick={handleAddShift}>Save Changes</Button>
+            <Button
+              onClick={
+                activeTab === "schedule"
+                  ? handleAddShift
+                  : handleUpdateAttendance
+              }
+            >
+              Save Changes
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

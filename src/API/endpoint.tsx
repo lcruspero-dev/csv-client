@@ -176,4 +176,14 @@ export const ScheduleAndAttendanceAPI = {
       "PUT",
       body
     ),
+
+  getTeamLeader: () =>
+    apiHelper("/api/ScheduleAndAttendanceRoutes/team-leader-entries", "GET"),
+
+  checkExistingEntry: (body: object) =>
+    apiHelper(
+      "/api/ScheduleAndAttendanceRoutes/check-existing-entry",
+      "POST",
+      body
+    ),
 };
