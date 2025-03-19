@@ -181,41 +181,72 @@ const ScheduleAndAttendance: React.FC = () => {
     setSelectedAttendanceStatus("present");
     setRepeatDays(1);
   };
+  const fetchEmployees = async () => {
+    try {
+      setLoading(true);
+      const response = await ScheduleAndAttendanceAPI.getScheduleEntries();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const formattedEmployees = response.data.map((entry: any) => ({
+        id: entry.employeeId,
+        name: entry.employeeName,
+        department: entry.position,
+        teamLeader: entry.teamLeader,
+        avatarUrl: `https://i.pravatar.cc/150?u=${entry.employeeId}`,
+        schedule: entry.schedule || [],
+      }));
+      setEmployees(formattedEmployees);
 
-  useEffect(() => {
-    const fetchEmployees = async () => {
-      try {
-        setLoading(true);
-        const response = await ScheduleAndAttendanceAPI.getScheduleEntries();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const formattedEmployees = response.data.map((entry: any) => ({
-          id: entry.employeeId,
-          name: entry.employeeName,
-          department: entry.position,
+      // Flatten the schedule array
+      const flattenedSchedule = response.data.flatMap((entry: ScheduleEntry) =>
+        entry.schedule.map((sched) => ({
+          ...sched,
+          employeeId: entry.employeeId,
+          employeeName: entry.employeeName,
           teamLeader: entry.teamLeader,
-          avatarUrl: `https://i.pravatar.cc/150?u=${entry.employeeId}`,
-          schedule: entry.schedule || [],
-        }));
-        setEmployees(formattedEmployees);
+          position: entry.position,
+        }))
+      );
+      setSchedule(flattenedSchedule);
+    } catch (err) {
+      setError("Failed to fetch employee data");
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    // const fetchEmployees = async () => {
+    //   try {
+    //     setLoading(true);
+    //     const response = await ScheduleAndAttendanceAPI.getScheduleEntries();
+    //     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    //     const formattedEmployees = response.data.map((entry: any) => ({
+    //       id: entry.employeeId,
+    //       name: entry.employeeName,
+    //       department: entry.position,
+    //       teamLeader: entry.teamLeader,
+    //       avatarUrl: `https://i.pravatar.cc/150?u=${entry.employeeId}`,
+    //       schedule: entry.schedule || [],
+    //     }));
+    //     setEmployees(formattedEmployees);
 
-        // Flatten the schedule array
-        const flattenedSchedule = response.data.flatMap(
-          (entry: ScheduleEntry) =>
-            entry.schedule.map((sched) => ({
-              ...sched,
-              employeeId: entry.employeeId,
-              employeeName: entry.employeeName,
-              teamLeader: entry.teamLeader,
-              position: entry.position,
-            }))
-        );
-        setSchedule(flattenedSchedule);
-      } catch (err) {
-        setError("Failed to fetch employee data");
-      } finally {
-        setLoading(false);
-      }
-    };
+    //     // Flatten the schedule array
+    //     const flattenedSchedule = response.data.flatMap(
+    //       (entry: ScheduleEntry) =>
+    //         entry.schedule.map((sched) => ({
+    //           ...sched,
+    //           employeeId: entry.employeeId,
+    //           employeeName: entry.employeeName,
+    //           teamLeader: entry.teamLeader,
+    //           position: entry.position,
+    //         }))
+    //     );
+    //     setSchedule(flattenedSchedule);
+    //   } catch (err) {
+    //     setError("Failed to fetch employee data");
+    //   } finally {
+    //     setLoading(false);
+    //   }
+    // };
 
     fetchEmployees();
   }, []);
@@ -279,56 +310,56 @@ const ScheduleAndAttendance: React.FC = () => {
     );
   };
 
-  const updateSchedule = async (
-    employeeId: string,
-    date: Date,
-    shiftType: ShiftType
-  ) => {
-    try {
-      const formattedDate = `${date.getFullYear()}-${String(
-        date.getMonth() + 1
-      ).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  // const updateSchedule = async (
+  //   employeeId: string,
+  //   date: Date,
+  //   shiftType: ShiftType
+  // ) => {
+  //   try {
+  //     const formattedDate = `${date.getFullYear()}-${String(
+  //       date.getMonth() + 1
+  //     ).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
-      // Call the API to update the schedule
-      await ScheduleAndAttendanceAPI.updateScheduleEntry(employeeId, {
-        date: formattedDate,
-        shiftType,
-      });
+  //     // Call the API to update the schedule
+  //     await ScheduleAndAttendanceAPI.updateScheduleEntry(employeeId, {
+  //       date: formattedDate,
+  //       shiftType,
+  //     });
 
-      // Find the existing schedule entry for the employee and date
-      const existingEntryIndex = schedule.findIndex(
-        (entry) =>
-          entry.employeeId === employeeId &&
-          isSameDay(new Date(entry.date), date) // Convert entry.date to Date
-      );
+  //     // Find the existing schedule entry for the employee and date
+  //     const existingEntryIndex = schedule.findIndex(
+  //       (entry) =>
+  //         entry.employeeId === employeeId &&
+  //         isSameDay(new Date(entry.date), date) // Convert entry.date to Date
+  //     );
 
-      if (existingEntryIndex !== -1) {
-        // If an entry exists, update it
-        const updatedSchedule = [...schedule];
-        updatedSchedule[existingEntryIndex] = {
-          ...updatedSchedule[existingEntryIndex],
-          shiftType,
-        };
-        setSchedule(updatedSchedule);
-      } else {
-        // If no entry exists, create a new one
-        const newEntry: ScheduleEntry = {
-          date: formattedDate,
-          shiftType,
-          _id: Date.now().toString(), // Generate a unique ID (temporary)
-          employeeId,
-          employeeName: selectedEmployee?.name || "",
-          teamLeader: selectedEmployee?.teamLeader || "",
-          position: selectedEmployee?.department || "",
-          schedule: [],
-          __v: 0,
-        };
-        setSchedule([...schedule, newEntry]);
-      }
-    } catch (error) {
-      console.error("Error updating schedule:", error);
-    }
-  };
+  //     if (existingEntryIndex !== -1) {
+  //       // If an entry exists, update it
+  //       const updatedSchedule = [...schedule];
+  //       updatedSchedule[existingEntryIndex] = {
+  //         ...updatedSchedule[existingEntryIndex],
+  //         shiftType,
+  //       };
+  //       setSchedule(updatedSchedule);
+  //     } else {
+  //       // If no entry exists, create a new one
+  //       const newEntry: ScheduleEntry = {
+  //         date: formattedDate,
+  //         shiftType,
+  //         _id: Date.now().toString(), // Generate a unique ID (temporary)
+  //         employeeId,
+  //         employeeName: selectedEmployee?.name || "",
+  //         teamLeader: selectedEmployee?.teamLeader || "",
+  //         position: selectedEmployee?.department || "",
+  //         schedule: [],
+  //         __v: 0,
+  //       };
+  //       setSchedule([...schedule, newEntry]);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error updating schedule:", error);
+  //   }
+  // };
 
   const updateAttendance = (
     employeeId: string,
@@ -724,11 +755,7 @@ const ScheduleAndAttendance: React.FC = () => {
           </div>
           <div className="flex gap-2 text-xs">
             <Button variant="outline">Export Data</Button>
-            <AddEmployee
-              onAdd={(employee) =>
-                setEmployees([...employees, employee as unknown as Employee])
-              }
-            />
+            <AddEmployee onEmployeeAdded={fetchEmployees} />
           </div>
         </CardFooter>
       </Card>
@@ -786,15 +813,7 @@ const ScheduleAndAttendance: React.FC = () => {
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="off" id="off" />
-                    <Label htmlFor="off">Rest Day</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="PTO" id="PTO" />
-                    <Label htmlFor="PTO">Paid Time Off</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="Leave" id="Leave" />
-                    <Label htmlFor="Leave">Plan Leave</Label>
+                    <Label htmlFor="off">Day Off</Label>
                   </div>
                 </RadioGroup>
                 <div className="flex items-center space-x-2 text-sm">

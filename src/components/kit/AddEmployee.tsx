@@ -33,10 +33,14 @@ interface TeamLeader {
 }
 
 interface AddEmployeeProps {
-  onAdd: (employee: Employee) => void;
+  // onAdd: (employee: Employee) => void;
+  onEmployeeAdded: () => void;
 }
 
-const AddEmployee: React.FC<AddEmployeeProps> = ({ onAdd }) => {
+const AddEmployee: React.FC<AddEmployeeProps> = ({
+  // onAdd,
+  onEmployeeAdded,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -144,7 +148,7 @@ const AddEmployee: React.FC<AddEmployeeProps> = ({ onAdd }) => {
 
       // Call the onAdd callback to update the parent component
       if (selectedEmployee) {
-        onAdd(selectedEmployee);
+        // onAdd(selectedEmployee);
       }
 
       // Show success message
@@ -155,6 +159,7 @@ const AddEmployee: React.FC<AddEmployeeProps> = ({ onAdd }) => {
 
       // Reset and close the dialog
       resetForm();
+      onEmployeeAdded();
     } catch (error) {
       console.error("Error creating schedule entry", error);
       toast({
