@@ -265,9 +265,7 @@ const AddEmployee: React.FC<AddEmployeeProps> = ({
                         <SelectValue placeholder="Select Position" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Customer Service Representative">
-                          Customer Service Representative
-                        </SelectItem>
+                        <SelectItem value="CSR">CSR</SelectItem>
                         <SelectItem value="Human Resources">
                           Human Resources
                         </SelectItem>

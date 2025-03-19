@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   addDays,
   eachDayOfInterval,
@@ -65,10 +64,25 @@ type Employee = {
   department: string;
   teamLeader: string;
   avatarUrl?: string;
-  schedule: { date: string; shiftType: string }[];
+  schedule: { date: string; shiftType: ShiftType }[];
 };
 
-type ShiftType = "morning" | "afternoon" | "night" | "off";
+// Define the specific shift type strings
+type ShiftTypeValue =
+  | "shift1"
+  | "shift2"
+  | "shift3"
+  | "staff"
+  | "restday"
+  | "paidTimeOff"
+  | "plannedLeave";
+
+// Define the ShiftType object structure
+type ShiftType = {
+  type: ShiftTypeValue;
+  startTime?: string;
+  endTime?: string;
+};
 
 type AttendanceStatus = "present" | "absent" | "late" | "holiday" | "pending";
 
@@ -82,7 +96,7 @@ type ScheduleEntry = {
   position: string;
   schedule: {
     date: string;
-    shiftType: string;
+    shiftType: ShiftType;
     _id: string;
   }[];
   __v: number;
@@ -100,18 +114,31 @@ type ViewMode = "weekly" | "monthly";
 
 // Helper to get shift color
 const getShiftColor = (shiftType: ShiftType): string => {
-  switch (shiftType) {
-    case "morning":
+  if (!shiftType || !shiftType.type) return "bg-gray-100 text-gray-500";
+
+  switch (shiftType.type) {
+    case "shift1":
       return "bg-blue-100 text-blue-800";
-    case "afternoon":
+    case "shift2":
       return "bg-yellow-100 text-yellow-800";
-    case "night":
+    case "shift3":
       return "bg-purple-100 text-purple-800";
-    case "off":
-      return "bg-gray-100 text-gray-500";
+    case "staff":
+      return "bg-green-100 text-green-800";
+    case "restday":
+      return "bg-gray-200 text-gray-500";
+    case "paidTimeOff":
+      return "bg-pink-100 text-pink-800";
+    case "plannedLeave":
+      return "bg-orange-100 text-orange-800";
     default:
       return "bg-gray-100 text-gray-500";
   }
+};
+
+// Helper to check if a shift type has time
+const hasShiftTime = (shiftType: ShiftTypeValue): boolean => {
+  return ["shift1", "shift2", "shift3", "staff"].includes(shiftType);
 };
 
 // Helper to get attendance status color
@@ -164,7 +191,9 @@ const ScheduleAndAttendance: React.FC = () => {
   );
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedShiftType, setSelectedShiftType] =
-    useState<ShiftType>("morning");
+    useState<ShiftTypeValue>("shift1");
+  const [selectedStartTime, setSelectedStartTime] = useState<string>("00:00");
+  const [selectedEndTime, setSelectedEndTime] = useState<string>("00:00");
   const [selectedAttendanceStatus, setSelectedAttendanceStatus] =
     useState<AttendanceStatus>("present");
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -177,77 +206,83 @@ const ScheduleAndAttendance: React.FC = () => {
   const resetDialogState = () => {
     setSelectedEmployee(null);
     setSelectedDate(null);
-    setSelectedShiftType("morning");
+    setSelectedShiftType("shift1");
+    setSelectedStartTime("00:00");
+    setSelectedEndTime("00:00");
     setSelectedAttendanceStatus("present");
     setRepeatDays(1);
   };
+
   const fetchEmployees = async () => {
     try {
       setLoading(true);
       const response = await ScheduleAndAttendanceAPI.getScheduleEntries();
+
+      // Normalize employee data according to the backend schema
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const formattedEmployees = response.data.map((entry: any) => ({
-        id: entry.employeeId,
-        name: entry.employeeName,
-        department: entry.position,
-        teamLeader: entry.teamLeader,
-        avatarUrl: `https://i.pravatar.cc/150?u=${entry.employeeId}`,
-        schedule: entry.schedule || [],
-      }));
+      const formattedEmployees = response.data.map((entry: any) => {
+        // Ensure correct data structure
+        const schedule = Array.isArray(entry.schedule) ? entry.schedule : [];
+
+        return {
+          id: entry.employeeId,
+          name: entry.employeeName,
+          department: entry.position,
+          teamLeader: entry.teamLeader,
+          avatarUrl: `https://i.pravatar.cc/150?u=${entry.employeeId}`,
+          schedule: schedule,
+        };
+      });
+
       setEmployees(formattedEmployees);
 
-      // Flatten the schedule array
-      const flattenedSchedule = response.data.flatMap((entry: ScheduleEntry) =>
-        entry.schedule.map((sched) => ({
-          ...sched,
-          employeeId: entry.employeeId,
-          employeeName: entry.employeeName,
-          teamLeader: entry.teamLeader,
-          position: entry.position,
-        }))
-      );
+      // Normalize schedule data based on the backend schema
+      let flattenedSchedule: ScheduleEntry[] = [];
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      response.data.forEach((entry: any) => {
+        if (Array.isArray(entry.schedule)) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const employeeSchedules = entry.schedule.map((sched: any) => {
+            // Convert the backend schema format to our frontend format
+            const shiftType: ShiftType = {
+              type: sched.shiftType as ShiftTypeValue,
+            };
+
+            // Add time properties if they exist and are applicable to this shift type
+            if (hasShiftTime(sched.shiftType as ShiftTypeValue)) {
+              if (sched.startTime) shiftType.startTime = sched.startTime;
+              if (sched.endTime) shiftType.endTime = sched.endTime;
+            }
+
+            return {
+              date: sched.date,
+              shiftType: shiftType,
+              _id: sched._id || Date.now().toString(),
+              employeeId: entry.employeeId,
+              employeeName: entry.employeeName,
+              teamLeader: entry.teamLeader,
+              position: entry.position,
+              schedule: [],
+              __v: 0,
+            };
+          });
+
+          flattenedSchedule = [...flattenedSchedule, ...employeeSchedules];
+        }
+      });
+
       setSchedule(flattenedSchedule);
+      console.log("Schedules loaded:", flattenedSchedule.length);
     } catch (err) {
+      console.error("Error fetching employee data:", err);
       setError("Failed to fetch employee data");
     } finally {
       setLoading(false);
     }
   };
+
   useEffect(() => {
-    // const fetchEmployees = async () => {
-    //   try {
-    //     setLoading(true);
-    //     const response = await ScheduleAndAttendanceAPI.getScheduleEntries();
-    //     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    //     const formattedEmployees = response.data.map((entry: any) => ({
-    //       id: entry.employeeId,
-    //       name: entry.employeeName,
-    //       department: entry.position,
-    //       teamLeader: entry.teamLeader,
-    //       avatarUrl: `https://i.pravatar.cc/150?u=${entry.employeeId}`,
-    //       schedule: entry.schedule || [],
-    //     }));
-    //     setEmployees(formattedEmployees);
-
-    //     // Flatten the schedule array
-    //     const flattenedSchedule = response.data.flatMap(
-    //       (entry: ScheduleEntry) =>
-    //         entry.schedule.map((sched) => ({
-    //           ...sched,
-    //           employeeId: entry.employeeId,
-    //           employeeName: entry.employeeName,
-    //           teamLeader: entry.teamLeader,
-    //           position: entry.position,
-    //         }))
-    //     );
-    //     setSchedule(flattenedSchedule);
-    //   } catch (err) {
-    //     setError("Failed to fetch employee data");
-    //   } finally {
-    //     setLoading(false);
-    //   }
-    // };
-
     fetchEmployees();
   }, []);
 
@@ -297,7 +332,9 @@ const ScheduleAndAttendance: React.FC = () => {
   ): ScheduleEntry | undefined => {
     return schedule.find(
       (entry) =>
-        entry.employeeId === employeeId && isSameDay(new Date(entry.date), date)
+        entry.employeeId === employeeId &&
+        entry.date &&
+        isSameDay(new Date(entry.date), date)
     );
   };
 
@@ -306,60 +343,12 @@ const ScheduleAndAttendance: React.FC = () => {
     date: Date
   ): AttendanceEntry | undefined => {
     return attendance.find(
-      (entry) => entry.employeeId === employeeId && isSameDay(entry.date, date)
+      (entry) =>
+        entry.employeeId === employeeId &&
+        entry.date &&
+        isSameDay(entry.date, date)
     );
   };
-
-  // const updateSchedule = async (
-  //   employeeId: string,
-  //   date: Date,
-  //   shiftType: ShiftType
-  // ) => {
-  //   try {
-  //     const formattedDate = `${date.getFullYear()}-${String(
-  //       date.getMonth() + 1
-  //     ).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-
-  //     // Call the API to update the schedule
-  //     await ScheduleAndAttendanceAPI.updateScheduleEntry(employeeId, {
-  //       date: formattedDate,
-  //       shiftType,
-  //     });
-
-  //     // Find the existing schedule entry for the employee and date
-  //     const existingEntryIndex = schedule.findIndex(
-  //       (entry) =>
-  //         entry.employeeId === employeeId &&
-  //         isSameDay(new Date(entry.date), date) // Convert entry.date to Date
-  //     );
-
-  //     if (existingEntryIndex !== -1) {
-  //       // If an entry exists, update it
-  //       const updatedSchedule = [...schedule];
-  //       updatedSchedule[existingEntryIndex] = {
-  //         ...updatedSchedule[existingEntryIndex],
-  //         shiftType,
-  //       };
-  //       setSchedule(updatedSchedule);
-  //     } else {
-  //       // If no entry exists, create a new one
-  //       const newEntry: ScheduleEntry = {
-  //         date: formattedDate,
-  //         shiftType,
-  //         _id: Date.now().toString(), // Generate a unique ID (temporary)
-  //         employeeId,
-  //         employeeName: selectedEmployee?.name || "",
-  //         teamLeader: selectedEmployee?.teamLeader || "",
-  //         position: selectedEmployee?.department || "",
-  //         schedule: [],
-  //         __v: 0,
-  //       };
-  //       setSchedule([...schedule, newEntry]);
-  //     }
-  //   } catch (error) {
-  //     console.error("Error updating schedule:", error);
-  //   }
-  // };
 
   const updateAttendance = (
     employeeId: string,
@@ -378,11 +367,40 @@ const ScheduleAndAttendance: React.FC = () => {
     if (selectedEmployee && selectedDate) {
       const updatedSchedule = [...schedule]; // Create a copy of the current schedule
 
+      // Format the date for the API
+      const formattedDate = `${selectedDate.getFullYear()}-${String(
+        selectedDate.getMonth() + 1
+      ).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`;
+
+      // Create the schedule entry matching the backend schema format
+      const scheduleData = {
+        date: formattedDate,
+        shiftType: selectedShiftType,
+        startTime: "",
+        endTime: "",
+      };
+
+      // Add time properties only for shift types that need them
+      if (hasShiftTime(selectedShiftType)) {
+        scheduleData.startTime = selectedStartTime;
+        scheduleData.endTime = selectedEndTime;
+      } else {
+        // For non-time shift types, still include empty strings to match schema
+        scheduleData.startTime = "";
+        scheduleData.endTime = "";
+      }
+
       for (let i = 0; i < repeatDays; i++) {
         const currentDate = addDays(selectedDate, i);
-        const formattedDate = `${currentDate.getFullYear()}-${String(
+        const currentFormattedDate = `${currentDate.getFullYear()}-${String(
           currentDate.getMonth() + 1
         ).padStart(2, "0")}-${String(currentDate.getDate()).padStart(2, "0")}`;
+
+        // Update the date for the current iteration
+        const currentScheduleData = {
+          ...scheduleData,
+          date: currentFormattedDate,
+        };
 
         // Find the existing schedule entry for the employee and date
         const existingEntryIndex = updatedSchedule.findIndex(
@@ -395,14 +413,26 @@ const ScheduleAndAttendance: React.FC = () => {
           // If an entry exists, update it
           updatedSchedule[existingEntryIndex] = {
             ...updatedSchedule[existingEntryIndex],
-            shiftType: selectedShiftType,
+            shiftType: {
+              type: selectedShiftType,
+              ...(hasShiftTime(selectedShiftType) && {
+                startTime: selectedStartTime,
+                endTime: selectedEndTime,
+              }),
+            },
           };
         } else {
           // If no entry exists, create a new one
           const newEntry: ScheduleEntry = {
-            date: formattedDate,
-            shiftType: selectedShiftType,
-            _id: Date.now().toString(), // Generate a unique ID (temporary)
+            date: currentFormattedDate,
+            shiftType: {
+              type: selectedShiftType,
+              ...(hasShiftTime(selectedShiftType) && {
+                startTime: selectedStartTime,
+                endTime: selectedEndTime,
+              }),
+            },
+            _id: Date.now().toString() + i, // Generate a unique ID (temporary)
             employeeId: selectedEmployee.id,
             employeeName: selectedEmployee.name,
             teamLeader: selectedEmployee.teamLeader,
@@ -413,14 +443,21 @@ const ScheduleAndAttendance: React.FC = () => {
           updatedSchedule.push(newEntry);
         }
 
-        // Call the API to update the schedule for each repeated day
-        await ScheduleAndAttendanceAPI.updateScheduleEntry(
-          selectedEmployee.id,
-          {
-            date: formattedDate,
-            shiftType: selectedShiftType,
-          }
-        );
+        try {
+          // Call the API to update the schedule for each repeated day
+          // Following the schema format for the backend
+          await ScheduleAndAttendanceAPI.updateScheduleEntry(
+            selectedEmployee.id,
+            currentScheduleData
+          );
+          console.log(`Successfully updated shift for ${currentFormattedDate}`);
+        } catch (err) {
+          console.error(
+            `Error updating shift for ${currentFormattedDate}:`,
+            err
+          );
+          setError(`Failed to update shift for ${currentFormattedDate}`);
+        }
       }
 
       // Update the state once with all the changes
@@ -433,8 +470,36 @@ const ScheduleAndAttendance: React.FC = () => {
   const handleScheduleCellClick = (employee: Employee, date: Date) => {
     setSelectedEmployee(employee);
     setSelectedDate(date);
+
+    // Find the schedule entry for the selected employee and date
     const entry = findScheduleEntry(employee.id, date);
-    setSelectedShiftType(entry ? entry.shiftType : "morning");
+
+    if (entry && entry.shiftType) {
+      // Use the existing shift type if available
+      setSelectedShiftType(entry.shiftType.type);
+
+      // Set times if they exist and the shift type has times
+      if (hasShiftTime(entry.shiftType.type)) {
+        if (entry.shiftType.startTime) {
+          setSelectedStartTime(entry.shiftType.startTime);
+        } else {
+          setSelectedStartTime("00:00");
+        }
+
+        if (entry.shiftType.endTime) {
+          setSelectedEndTime(entry.shiftType.endTime);
+        } else {
+          setSelectedEndTime("00:00");
+        }
+      }
+    } else {
+      // Default shift type and times
+      setSelectedShiftType("shift1");
+      setSelectedStartTime("00:00");
+      setSelectedEndTime("00:00");
+    }
+
+    // Open the dialog
     setIsAddShiftOpen(true);
   };
 
@@ -456,6 +521,70 @@ const ScheduleAndAttendance: React.FC = () => {
       );
       setIsAddShiftOpen(false);
     }
+  };
+
+  // Helper function to convert 24-hour time to 12-hour AM/PM format
+  const formatTimeToAMPM = (time: string): string => {
+    if (!time) return "";
+
+    const [hourStr, minuteStr] = time.split(":");
+    const hour = parseInt(hourStr, 10);
+    const minute = minuteStr || "00";
+
+    const period = hour >= 12 ? "PM" : "AM";
+    const displayHour = hour % 12 || 12; // Convert 0 to 12 for 12 AM
+
+    return `${displayHour}:${minute} ${period}`;
+  };
+
+  // Helper function to display shift information
+  const displayShiftInfo = (
+    shiftType: ShiftType
+  ): { name: string; time: string } => {
+    if (!shiftType || !shiftType.type) return { name: "", time: "" };
+
+    let displayName = "";
+    let displayTime = "";
+
+    // Format the shift type name
+    switch (shiftType.type) {
+      case "shift1":
+        displayName = "Shift 1";
+        break;
+      case "shift2":
+        displayName = "Shift 2";
+        break;
+      case "shift3":
+        displayName = "Shift 3";
+        break;
+      case "staff":
+        displayName = "Staff";
+        break;
+      case "restday":
+        displayName = "Rest Day";
+        break;
+      case "paidTimeOff":
+        displayName = "PTO";
+        break;
+      case "plannedLeave":
+        displayName = "Leave";
+        break;
+      default:
+        displayName = shiftType.type;
+    }
+
+    // Only show time for shift types that have times
+    if (
+      hasShiftTime(shiftType.type) &&
+      shiftType.startTime &&
+      shiftType.endTime
+    ) {
+      displayTime = `${formatTimeToAMPM(
+        shiftType.startTime
+      )} - ${formatTimeToAMPM(shiftType.endTime)}`;
+    }
+
+    return { name: displayName, time: displayTime };
   };
 
   return (
@@ -592,24 +721,37 @@ const ScheduleAndAttendance: React.FC = () => {
                               handleScheduleCellClick(employee, day)
                             }
                           >
-                            {scheduleEntry && (
+                            {scheduleEntry && scheduleEntry.shiftType && (
                               <TooltipProvider>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <Badge
-                                      variant="outline"
-                                      className={`${getShiftColor(
-                                        scheduleEntry.shiftType
-                                      )}`}
-                                    >
-                                      {scheduleEntry.shiftType
-                                        .charAt(0)
-                                        .toUpperCase() +
-                                        scheduleEntry.shiftType.slice(1)}
-                                    </Badge>
+                                    <div className="flex flex-col items-center">
+                                      <Badge
+                                        variant="outline"
+                                        className={`w-fit flex items-center justify-center px-3 py-1 min-w-24 ${getShiftColor(
+                                          scheduleEntry.shiftType
+                                        )}`}
+                                      >
+                                        {
+                                          displayShiftInfo(
+                                            scheduleEntry.shiftType
+                                          ).name
+                                        }
+                                      </Badge>
+                                      {displayShiftInfo(scheduleEntry.shiftType)
+                                        .time && (
+                                        <span className="text-[11px] text-gray-500">
+                                          {
+                                            displayShiftInfo(
+                                              scheduleEntry.shiftType
+                                            ).time
+                                          }
+                                        </span>
+                                      )}
+                                    </div>
                                   </TooltipTrigger>
                                   <TooltipContent>
-                                    <p>Click to update shift</p>
+                                    <p>Click to update</p>
                                   </TooltipContent>
                                 </Tooltip>
                               </TooltipProvider>
@@ -795,27 +937,73 @@ const ScheduleAndAttendance: React.FC = () => {
                 <RadioGroup
                   id="shift-type"
                   value={selectedShiftType}
-                  onValueChange={(value: string) =>
-                    setSelectedShiftType(value as ShiftType)
-                  }
+                  onValueChange={(value: string) => {
+                    setSelectedShiftType(value as ShiftTypeValue);
+
+                    // Set default times based on whether this shift type has time or not
+                    if (hasShiftTime(value as ShiftTypeValue)) {
+                      setSelectedStartTime("00:00");
+                      setSelectedEndTime("00:00");
+                    }
+                  }}
                 >
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="morning" id="morning" />
-                    <Label htmlFor="morning">Morning (6am - 2pm)</Label>
+                    <RadioGroupItem value="shift1" id="shift1" />
+                    <Label htmlFor="shift1">Shift 1</Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="afternoon" id="afternoon" />
-                    <Label htmlFor="afternoon">Afternoon (2pm - 10pm)</Label>
+                    <RadioGroupItem value="shift2" id="shift2" />
+                    <Label htmlFor="shift2">Shift 2</Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="night" id="night" />
-                    <Label htmlFor="night">Night (10pm - 6am)</Label>
+                    <RadioGroupItem value="shift3" id="shift3" />
+                    <Label htmlFor="shift3">Shift 3</Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="off" id="off" />
-                    <Label htmlFor="off">Day Off</Label>
+                    <RadioGroupItem value="staff" id="staff" />
+                    <Label htmlFor="staff">Staff</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="restday" id="restday" />
+                    <Label htmlFor="restday">Rest Day</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="paidTimeOff" id="paidTimeOff" />
+                    <Label htmlFor="paidTimeOff">Paid Time Off</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="plannedLeave" id="plannedLeave" />
+                    <Label htmlFor="plannedLeave">Planned Leave</Label>
                   </div>
                 </RadioGroup>
+
+                {/* Input fields for custom start and end times - only show for shift types that have times */}
+                {hasShiftTime(selectedShiftType) && (
+                  <div className="flex space-x-4">
+                    <div>
+                      <Label htmlFor="start-time">Start Time</Label>
+                      <input
+                        id="start-time"
+                        type="time"
+                        value={selectedStartTime}
+                        onChange={(e) => setSelectedStartTime(e.target.value)}
+                        className="border p-2 rounded text-sm"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="end-time">End Time</Label>
+                      <input
+                        id="end-time"
+                        type="time"
+                        value={selectedEndTime}
+                        onChange={(e) => setSelectedEndTime(e.target.value)}
+                        className="border p-2 rounded text-sm"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Repeat days selector */}
                 <div className="flex items-center space-x-2 text-sm">
                   <span>Repeat for</span>
                   <Select
