@@ -80,7 +80,11 @@ export const timer = {
   timeOut: (body: object) => apiHelper("/api/employeeTimes", "PUT", body),
   updateBreakStart: (body: object) =>
     apiHelper("/api/employeeTimes/break", "PUT", body),
+  updateSecondBreakStart: (body: object) =>
+    apiHelper("/api/employeeTimes/break", "PUT", body),
   updateBreakEnd: (body: object) =>
+    apiHelper("/api/employeeTimes/break", "PUT", body),
+  updateSecondBreakEnd: (body: object) =>
     apiHelper("/api/employeeTimes/break", "PUT", body),
   updateLunchStart: (body: object) =>
     apiHelper("/api/employeeTimes/lunch/update", "PUT", body),

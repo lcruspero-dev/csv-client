@@ -1,3 +1,4 @@
+/* eslint-disable prefer-const */
 import { timer } from "@/API/endpoint";
 import BackButton from "@/components/kit/BackButton";
 import { Button } from "@/components/ui/button";
@@ -51,6 +52,11 @@ interface AttendanceEntry {
   totalBreakTime?: number;
   dateBreakStart?: string;
   dateBreakEnd?: string;
+  secondBreakStart?: string;
+  secondBreakEnd?: string;
+  totalSecondBreakTime?: number;
+  dateSecondBreakStart?: string;
+  dateSecondBreakEnd?: string;
   lunchStart?: string;
   lunchEnd?: string;
   totalLunchTime?: number;
@@ -81,6 +87,9 @@ export const AttendanceTracker: React.FC = () => {
     });
   const [selectedShift, setSelectedShift] = useState<string | null>(null);
   const [selectedAction, setSelectedAction] = useState<string | null>(null);
+  const [isLoadingSecondBreakStart, setIsLoadingSecondBreakStart] =
+    useState(false);
+  const [isLoadingSecondBreakEnd, setIsLoadingSecondBreakEnd] = useState(false);
 
   // Loading states
   const [isLoadingInitial, setIsLoadingInitial] = useState(true);
@@ -197,10 +206,11 @@ export const AttendanceTracker: React.FC = () => {
 
     // Determine the current status (on break, on lunch, or regular work)
     const isOnBreak = currentEntry.breakStart && !currentEntry.breakEnd;
+    const isOnSecondBreak =
+      currentEntry.secondBreakStart && !currentEntry.secondBreakEnd;
     const isOnLunch = currentEntry.lunchStart && !currentEntry.lunchEnd;
 
     // Set up the interval to update elapsed time
-    // eslint-disable-next-line prefer-const
     intervalId = setInterval(() => {
       const currentTime = Date.now() + timeOffset;
       let diffMs = 0;
@@ -213,6 +223,14 @@ export const AttendanceTracker: React.FC = () => {
           }`
         ).getTime();
         diffMs = currentTime - breakStartTime;
+      } else if (isOnSecondBreak) {
+        // On second break: calculate time since second break started
+        const secondBreakStartTime = new Date(
+          `${currentEntry.dateSecondBreakStart || currentEntry.date} ${
+            currentEntry.secondBreakStart
+          }`
+        ).getTime();
+        diffMs = currentTime - secondBreakStartTime;
       } else if (isOnLunch) {
         // On lunch: calculate time since lunch started
         const lunchStartTime = new Date(
@@ -249,6 +267,29 @@ export const AttendanceTracker: React.FC = () => {
           totalBreakMs = breakEnd.getTime() - breakStart.getTime();
         }
 
+        // Calculate total second break time
+        let totalSecondBreakMs = 0;
+        if (currentEntry.secondBreakStart && currentEntry.secondBreakEnd) {
+          const secondBreakStart = new Date(
+            `${currentEntry.dateSecondBreakStart || currentEntry.date} ${
+              currentEntry.secondBreakStart
+            }`
+          );
+          const secondBreakEnd = new Date(
+            `${currentEntry.dateSecondBreakEnd || currentEntry.date} ${
+              currentEntry.secondBreakEnd
+            }`
+          );
+
+          // Adjust if second break spans midnight
+          if (secondBreakEnd < secondBreakStart) {
+            secondBreakEnd.setDate(secondBreakEnd.getDate() + 1);
+          }
+
+          totalSecondBreakMs =
+            secondBreakEnd.getTime() - secondBreakStart.getTime();
+        }
+
         // Calculate total lunch time
         let totalLunchMs = 0;
         if (currentEntry.lunchStart && currentEntry.lunchEnd) {
@@ -271,8 +312,13 @@ export const AttendanceTracker: React.FC = () => {
           totalLunchMs = lunchEnd.getTime() - lunchStart.getTime();
         }
 
-        // Total elapsed time = current time - time in - breaks - lunch
-        diffMs = currentTime - timeInDate - totalBreakMs - totalLunchMs;
+        // Total elapsed time = current time - time in - breaks - second break - lunch
+        diffMs =
+          currentTime -
+          timeInDate -
+          totalBreakMs -
+          totalSecondBreakMs -
+          totalLunchMs;
       }
 
       // Update the elapsed time state
@@ -602,20 +648,40 @@ export const AttendanceTracker: React.FC = () => {
   const handleConfirmAction = async () => {
     switch (selectedAction) {
       case "startBreak":
+        setIsLoadingBreakStart(true);
         await handleBreakStart();
-        setSelectedAction("endBreak"); // Preselect "End Break"
+        setSelectedAction("endBreak");
+        setIsLoadingBreakStart(false);
         break;
       case "endBreak":
+        setIsLoadingBreakEnd(true);
         await handleBreakEnd();
-        setSelectedAction(null); // Reset to show "Select Action" placeholder
+        setSelectedAction(null); // Reset the selected action
+        setIsLoadingBreakEnd(false);
+        break;
+      case "startSecondBreak":
+        setIsLoadingSecondBreakStart(true);
+        await handleSecondBreakStart();
+        setSelectedAction("endSecondBreak");
+        setIsLoadingSecondBreakStart(false);
+        break;
+      case "endSecondBreak":
+        setIsLoadingSecondBreakEnd(true);
+        await handleSecondBreakEnd();
+        setSelectedAction(null); // Reset the selected action
+        setIsLoadingSecondBreakEnd(false);
         break;
       case "startLunch":
+        setIsLoadingLunchStart(true);
         await handleLunchStart();
-        setSelectedAction("endLunch"); // Preselect "End Lunch"
+        setSelectedAction("endLunch");
+        setIsLoadingLunchStart(false);
         break;
       case "endLunch":
+        setIsLoadingLunchEnd(true);
         await handleLunchEnd();
-        setSelectedAction(null); // Reset to show "Select Action" placeholder
+        setSelectedAction(null); // Reset the selected action
+        setIsLoadingLunchEnd(false);
         break;
       case "timeOut":
         setDialogOpen(true);
@@ -624,26 +690,129 @@ export const AttendanceTracker: React.FC = () => {
         break;
     }
   };
+  const handleSecondBreakStart = async () => {
+    setIsLoadingSecondBreakStart(true);
+    try {
+      const currentTimeData = await getCurrentTimeFromAPI();
+
+      const updatedEntry = {
+        ...currentEntry,
+        secondBreakStart: currentTimeData.time,
+        dateSecondBreakStart: currentTimeData.date,
+      };
+
+      const response = await timer.updateSecondBreakStart(updatedEntry);
+      setCurrentEntry(response.data);
+      setElapsedTime(0); // Reset elapsed time when starting second break
+      toast({
+        title: "Success",
+        description: "Second break started successfully!",
+        variant: "default",
+      });
+    } catch (error) {
+      console.error("Error starting second break:", error);
+      toast({
+        title: "Error",
+        description: "Failed to start second break. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingSecondBreakStart(false);
+    }
+  };
+
+  const handleSecondBreakEnd = async () => {
+    setIsLoadingSecondBreakEnd(true);
+    try {
+      const currentTimeData = await getCurrentTimeFromAPI();
+
+      const secondBreakStart = new Date(
+        `${currentEntry.dateSecondBreakStart} ${currentEntry.secondBreakStart}`
+      );
+      const secondBreakEnd = new Date(
+        `${currentTimeData.date} ${currentTimeData.time}`
+      );
+
+      if (secondBreakEnd < secondBreakStart) {
+        secondBreakEnd.setDate(secondBreakEnd.getDate() + 1);
+      }
+
+      const secondBreakDurationMs =
+        secondBreakEnd.getTime() - secondBreakStart.getTime();
+      const newSecondBreakTimeHours = Number(
+        secondBreakDurationMs / (1000 * 60 * 60)
+      );
+      const totalSecondBreakTimeHours =
+        (currentEntry.totalSecondBreakTime ?? 0) + newSecondBreakTimeHours;
+
+      const updatedEntry = {
+        ...currentEntry,
+        secondBreakEnd: currentTimeData.time,
+        dateSecondBreakEnd: currentTimeData.date,
+        totalSecondBreakTime: Number(
+          (totalSecondBreakTimeHours || 0).toFixed(2)
+        ),
+      };
+
+      const response = await timer.updateSecondBreakEnd(updatedEntry);
+      setCurrentEntry(response.data);
+      setSelectedAction(null); // Reset the selected action after second break ends
+      toast({
+        title: "Success",
+        description: "Second break ended successfully!",
+        variant: "default",
+      });
+    } catch (error) {
+      console.error("Error ending second break:", error);
+      toast({
+        title: "Error",
+        description: "Failed to end second break. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingSecondBreakEnd(false);
+    }
+  };
 
   const getAvailableActions = () => {
     const actions = [];
 
-    // If break is started but not ended, ONLY show "End Break"
+    // Check if the user is currently on a break
     if (currentEntry.breakStart && !currentEntry.breakEnd) {
       actions.push({ value: "endBreak", label: "End Break" });
     }
-    // If lunch is started but not ended, ONLY show "End Lunch"
+    // Check if the user is currently on a second break
+    else if (currentEntry.secondBreakStart && !currentEntry.secondBreakEnd) {
+      actions.push({ value: "endSecondBreak", label: "End Second Break" });
+    }
+    // Check if the user is currently on lunch
     else if (currentEntry.lunchStart && !currentEntry.lunchEnd) {
       actions.push({ value: "endLunch", label: "End Lunch" });
     }
-    // Otherwise, show the available actions
+    // If not on any break or lunch, show available actions
     else {
-      if (!currentEntry.breakStart) {
+      // Only show "Start Break" if break hasn't started or has ended
+      if (!currentEntry.breakStart || currentEntry.breakEnd) {
         actions.push({ value: "startBreak", label: "Start Break" });
       }
-      if (!currentEntry.lunchStart) {
+
+      // Only show "Start Second Break" if first break has ended and second break hasn't started or has ended
+      if (
+        currentEntry.breakEnd &&
+        (!currentEntry.secondBreakStart || currentEntry.secondBreakEnd)
+      ) {
+        actions.push({
+          value: "startSecondBreak",
+          label: "Start Second Break",
+        });
+      }
+
+      // Only show "Start Lunch" if lunch hasn't started or has ended
+      if (!currentEntry.lunchStart || currentEntry.lunchEnd) {
         actions.push({ value: "startLunch", label: "Start Lunch" });
       }
+
+      // Always show "Time Out" if the user is timed in
       if (isTimeIn) {
         actions.push({ value: "timeOut", label: "Time Out" });
       }
@@ -694,16 +863,22 @@ export const AttendanceTracker: React.FC = () => {
               </div>
             )}
 
-            {currentEntry.breakStart !== null &&
-            currentEntry.breakEnd === null ? (
+            {currentEntry.breakStart && !currentEntry.breakEnd ? (
               <div className="text-4xl font-bold tracking-tighter text-red-600 text-center">
                 <p className="text-base text-black tracking-wide">
                   BREAK TIME{" "}
                 </p>
                 {formatElapsedTime(elapsedTime)}
               </div>
-            ) : currentEntry.lunchStart !== null &&
-              currentEntry.lunchEnd === null ? (
+            ) : currentEntry.secondBreakStart &&
+              !currentEntry.secondBreakEnd ? (
+              <div className="text-4xl font-bold tracking-tighter text-red-600 text-center">
+                <p className="text-base text-black tracking-wide">
+                  SECOND BREAK TIME{" "}
+                </p>
+                {formatElapsedTime(elapsedTime)}
+              </div>
+            ) : currentEntry.lunchStart && !currentEntry.lunchEnd ? (
               <div className="text-4xl font-bold tracking-tighter text-red-600 text-center">
                 <p className="text-base text-black tracking-wide">
                   LUNCH TIME{" "}
@@ -761,6 +936,8 @@ export const AttendanceTracker: React.FC = () => {
                       disabled={
                         isLoadingBreakStart ||
                         isLoadingBreakEnd ||
+                        isLoadingSecondBreakStart ||
+                        isLoadingSecondBreakEnd ||
                         isLoadingLunchStart ||
                         isLoadingLunchEnd ||
                         isLoadingTimeOut
@@ -829,6 +1006,19 @@ export const AttendanceTracker: React.FC = () => {
                       {Math.round(currentEntry.totalBreakTime * 60)} min.
                     </p>
                   )}
+                {currentEntry.secondBreakStart && (
+                  <p>Second Break Started: {currentEntry.secondBreakStart}</p>
+                )}
+                {currentEntry.secondBreakEnd && (
+                  <p>Second Break Ended: {currentEntry.secondBreakEnd}</p>
+                )}
+                {currentEntry.totalSecondBreakTime !== undefined &&
+                  currentEntry.totalSecondBreakTime !== null && (
+                    <p>
+                      Total Second Break Time:{" "}
+                      {Math.round(currentEntry.totalSecondBreakTime * 60)} min.
+                    </p>
+                  )}
 
                 {currentEntry.lunchStart && (
                   <p>Lunch Started: {currentEntry.lunchStart}</p>
@@ -867,6 +1057,7 @@ export const AttendanceTracker: React.FC = () => {
                         <TableHead>Time Out</TableHead>
                         <TableHead>Total Hours</TableHead>
                         <TableHead>Break Time</TableHead>
+                        <TableHead>Second Break Time</TableHead>
                         <TableHead>Lunch Time</TableHead>
                         <TableHead>Shift</TableHead>
                         <TableHead>Notes</TableHead>
@@ -874,8 +1065,8 @@ export const AttendanceTracker: React.FC = () => {
                     </TableHeader>
                     <TableBody>
                       {currentEntries.length > 0 ? (
-                        currentEntries.map((entry) => (
-                          <TableRow key={entry.id}>
+                        currentEntries.map((entry, index) => (
+                          <TableRow key={entry.id || `entry-${index}`}>
                             <TableCell>{entry.date}</TableCell>
                             <TableCell>{entry.timeIn}</TableCell>
                             <TableCell>
@@ -886,6 +1077,13 @@ export const AttendanceTracker: React.FC = () => {
                               {entry.totalBreakTime
                                 ? `${Math.round(
                                     entry.totalBreakTime * 60
+                                  )} min.`
+                                : "-"}
+                            </TableCell>
+                            <TableCell>
+                              {entry.totalSecondBreakTime
+                                ? `${Math.round(
+                                    entry.totalSecondBreakTime * 60
                                   )} min.`
                                 : "-"}
                             </TableCell>
