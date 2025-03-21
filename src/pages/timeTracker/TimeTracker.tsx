@@ -7,7 +7,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,7 +35,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
-import { Clock, Coffee, Loader2, LogIn, LogOut } from "lucide-react";
+import { Clock, Loader2, LogIn } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
 interface AttendanceEntry {
@@ -52,6 +51,11 @@ interface AttendanceEntry {
   totalBreakTime?: number;
   dateBreakStart?: string;
   dateBreakEnd?: string;
+  lunchStart?: string;
+  lunchEnd?: string;
+  totalLunchTime?: number;
+  dateLunchStart?: string;
+  dateLunchEnd?: string;
 }
 
 interface CurrentTimeResponse {
@@ -76,6 +80,7 @@ export const AttendanceTracker: React.FC = () => {
       time: "",
     });
   const [selectedShift, setSelectedShift] = useState<string | null>(null);
+  const [selectedAction, setSelectedAction] = useState<string | null>(null);
 
   // Loading states
   const [isLoadingInitial, setIsLoadingInitial] = useState(true);
@@ -83,6 +88,8 @@ export const AttendanceTracker: React.FC = () => {
   const [isLoadingTimeOut, setIsLoadingTimeOut] = useState(false);
   const [isLoadingBreakStart, setIsLoadingBreakStart] = useState(false);
   const [isLoadingBreakEnd, setIsLoadingBreakEnd] = useState(false);
+  const [isLoadingLunchStart, setIsLoadingLunchStart] = useState(false);
+  const [isLoadingLunchEnd, setIsLoadingLunchEnd] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
   const entriesPerPage = 10;
@@ -171,66 +178,111 @@ export const AttendanceTracker: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // This is a replacement for the entire useEffect that handles the timer calculations
+
   useEffect(() => {
-    let startTime: number;
-    let timeInstartTime: number;
-    let intervalId: NodeJS.Timeout;
-    let timeOffset = 0;
-
-    const breakStart = new Date(
-      `${currentEntry.dateBreakStart} ${currentEntry.breakStart}`
-    );
-    const breakEnd = new Date(
-      `${currentEntry.dateBreakEnd} ${currentEntry.breakEnd}`
-    );
-    console.log(breakStart, breakEnd);
-    // Adjust break end date if it's the next day
-    if (breakEnd < breakStart) {
-      breakEnd.setDate(breakEnd.getDate() + 1);
+    // Only run this effect if the user is timed in
+    if (!isTimeIn || !currentEntry.date) {
+      return;
     }
-    // Calculate the new break duration in milliseconds
-    const breakDurationMs = currentEntry.totalBreakTime
-      ? breakEnd.getTime() - breakStart.getTime()
-      : 0;
 
-    if (isTimeIn && currentEntry.date) {
-      // Calculate server-client time offset
-      const serverTime = new Date(
-        `${currentServerTime.date} ${currentServerTime.time}`
-      ).getTime();
-      const localTime = Date.now();
-      timeOffset = serverTime - localTime;
+    let intervalId: NodeJS.Timeout;
 
-      // Determine reference start time based on break status
-      const isOnBreak = currentEntry.breakStart && !currentEntry.breakEnd;
-      const timeReference = isOnBreak
-        ? currentEntry.breakStart
-        : currentEntry.timeIn;
+    // Calculate server-client time offset for accurate time tracking
+    const serverTime = new Date(
+      `${currentServerTime.date} ${currentServerTime.time}`
+    ).getTime();
+    const localTime = Date.now();
+    const timeOffset = serverTime - localTime;
 
-      startTime = new Date(
-        `${currentEntry.dateBreakStart} ${timeReference}`
-      ).getTime();
-      timeInstartTime = new Date(
-        `${currentEntry.date} ${timeReference}`
-      ).getTime();
-      intervalId = setInterval(() => {
-        const currentTime = Date.now() + timeOffset;
-        let diffMs;
+    // Determine the current status (on break, on lunch, or regular work)
+    const isOnBreak = currentEntry.breakStart && !currentEntry.breakEnd;
+    const isOnLunch = currentEntry.lunchStart && !currentEntry.lunchEnd;
 
-        if (isOnBreak) {
-          // If on break, calculate time from break start
-          diffMs = currentTime - startTime;
-        } else {
-          // Convert totalBreakTime from hours to seconds before applying
-          diffMs = currentTime - timeInstartTime - breakDurationMs;
+    // Set up the interval to update elapsed time
+    // eslint-disable-next-line prefer-const
+    intervalId = setInterval(() => {
+      const currentTime = Date.now() + timeOffset;
+      let diffMs = 0;
+
+      if (isOnBreak) {
+        // On break: calculate time since break started
+        const breakStartTime = new Date(
+          `${currentEntry.dateBreakStart || currentEntry.date} ${
+            currentEntry.breakStart
+          }`
+        ).getTime();
+        diffMs = currentTime - breakStartTime;
+      } else if (isOnLunch) {
+        // On lunch: calculate time since lunch started
+        const lunchStartTime = new Date(
+          `${currentEntry.dateLunchStart || currentEntry.date} ${
+            currentEntry.lunchStart
+          }`
+        ).getTime();
+        diffMs = currentTime - lunchStartTime;
+      } else {
+        // Regular work: Calculate total work time minus breaks
+        const timeInDate = new Date(
+          `${currentEntry.date} ${currentEntry.timeIn}`
+        ).getTime();
+
+        // Calculate total break time
+        let totalBreakMs = 0;
+        if (currentEntry.breakStart && currentEntry.breakEnd) {
+          const breakStart = new Date(
+            `${currentEntry.dateBreakStart || currentEntry.date} ${
+              currentEntry.breakStart
+            }`
+          );
+          const breakEnd = new Date(
+            `${currentEntry.dateBreakEnd || currentEntry.date} ${
+              currentEntry.breakEnd
+            }`
+          );
+
+          // Adjust if break spans midnight
+          if (breakEnd < breakStart) {
+            breakEnd.setDate(breakEnd.getDate() + 1);
+          }
+
+          totalBreakMs = breakEnd.getTime() - breakStart.getTime();
         }
 
-        setElapsedTime(Math.floor(diffMs / 1000));
-      }, 1000);
-      return () => {
-        clearInterval(intervalId);
-      };
-    }
+        // Calculate total lunch time
+        let totalLunchMs = 0;
+        if (currentEntry.lunchStart && currentEntry.lunchEnd) {
+          const lunchStart = new Date(
+            `${currentEntry.dateLunchStart || currentEntry.date} ${
+              currentEntry.lunchStart
+            }`
+          );
+          const lunchEnd = new Date(
+            `${currentEntry.dateLunchEnd || currentEntry.date} ${
+              currentEntry.lunchEnd
+            }`
+          );
+
+          // Adjust if lunch spans midnight
+          if (lunchEnd < lunchStart) {
+            lunchEnd.setDate(lunchEnd.getDate() + 1);
+          }
+
+          totalLunchMs = lunchEnd.getTime() - lunchStart.getTime();
+        }
+
+        // Total elapsed time = current time - time in - breaks - lunch
+        diffMs = currentTime - timeInDate - totalBreakMs - totalLunchMs;
+      }
+
+      // Update the elapsed time state
+      setElapsedTime(Math.max(0, Math.floor(diffMs / 1000)));
+    }, 1000);
+
+    // Clean up the interval when the component unmounts or dependencies change
+    return () => {
+      clearInterval(intervalId);
+    };
   }, [isTimeIn, currentEntry, currentServerTime]);
 
   const formatElapsedTime = (totalSeconds: number) => {
@@ -311,18 +363,36 @@ export const AttendanceTracker: React.FC = () => {
       const breakEnd = new Date(
         `${currentEntry.dateBreakEnd} ${currentEntry.breakEnd}`
       );
+      const lunchStart = new Date(
+        `${currentEntry.dateLunchStart} ${currentEntry.lunchStart}`
+      );
+      const lunchEnd = new Date(
+        `${currentEntry.dateLunchEnd} ${currentEntry.lunchEnd}`
+      );
 
       // Adjust break end date if it's the next day
       if (breakEnd < breakStart) {
         breakEnd.setDate(breakEnd.getDate() + 1);
       }
+      // Adjust lunch end date if it's the next day
+      if (lunchEnd < lunchStart) {
+        lunchEnd.setDate(lunchEnd.getDate() + 1);
+      }
+
       // Calculate the new break duration in milliseconds
       const breakDurationMs = currentEntry.totalBreakTime
         ? breakEnd.getTime() - breakStart.getTime()
         : 0;
+      // Calculate the new lunch duration in milliseconds
+      const lunchDurationMs = currentEntry.totalLunchTime
+        ? lunchEnd.getTime() - lunchStart.getTime()
+        : 0;
 
       const diffMs =
-        timeOutDate.getTime() - timeInDate.getTime() - breakDurationMs;
+        timeOutDate.getTime() -
+        timeInDate.getTime() -
+        breakDurationMs -
+        lunchDurationMs;
       const totalHours = diffMs / (1000 * 60 * 60);
 
       const updatedEntry = {
@@ -441,6 +511,147 @@ export const AttendanceTracker: React.FC = () => {
     }
   };
 
+  const handleLunchStart = async () => {
+    setIsLoadingLunchStart(true);
+    try {
+      const currentTimeData = await getCurrentTimeFromAPI();
+
+      const updatedEntry = {
+        ...currentEntry,
+        lunchStart: currentTimeData.time,
+        dateLunchStart: currentTimeData.date,
+      };
+
+      const response = await timer.updateLunchStart(updatedEntry);
+      setCurrentEntry(response.data);
+      setElapsedTime(0);
+      toast({
+        title: "Success",
+        description: "Lunch started successfully!",
+        variant: "default",
+      });
+    } catch (error) {
+      console.error("Error starting lunch:", error);
+      toast({
+        title: "Error",
+        description:
+          "Failed to start lunch. Please try again. If the issue persists, contact IT support.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingLunchStart(false);
+    }
+  };
+
+  const handleLunchEnd = async () => {
+    setIsLoadingLunchEnd(true);
+    try {
+      const currentTimeData = await getCurrentTimeFromAPI();
+
+      // Create date objects for lunch start and end
+      const lunchStart = new Date(
+        `${currentEntry.dateLunchStart} ${currentEntry.lunchStart}`
+      );
+      const lunchEnd = new Date(
+        `${currentTimeData.date} ${currentTimeData.time}`
+      );
+
+      // Adjust lunch end date if it's the next day
+      if (lunchEnd < lunchStart) {
+        lunchEnd.setDate(lunchEnd.getDate() + 1);
+      }
+
+      // Calculate the new lunch duration in milliseconds
+      const lunchDurationMs = lunchEnd.getTime() - lunchStart.getTime();
+
+      // Convert lunch duration to hours and add to any existing lunch time
+      const newLunchTimeHours = lunchDurationMs / (1000 * 60 * 60);
+      const totalLunchTimeHours =
+        (currentEntry.totalLunchTime || 0) + newLunchTimeHours;
+
+      const updatedEntry = {
+        ...currentEntry,
+        lunchEnd: currentTimeData.time,
+        dateLunchEnd: currentTimeData.date,
+        totalLunchTime: Number(totalLunchTimeHours.toFixed(2)),
+      };
+
+      const response = await timer.updateLunchEnd(updatedEntry);
+      setCurrentEntry(response.data);
+      toast({
+        title: "Success",
+        description: "End lunch logged successfully!",
+        variant: "default",
+      });
+    } catch (error) {
+      console.error("Error ending lunch:", error);
+      toast({
+        title: "Error",
+        description: "Failed to log end lunch. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingLunchEnd(false);
+    }
+  };
+
+  const handleActionChange = (value: string) => {
+    setSelectedAction(value);
+  };
+
+  const handleConfirmAction = async () => {
+    switch (selectedAction) {
+      case "startBreak":
+        await handleBreakStart();
+        setSelectedAction("endBreak"); // Preselect "End Break"
+        break;
+      case "endBreak":
+        await handleBreakEnd();
+        setSelectedAction(null); // Reset to show "Select Action" placeholder
+        break;
+      case "startLunch":
+        await handleLunchStart();
+        setSelectedAction("endLunch"); // Preselect "End Lunch"
+        break;
+      case "endLunch":
+        await handleLunchEnd();
+        setSelectedAction(null); // Reset to show "Select Action" placeholder
+        break;
+      case "timeOut":
+        setDialogOpen(true);
+        break;
+      default:
+        break;
+    }
+  };
+
+  const getAvailableActions = () => {
+    const actions = [];
+
+    // If break is started but not ended, ONLY show "End Break"
+    if (currentEntry.breakStart && !currentEntry.breakEnd) {
+      actions.push({ value: "endBreak", label: "End Break" });
+    }
+    // If lunch is started but not ended, ONLY show "End Lunch"
+    else if (currentEntry.lunchStart && !currentEntry.lunchEnd) {
+      actions.push({ value: "endLunch", label: "End Lunch" });
+    }
+    // Otherwise, show the available actions
+    else {
+      if (!currentEntry.breakStart) {
+        actions.push({ value: "startBreak", label: "Start Break" });
+      }
+      if (!currentEntry.lunchStart) {
+        actions.push({ value: "startLunch", label: "Start Lunch" });
+      }
+      if (isTimeIn) {
+        actions.push({ value: "timeOut", label: "Time Out" });
+      }
+    }
+
+    return actions;
+  };
+
   if (isLoadingInitial) {
     return (
       <div className="flex justify-center items-start w-full pt-4">
@@ -491,12 +702,23 @@ export const AttendanceTracker: React.FC = () => {
                 </p>
                 {formatElapsedTime(elapsedTime)}
               </div>
+            ) : currentEntry.lunchStart !== null &&
+              currentEntry.lunchEnd === null ? (
+              <div className="text-4xl font-bold tracking-tighter text-red-600 text-center">
+                <p className="text-base text-black tracking-wide">
+                  LUNCH TIME{" "}
+                </p>
+                {formatElapsedTime(elapsedTime)}
+              </div>
             ) : (
               <div
-                className={`text-4xl font-bold tracking-tighter text-center ${
-                  currentEntry?.timeIn ? "" : "hidden"
+                className={`mb-2 text-4xl font-bold tracking-tighter text-center text-green-700 ${
+                  isTimeIn ? "" : "hidden"
                 }`}
               >
+                <p className="text-base text-black tracking-wide">
+                  RUNNING TIME{" "}
+                </p>
                 {formatElapsedTime(elapsedTime)}
               </div>
             )}
@@ -517,62 +739,37 @@ export const AttendanceTracker: React.FC = () => {
                 </Button>
               ) : (
                 <>
-                  {currentEntry.shift === "Staff" &&
-                    (currentEntry.breakStart === null ? (
-                      <Button
-                        onClick={handleBreakStart}
-                        variant="default"
-                        className="flex items-center"
-                        disabled={
-                          currentEntry.totalBreakTime !== null ||
-                          isLoadingBreakStart
-                        }
-                      >
-                        {isLoadingBreakStart ? (
-                          <LoadingSpinner />
-                        ) : (
-                          <Coffee className="mr-1 h-4 w-4" />
-                        )}
-                        Start Break
-                      </Button>
-                    ) : (
-                      <Button
-                        onClick={handleBreakEnd}
-                        variant="default"
-                        className="flex items-center"
-                        disabled={
-                          (currentEntry.breakStart !== null &&
-                            currentEntry.breakEnd !== null) ||
-                          isLoadingBreakEnd
-                        }
-                      >
-                        {isLoadingBreakEnd ? (
-                          <LoadingSpinner />
-                        ) : (
-                          <Coffee className="mr-2 h-4 w-4" />
-                        )}
-                        End Break
-                      </Button>
-                    ))}
+                  <Select
+                    value={selectedAction || undefined}
+                    onValueChange={handleActionChange}
+                  >
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Select Action" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getAvailableActions().map((action) => (
+                        <SelectItem key={action.value} value={action.value}>
+                          {action.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedAction && (
+                    <Button
+                      onClick={handleConfirmAction}
+                      className="flex items-center text-sm"
+                      disabled={
+                        isLoadingBreakStart ||
+                        isLoadingBreakEnd ||
+                        isLoadingLunchStart ||
+                        isLoadingLunchEnd ||
+                        isLoadingTimeOut
+                      }
+                    >
+                      Confirm
+                    </Button>
+                  )}
                   <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button
-                        variant="destructive"
-                        className="flex items-center"
-                        disabled={
-                          (currentEntry.breakStart !== null &&
-                            currentEntry.breakEnd === null) ||
-                          isLoadingTimeOut
-                        }
-                      >
-                        {isLoadingTimeOut ? (
-                          <LoadingSpinner />
-                        ) : (
-                          <LogOut className="mr-2 h-4 w-4" />
-                        )}
-                        Time Out
-                      </Button>
-                    </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
                         <DialogTitle>Time Out</DialogTitle>
@@ -612,23 +809,41 @@ export const AttendanceTracker: React.FC = () => {
             </div>
 
             {isTimeIn && (
-              <div className="text-center p-4 bg-muted rounded-lg">
+              <div className="text-center p-4 bg-muted rounded-lg text-sm">
                 <p className="font-semibold">Current Session</p>
-                <p>Date: {currentEntry.date}</p>
-                <p>Time In: {currentEntry.timeIn}</p>
-                <p>Shift: {currentEntry.shift}</p>
-                {currentEntry.shift === "Staff" && (
-                  <>
-                    <p>Break Started: {currentEntry.breakStart}</p>
-                    <p>Break Ended: {currentEntry.breakEnd}</p>
+
+                {currentEntry.date && <p>Date: {currentEntry.date}</p>}
+                {currentEntry.timeIn && <p>Time In: {currentEntry.timeIn}</p>}
+                {currentEntry.shift && <p>Shift: {currentEntry.shift}</p>}
+                {currentEntry.breakStart && (
+                  <p>Break Started: {currentEntry.breakStart}</p>
+                )}
+                {currentEntry.breakEnd && (
+                  <p>Break Ended: {currentEntry.breakEnd}</p>
+                )}
+
+                {currentEntry.totalBreakTime !== undefined &&
+                  currentEntry.totalBreakTime !== null && (
                     <p>
                       Total Break Time:{" "}
-                      {currentEntry.totalBreakTime
-                        ? `${Math.round(currentEntry.totalBreakTime * 60)} min.`
-                        : " "}
+                      {Math.round(currentEntry.totalBreakTime * 60)} min.
                     </p>
-                  </>
+                  )}
+
+                {currentEntry.lunchStart && (
+                  <p>Lunch Started: {currentEntry.lunchStart}</p>
                 )}
+                {currentEntry.lunchEnd && (
+                  <p>Lunch Ended: {currentEntry.lunchEnd}</p>
+                )}
+
+                {currentEntry.totalLunchTime !== undefined &&
+                  currentEntry.totalLunchTime !== null && (
+                    <p>
+                      Total Lunch Time:{" "}
+                      {Math.round(currentEntry.totalLunchTime * 60)} min.
+                    </p>
+                  )}
               </div>
             )}
           </div>
@@ -651,9 +866,8 @@ export const AttendanceTracker: React.FC = () => {
                         <TableHead>Time In</TableHead>
                         <TableHead>Time Out</TableHead>
                         <TableHead>Total Hours</TableHead>
-                        {attendanceEntries.some(
-                          (entry) => entry.shift === "Staff"
-                        ) && <TableHead>Break Time</TableHead>}
+                        <TableHead>Break Time</TableHead>
+                        <TableHead>Lunch Time</TableHead>
                         <TableHead>Shift</TableHead>
                         <TableHead>Notes</TableHead>
                       </TableRow>
@@ -668,26 +882,27 @@ export const AttendanceTracker: React.FC = () => {
                               {entry.timeOut || "In Progress"}
                             </TableCell>
                             <TableCell>{entry.totalHours || "N/A"}</TableCell>
-                            {attendanceEntries.some(
-                              (e) => e.shift === "Staff"
-                            ) && (
-                              <TableCell>
-                                {entry.shift === "Staff"
-                                  ? entry.totalBreakTime
-                                    ? `${Math.round(
-                                        entry.totalBreakTime * 60
-                                      )} min.`
-                                    : "-"
-                                  : "-"}
-                              </TableCell>
-                            )}
+                            <TableCell>
+                              {entry.totalBreakTime
+                                ? `${Math.round(
+                                    entry.totalBreakTime * 60
+                                  )} min.`
+                                : "-"}
+                            </TableCell>
+                            <TableCell>
+                              {entry.totalLunchTime
+                                ? `${Math.round(
+                                    entry.totalLunchTime * 60
+                                  )} min.`
+                                : "-"}
+                            </TableCell>
                             <TableCell>{entry.shift}</TableCell>
                             <TableCell>{entry.notes || "-"}</TableCell>
                           </TableRow>
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center py-4">
+                          <TableCell colSpan={8} className="text-center py-4">
                             No attendance records found
                           </TableCell>
                         </TableRow>
