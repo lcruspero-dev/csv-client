@@ -1,5 +1,5 @@
 /* eslint-disable prefer-const */
-import { timer } from "@/API/endpoint";
+import { ScheduleAndAttendanceAPI, timer } from "@/API/endpoint";
 import BackButton from "@/components/kit/BackButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -85,7 +85,6 @@ export const AttendanceTracker: React.FC = () => {
       date: "",
       time: "",
     });
-  const [selectedShift, setSelectedShift] = useState<string | null>(null);
   const [selectedAction, setSelectedAction] = useState<string | null>(null);
   const [isLoadingSecondBreakStart, setIsLoadingSecondBreakStart] =
     useState(false);
@@ -102,7 +101,6 @@ export const AttendanceTracker: React.FC = () => {
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
   const entriesPerPage = 10;
-  const SHIFT_OPTIONS = ["Shift 1", "Shift 2", "Shift 3", "Staff"];
 
   const totalPages = Math.ceil(attendanceEntries.length / entriesPerPage);
   const startIndex = (currentPage - 1) * entriesPerPage;
@@ -171,11 +169,19 @@ export const AttendanceTracker: React.FC = () => {
     const initializeData = async () => {
       setIsLoadingInitial(true);
       try {
-        await Promise.all([
-          getAttendance(),
-          getCurrentTimeFromAPI(),
-          getCurrentTime(),
-        ]);
+        const currentTimeData = await getCurrentTimeFromAPI();
+        const employeeId = JSON.parse(localStorage.getItem("user")!)._id;
+        const shift = await fetchShiftSchedule(
+          currentTimeData.date,
+          employeeId
+        );
+
+        // Set the shift automatically
+        if (shift) {
+          setCurrentEntry((prev) => ({ ...prev, shift }));
+        }
+
+        await Promise.all([getAttendance(), getCurrentTime()]);
       } catch (error) {
         console.error("Error initializing data:", error);
       } finally {
@@ -187,36 +193,29 @@ export const AttendanceTracker: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // This is a replacement for the entire useEffect that handles the timer calculations
-
   useEffect(() => {
-    // Only run this effect if the user is timed in
     if (!isTimeIn || !currentEntry.date) {
       return;
     }
 
     let intervalId: NodeJS.Timeout;
 
-    // Calculate server-client time offset for accurate time tracking
     const serverTime = new Date(
       `${currentServerTime.date} ${currentServerTime.time}`
     ).getTime();
     const localTime = Date.now();
     const timeOffset = serverTime - localTime;
 
-    // Determine the current status (on break, on lunch, or regular work)
     const isOnBreak = currentEntry.breakStart && !currentEntry.breakEnd;
     const isOnSecondBreak =
       currentEntry.secondBreakStart && !currentEntry.secondBreakEnd;
     const isOnLunch = currentEntry.lunchStart && !currentEntry.lunchEnd;
 
-    // Set up the interval to update elapsed time
     intervalId = setInterval(() => {
       const currentTime = Date.now() + timeOffset;
       let diffMs = 0;
 
       if (isOnBreak) {
-        // On break: calculate time since break started
         const breakStartTime = new Date(
           `${currentEntry.dateBreakStart || currentEntry.date} ${
             currentEntry.breakStart
@@ -224,7 +223,6 @@ export const AttendanceTracker: React.FC = () => {
         ).getTime();
         diffMs = currentTime - breakStartTime;
       } else if (isOnSecondBreak) {
-        // On second break: calculate time since second break started
         const secondBreakStartTime = new Date(
           `${currentEntry.dateSecondBreakStart || currentEntry.date} ${
             currentEntry.secondBreakStart
@@ -232,7 +230,6 @@ export const AttendanceTracker: React.FC = () => {
         ).getTime();
         diffMs = currentTime - secondBreakStartTime;
       } else if (isOnLunch) {
-        // On lunch: calculate time since lunch started
         const lunchStartTime = new Date(
           `${currentEntry.dateLunchStart || currentEntry.date} ${
             currentEntry.lunchStart
@@ -240,57 +237,11 @@ export const AttendanceTracker: React.FC = () => {
         ).getTime();
         diffMs = currentTime - lunchStartTime;
       } else {
-        // Regular work: Calculate total work time minus breaks
         const timeInDate = new Date(
           `${currentEntry.date} ${currentEntry.timeIn}`
         ).getTime();
 
-        // Calculate total break time
-        let totalBreakMs = 0;
-        if (currentEntry.breakStart && currentEntry.breakEnd) {
-          const breakStart = new Date(
-            `${currentEntry.dateBreakStart || currentEntry.date} ${
-              currentEntry.breakStart
-            }`
-          );
-          const breakEnd = new Date(
-            `${currentEntry.dateBreakEnd || currentEntry.date} ${
-              currentEntry.breakEnd
-            }`
-          );
-
-          // Adjust if break spans midnight
-          if (breakEnd < breakStart) {
-            breakEnd.setDate(breakEnd.getDate() + 1);
-          }
-
-          totalBreakMs = breakEnd.getTime() - breakStart.getTime();
-        }
-
-        // Calculate total second break time
-        let totalSecondBreakMs = 0;
-        if (currentEntry.secondBreakStart && currentEntry.secondBreakEnd) {
-          const secondBreakStart = new Date(
-            `${currentEntry.dateSecondBreakStart || currentEntry.date} ${
-              currentEntry.secondBreakStart
-            }`
-          );
-          const secondBreakEnd = new Date(
-            `${currentEntry.dateSecondBreakEnd || currentEntry.date} ${
-              currentEntry.secondBreakEnd
-            }`
-          );
-
-          // Adjust if second break spans midnight
-          if (secondBreakEnd < secondBreakStart) {
-            secondBreakEnd.setDate(secondBreakEnd.getDate() + 1);
-          }
-
-          totalSecondBreakMs =
-            secondBreakEnd.getTime() - secondBreakStart.getTime();
-        }
-
-        // Calculate total lunch time
+        // Only deduct lunch time from total hours
         let totalLunchMs = 0;
         if (currentEntry.lunchStart && currentEntry.lunchEnd) {
           const lunchStart = new Date(
@@ -304,7 +255,6 @@ export const AttendanceTracker: React.FC = () => {
             }`
           );
 
-          // Adjust if lunch spans midnight
           if (lunchEnd < lunchStart) {
             lunchEnd.setDate(lunchEnd.getDate() + 1);
           }
@@ -312,20 +262,13 @@ export const AttendanceTracker: React.FC = () => {
           totalLunchMs = lunchEnd.getTime() - lunchStart.getTime();
         }
 
-        // Total elapsed time = current time - time in - breaks - second break - lunch
-        diffMs =
-          currentTime -
-          timeInDate -
-          totalBreakMs -
-          totalSecondBreakMs -
-          totalLunchMs;
+        // Total elapsed time = current time - time in - lunch time
+        diffMs = currentTime - timeInDate - totalLunchMs;
       }
 
-      // Update the elapsed time state
       setElapsedTime(Math.max(0, Math.floor(diffMs / 1000)));
     }, 1000);
 
-    // Clean up the interval when the component unmounts or dependencies change
     return () => {
       clearInterval(intervalId);
     };
@@ -344,13 +287,19 @@ export const AttendanceTracker: React.FC = () => {
   const getCurrentTime = async () => {
     try {
       const response = await timer.getCurrentTimeIn();
-      const currentTimeData = response.data[0];
-      if (currentTimeData.timeOut) {
-        setIsTimeIn(false);
+      const currentTimeData = response.data[0]; // Check if this exists
+
+      if (currentTimeData) {
+        if (currentTimeData.timeOut) {
+          setIsTimeIn(false);
+        } else {
+          setIsTimeIn(true);
+        }
+        setCurrentEntry(currentTimeData);
       } else {
-        setIsTimeIn(true);
+        console.warn("No current time data found.");
+        setIsTimeIn(false); // Default to not timed in if no data exists
       }
-      setCurrentEntry(currentTimeData);
     } catch (error) {
       console.error("Error getting current time:", error);
     }
@@ -365,7 +314,7 @@ export const AttendanceTracker: React.FC = () => {
         id: `entry-${new Date().getTime()}`,
         date: currentTimeData.date,
         timeIn: currentTimeData.time,
-        shift: selectedShift || "",
+        shift: currentEntry.shift || "", // Use the shift from currentEntry
       };
 
       const response = await timer.timeIn(entry);
@@ -381,9 +330,8 @@ export const AttendanceTracker: React.FC = () => {
     } catch (error) {
       console.error("Error logging time:", error);
       toast({
-        title: "Error",
-        description:
-          "Failed to log time. Please try again. If the issue persists, contact IT support.",
+        title: "Duplicate entry",
+        description: "Time-in already recorded for this date.",
         variant: "destructive",
       });
     } finally {
@@ -402,43 +350,27 @@ export const AttendanceTracker: React.FC = () => {
       const timeOutDate = new Date(
         `${currentTimeData.date} ${currentTimeData.time}`
       );
-      // dapat sa backend data
-      const breakStart = new Date(
-        `${currentEntry.dateBreakStart} ${currentEntry.breakStart}`
-      );
-      const breakEnd = new Date(
-        `${currentEntry.dateBreakEnd} ${currentEntry.breakEnd}`
-      );
-      const lunchStart = new Date(
-        `${currentEntry.dateLunchStart} ${currentEntry.lunchStart}`
-      );
-      const lunchEnd = new Date(
-        `${currentEntry.dateLunchEnd} ${currentEntry.lunchEnd}`
-      );
 
-      // Adjust break end date if it's the next day
-      if (breakEnd < breakStart) {
-        breakEnd.setDate(breakEnd.getDate() + 1);
-      }
-      // Adjust lunch end date if it's the next day
-      if (lunchEnd < lunchStart) {
-        lunchEnd.setDate(lunchEnd.getDate() + 1);
+      // Calculate lunch duration in milliseconds
+      let totalLunchMs = 0;
+      if (currentEntry.lunchStart && currentEntry.lunchEnd) {
+        const lunchStart = new Date(
+          `${currentEntry.dateLunchStart} ${currentEntry.lunchStart}`
+        );
+        const lunchEnd = new Date(
+          `${currentEntry.dateLunchEnd} ${currentEntry.lunchEnd}`
+        );
+
+        if (lunchEnd < lunchStart) {
+          lunchEnd.setDate(lunchEnd.getDate() + 1);
+        }
+
+        totalLunchMs = lunchEnd.getTime() - lunchStart.getTime();
       }
 
-      // Calculate the new break duration in milliseconds
-      const breakDurationMs = currentEntry.totalBreakTime
-        ? breakEnd.getTime() - breakStart.getTime()
-        : 0;
-      // Calculate the new lunch duration in milliseconds
-      const lunchDurationMs = currentEntry.totalLunchTime
-        ? lunchEnd.getTime() - lunchStart.getTime()
-        : 0;
-
+      // Total hours = (time out - time in) - lunch time
       const diffMs =
-        timeOutDate.getTime() -
-        timeInDate.getTime() -
-        breakDurationMs -
-        lunchDurationMs;
+        timeOutDate.getTime() - timeInDate.getTime() - totalLunchMs;
       const totalHours = diffMs / (1000 * 60 * 60);
 
       const updatedEntry = {
@@ -454,7 +386,7 @@ export const AttendanceTracker: React.FC = () => {
       setIsTimeIn(false);
       setDialogOpen(false);
       setElapsedTime(0);
-      setSelectedShift(null);
+
       toast({
         title: "Success",
         description: "Time-out logged successfully!",
@@ -645,6 +577,29 @@ export const AttendanceTracker: React.FC = () => {
     setSelectedAction(value);
   };
 
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const fetchShiftSchedule = async (date: string, employeeId: string) => {
+    try {
+      const formattedDate = formatDate(date); // Format the date if needed
+      const response =
+        await ScheduleAndAttendanceAPI.getSchedulePerEmployeeByDate(
+          employeeId,
+          formattedDate
+        );
+      return response.data.shiftType; // Assuming the API returns `shiftType`
+    } catch (error) {
+      console.error("Error fetching shift schedule:", error);
+      return null;
+    }
+  };
+
   const handleConfirmAction = async () => {
     switch (selectedAction) {
       case "startBreak":
@@ -777,29 +732,29 @@ export const AttendanceTracker: React.FC = () => {
   const getAvailableActions = () => {
     const actions = [];
 
-    // Check if the user is currently on a break
+    // Check if the user is currently on a break and breakEnd is not set
     if (currentEntry.breakStart && !currentEntry.breakEnd) {
       actions.push({ value: "endBreak", label: "End Break" });
     }
-    // Check if the user is currently on a second break
+    // Check if the user is currently on a second break and secondBreakEnd is not set
     else if (currentEntry.secondBreakStart && !currentEntry.secondBreakEnd) {
       actions.push({ value: "endSecondBreak", label: "End Second Break" });
     }
-    // Check if the user is currently on lunch
+    // Check if the user is currently on lunch and lunchEnd is not set
     else if (currentEntry.lunchStart && !currentEntry.lunchEnd) {
       actions.push({ value: "endLunch", label: "End Lunch" });
     }
     // If not on any break or lunch, show available actions
     else {
-      // Only show "Start Break" if break hasn't started or has ended
-      if (!currentEntry.breakStart || currentEntry.breakEnd) {
+      // Only show "Start Break" if break hasn't started or hasn't ended
+      if (!currentEntry.breakStart || !currentEntry.breakEnd) {
         actions.push({ value: "startBreak", label: "Start Break" });
       }
 
-      // Only show "Start Second Break" if first break has ended and second break hasn't started or has ended
+      // Only show "Start Second Break" if first break has ended and second break hasn't started or hasn't ended
       if (
         currentEntry.breakEnd &&
-        (!currentEntry.secondBreakStart || currentEntry.secondBreakEnd)
+        (!currentEntry.secondBreakStart || !currentEntry.secondBreakEnd)
       ) {
         actions.push({
           value: "startSecondBreak",
@@ -807,8 +762,8 @@ export const AttendanceTracker: React.FC = () => {
         });
       }
 
-      // Only show "Start Lunch" if lunch hasn't started or has ended
-      if (!currentEntry.lunchStart || currentEntry.lunchEnd) {
+      // Only show "Start Lunch" if lunch hasn't started or hasn't ended
+      if (!currentEntry.lunchStart || !currentEntry.lunchEnd) {
         actions.push({ value: "startLunch", label: "Start Lunch" });
       }
 
@@ -842,27 +797,6 @@ export const AttendanceTracker: React.FC = () => {
         </div>
         <div className="flex flex-col space-y-4">
           <div className="flex flex-col items-center space-y-4">
-            {!isTimeIn && (
-              <div className="w-full max-w-xs text-center">
-                <Label>Select your shift schedule</Label>
-                <Select
-                  value={selectedShift || undefined}
-                  onValueChange={(value) => setSelectedShift(value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Shift" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SHIFT_OPTIONS.map((shift) => (
-                      <SelectItem key={shift} value={shift}>
-                        {shift}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
             {currentEntry.breakStart && !currentEntry.breakEnd ? (
               <div className="text-4xl font-bold tracking-tighter text-red-600 text-center">
                 <p className="text-base text-black tracking-wide">
@@ -903,7 +837,7 @@ export const AttendanceTracker: React.FC = () => {
                 <Button
                   onClick={handleTimeIn}
                   className="flex items-center"
-                  disabled={!selectedShift || isLoadingTimeIn}
+                  disabled={isLoadingTimeIn}
                 >
                   {isLoadingTimeIn ? (
                     <LoadingSpinner />
@@ -1072,7 +1006,7 @@ export const AttendanceTracker: React.FC = () => {
                             <TableCell>
                               {entry.timeOut || "In Progress"}
                             </TableCell>
-                            <TableCell>{entry.totalHours || "N/A"}</TableCell>
+                            <TableCell>{entry.totalHours || "-"}</TableCell>
                             <TableCell>
                               {entry.totalBreakTime
                                 ? `${Math.round(

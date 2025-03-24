@@ -194,4 +194,10 @@ export const ScheduleAndAttendanceAPI = {
       "POST",
       body
     ),
+
+  getSchedulePerEmployeeByDate: (employeeId: string, date: string) =>
+    apiHelper(
+      `/api/ScheduleAndAttendanceRoutes/schedule-per-employee-by-date?employeeId=${employeeId}&date=${date}`,
+      "GET"
+    ),
 };
