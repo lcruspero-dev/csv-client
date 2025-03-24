@@ -853,7 +853,8 @@ export const AttendanceTracker: React.FC = () => {
                     onValueChange={handleActionChange}
                   >
                     <SelectTrigger className="w-40">
-                      <SelectValue placeholder="Select Action" />
+                      <SelectValue />
+                      {selectedAction ? null : "Select Action"}
                     </SelectTrigger>
                     <SelectContent>
                       {getAvailableActions().map((action) => (
