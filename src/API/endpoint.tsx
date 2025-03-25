@@ -200,4 +200,10 @@ export const ScheduleAndAttendanceAPI = {
       `/api/ScheduleAndAttendanceRoutes/schedule-per-employee-by-date?employeeId=${employeeId}&date=${date}`,
       "GET"
     ),
+
+  getSchedulePerEmployee: (employeeId: string) =>
+    apiHelper(
+      `/api/ScheduleAndAttendanceRoutes/schedule/employee?employeeId=${employeeId}`,
+      "GET"
+    ),
 };

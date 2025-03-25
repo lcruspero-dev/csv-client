@@ -1,6 +1,7 @@
 /* eslint-disable prefer-const */
 import { ScheduleAndAttendanceAPI, timer } from "@/API/endpoint";
 import BackButton from "@/components/kit/BackButton";
+import { ViewScheduleButton } from "@/components/kit/ViewScheduleButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -786,7 +787,12 @@ export const AttendanceTracker: React.FC = () => {
 
   return (
     <Card className="w-full max-w-4xl mx-auto">
-      <CardHeader>
+      <CardHeader className="relative">
+        <div className="absolute right-6 top-6">
+          {" "}
+          {/* Position the button in top right */}
+          <ViewScheduleButton />
+        </div>
         <CardTitle className="flex items-center justify-center">
           <Clock className="mr-2" /> Time Tracker
         </CardTitle>
