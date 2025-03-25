@@ -28,6 +28,7 @@ import CreateSurvey from "./pages/survey/CreateSurvey";
 import AdminTimeRecordEdit from "./pages/timeTracker/EditTime";
 import ScheduleAndAttendance from "./pages/timeTracker/ScheduleAndAttendance";
 import TimeTracker from "./pages/timeTracker/TimeTracker";
+import ProtectedRoute2 from "./utils/protectedRoutes";
 
 function App() {
   return (
@@ -70,7 +71,11 @@ function App() {
             <Route path="profile/edit" element={<ProfilePage />} />
             <Route
               path="/schedule-and-attendance"
-              element={<ScheduleAndAttendance />}
+              element={
+                <ProtectedRoute2>
+                  <ScheduleAndAttendance />
+                </ProtectedRoute2>
+              }
             />
           </Route>
         </Routes>

@@ -3,12 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/context/useAuth";
-
 import { ChangeEvent, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 
 interface Form {
-  name: string;
+  firstName: string;
+  middleName: string;
+  lastName: string;
   email: string;
   password: string;
   confirm_password: string;
@@ -16,7 +17,9 @@ interface Form {
 
 const Registration = () => {
   const [form, setForm] = useState<Form>({
-    name: "",
+    firstName: "",
+    middleName: "",
+    lastName: "",
     email: "",
     password: "",
     confirm_password: "",
@@ -26,13 +29,19 @@ const Registration = () => {
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
-    console.log(form);
   };
 
   const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    // Combine names into a single string
+    const middleInitial = form.middleName
+      ? `${form.middleName.charAt(0).toUpperCase()}.`
+      : "";
+    const fullName =
+      `${form.firstName} ${middleInitial} ${form.lastName}`.trim();
 
     // Password validation - must be at least 12 characters with alphanumeric + special characters
     if (form.password.length < 12) {
@@ -61,7 +70,14 @@ const Registration = () => {
     }
 
     try {
-      const response = await AuthAPI.register(form);
+      // Create payload with combined name
+      const payload = {
+        name: fullName,
+        email: form.email,
+        password: form.password,
+      };
+
+      const response = await AuthAPI.register(payload);
       console.log(response.data);
       toast({
         title: "Account created successfully",
@@ -98,14 +114,34 @@ const Registration = () => {
         <h1 className="text-4xl drop-shadow-lg p-2 font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#1638df] to-[#192fb4]">
           Create Account
         </h1>
+
+        <div className="flex gap-4">
+          <Input
+            placeholder="First Name"
+            name="firstName"
+            type="text"
+            className="w-full"
+            onChange={handleChange}
+            required
+          />
+          <Input
+            placeholder="Middle Name"
+            name="middleName"
+            type="text"
+            className="w-full"
+            onChange={handleChange}
+          />
+        </div>
+
         <Input
-          placeholder="Full Name (e.g., Juan Dela Cruz)"
-          name="name"
+          placeholder="Last Name"
+          name="lastName"
           type="text"
           className="w-full"
           onChange={handleChange}
           required
         />
+
         <Input
           placeholder="Company Email"
           name="email"

@@ -234,8 +234,21 @@ export const ViewScheduleButton: React.FC = () => {
                             <TableCell>{format(date, "MMM d, yyyy")}</TableCell>
                             <TableCell>{format(date, "EEEE")}</TableCell>
                             <TableCell>
-                              {schedule?.shiftType || "No schedule"}
+                              {schedule?.shiftType === "restday"
+                                ? "Rest Day"
+                                : schedule?.shiftType === "paidTimeOff"
+                                ? "PTO"
+                                : schedule?.shiftType === "plannedLeave"
+                                ? "Leave"
+                                : schedule?.shiftType === "shift1"
+                                ? "Shift 1"
+                                : schedule?.shiftType === "shift2"
+                                ? "Shift 2"
+                                : schedule?.shiftType === "shift3"
+                                ? "Shift 3"
+                                : schedule?.shiftType || "No schedule"}
                             </TableCell>
+
                             <TableCell>
                               {schedule
                                 ? formatTimeToAMPM(schedule.startTime)
