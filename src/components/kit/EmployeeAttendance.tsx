@@ -1,3 +1,32 @@
+// components/Attendance.tsx
+import {
+  eachDayOfInterval,
+  endOfMonth,
+  endOfWeek,
+  format,
+  isSameDay,
+  isToday,
+  startOfMonth,
+  startOfWeek,
+} from "date-fns";
+import {
+  AlertTriangle,
+  Ban,
+  Calendar,
+  CheckCircle,
+  ClipboardList,
+  Clock,
+  Clock4,
+  HandHeart,
+  LogOut,
+  Phone,
+  Sun,
+  TreePalm,
+  UserX,
+  XCircle,
+} from "lucide-react";
+import React from "react";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -6,199 +35,236 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { format, isSameDay, isToday } from "date-fns";
-import { CheckCircle, Clock, XCircle } from "lucide-react";
-import React from "react";
-import { Calendar } from "../ui/calendar";
+import {
+  AttendanceEntry,
+  AttendanceStatus,
+  Employee,
+} from "@/pages/timeTracker/ScheduleAndAttendance";
 
-type Employee = {
-  id: string;
-  name: string;
-  department: string;
-  avatarUrl?: string;
+// Helper to get attendance status color
+const getAttendanceStatusColor = (status: AttendanceStatus): string => {
+  switch (status) {
+    case "Present":
+      return "bg-green-100 text-green-800";
+    case "NCNS":
+      return "bg-red-100 text-red-800";
+    case "Call In":
+      return "bg-purple-100 text-purple-800";
+    case "Rest Day":
+      return "bg-blue-100 text-blue-800";
+    case "Tardy":
+      return "bg-orange-100 text-orange-800";
+    case "RDOT":
+      return "bg-yellow-100 text-yellow-800";
+    case "Suspended":
+      return "bg-gray-100 text-gray-800";
+    case "Attrition":
+      return "bg-pink-100 text-pink-800";
+    case "LOA":
+      return "bg-indigo-100 text-indigo-800";
+    case "VL":
+      return "bg-teal-100 text-teal-800";
+    case "Half Day":
+      return "bg-amber-100 text-amber-800";
+    case "Early Log Out":
+      return "bg-rose-100 text-rose-800";
+    case "VTO":
+      return "bg-lime-100 text-lime-800";
+    case "TB":
+      return "bg-cyan-100 text-cyan-800";
+    default:
+      return "bg-gray-100 text-gray-500";
+  }
 };
 
-type AttendanceStatus = "present" | "absent" | "late" | "holiday" | "pending";
-
-type AttendanceEntry = {
-  employeeId: string;
-  date: Date;
-  status: AttendanceStatus;
-  logIn?: string;
-  logOut?: string;
-  ot?: string;
-  rdot?: string;
+// Helper to get attendance status icon
+const AttendanceStatusIcon = ({ status }: { status: AttendanceStatus }) => {
+  switch (status) {
+    case "Present":
+      return <CheckCircle className="h-4 w-4 text-green-600" />;
+    case "NCNS":
+      return <XCircle className="h-4 w-4 text-red-600" />;
+    case "Call In":
+      return <Phone className="h-4 w-4 text-purple-600" />;
+    case "Rest Day":
+      return <Calendar className="h-4 w-4 text-blue-600" />;
+    case "Tardy":
+      return <Clock className="h-4 w-4 text-orange-600" />;
+    case "RDOT":
+      return <Sun className="h-4 w-4 text-yellow-600" />;
+    case "Suspended":
+      return <Ban className="h-4 w-4 text-gray-600" />;
+    case "Attrition":
+      return <UserX className="h-4 w-4 text-pink-600" />;
+    case "LOA":
+      return <ClipboardList className="h-4 w-4 text-indigo-600" />;
+    case "VL":
+      return <TreePalm className="h-4 w-4 text-teal-600" />;
+    case "Half Day":
+      return <Clock4 className="h-4 w-4 text-amber-600" />;
+    case "Early Log Out":
+      return <LogOut className="h-4 w-4 text-rose-600" />;
+    case "VTO":
+      return <HandHeart className="h-4 w-4 text-lime-600" />;
+    case "TB":
+      return <AlertTriangle className="h-4 w-4 text-cyan-600" />;
+    default:
+      return null;
+  }
 };
 
-type EmployeeAttendanceProps = {
-  employees: Employee[];
-  days: Date[];
+type AttendanceProps = {
+  viewMode: "weekly" | "monthly";
+  currentDate: Date;
+  filteredEmployees: Employee[];
   attendance: AttendanceEntry[];
-  onAttendanceCellClick: (employee: Employee, date: Date) => void;
+  handleAttendanceCellClick: (employee: Employee, date: Date) => void;
 };
 
-const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
-  employees,
-  days,
+export const Attendance: React.FC<AttendanceProps> = ({
+  viewMode,
+  currentDate,
+  filteredEmployees,
   attendance,
-  onAttendanceCellClick,
+  handleAttendanceCellClick,
 }) => {
-  const getAttendanceStatusColor = (status: AttendanceStatus): string => {
-    switch (status) {
-      case "present":
-        return "bg-green-100 text-green-800";
-      case "absent":
-        return "bg-red-100 text-red-800";
-      case "late":
-        return "bg-orange-100 text-orange-800";
-      case "holiday":
-        return "bg-blue-100 text-blue-800";
-      case "pending":
-        return "bg-gray-100 text-gray-500";
-      default:
-        return "bg-gray-100 text-gray-500";
-    }
+  const getDaysInView = () => {
+    const start =
+      viewMode === "weekly"
+        ? startOfWeek(currentDate)
+        : startOfMonth(currentDate);
+    const end =
+      viewMode === "weekly" ? endOfWeek(currentDate) : endOfMonth(currentDate);
+    return eachDayOfInterval({ start, end });
   };
 
-  const AttendanceStatusIcon = ({ status }: { status: AttendanceStatus }) => {
-    switch (status) {
-      case "present":
-        return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case "absent":
-        return <XCircle className="h-4 w-4 text-red-600" />;
-      case "late":
-        return <Clock className="h-4 w-4 text-orange-600" />;
-      case "holiday":
-        return <Calendar className="h-4 w-4 text-blue-600" />;
-      case "pending":
-        return (
-          <div className="h-4 w-4 rounded-full border border-gray-300"></div>
-        );
-      default:
-        return null;
-    }
-  };
+  const days = getDaysInView();
 
   const findAttendanceEntry = (
     employeeId: string,
     date: Date
   ): AttendanceEntry | undefined => {
     return attendance.find(
-      (entry) => entry.employeeId === employeeId && isSameDay(entry.date, date)
+      (entry) =>
+        entry.employeeId === employeeId &&
+        entry.date &&
+        isSameDay(entry.date, date)
     );
   };
 
   return (
-    <table className="min-w-full divide-y divide-gray-200">
-      <thead>
-        <tr>
-          <th className="p-2 border sticky left-0 bg-white z-10 min-w-40">
-            Employee
-          </th>
-          {days.map((day) => (
-            <th
-              key={day.toString()}
-              className="p-2 border text-center min-w-32"
-            >
-              <div
-                className={`font-medium ${isToday(day) ? "text-blue-600" : ""}`}
-              >
-                {format(day, "EEE")}
-              </div>
-              <div
-                className={`text-sm ${
-                  isToday(day) ? "text-blue-600 font-bold" : ""
-                }`}
-              >
-                {format(day, "MMM d")}
-              </div>
+    <div className="overflow-x-auto">
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead>
+          <tr>
+            <th className="p-2 border sticky left-0 bg-white z-10 min-w-40">
+              Employee
             </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-gray-200">
-        {employees.map((employee) => (
-          <tr key={employee.id}>
-            <td className="p-2 border sticky left-0 bg-white z-10">
-              <div className="flex items-center">
-                <Avatar className="h-8 w-8 mr-2 rounded-full overflow-hidden border-2 border-blue-200">
-                  <AvatarImage src={employee.avatarUrl} alt={employee.name} />
-                  <AvatarFallback>
-                    {employee.name.substring(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <div className="font-bold text-sm">{employee.name}</div>
-                  <div className="text-xs text-gray-500">
-                    {employee.department}
+            {days.map((day) => (
+              <th
+                key={day.toString()}
+                className="p-2 border text-center min-w-32"
+              >
+                <div
+                  className={`font-medium ${
+                    isToday(day) ? "text-blue-600" : ""
+                  }`}
+                >
+                  {format(day, "EEE")}
+                </div>
+                <div
+                  className={`text-sm ${
+                    isToday(day) ? "text-blue-600 font-bold" : ""
+                  }`}
+                >
+                  {format(day, "MMM d")}
+                </div>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-200">
+          {filteredEmployees.map((employee) => (
+            <tr key={employee.id}>
+              <td className="p-2 border sticky left-0 bg-white z-10">
+                <div className="flex items-center">
+                  <Avatar className="h-8 w-8 mr-2 rounded-full overflow-hidden border-2 border-blue-200">
+                    <AvatarImage src={employee.avatarUrl} alt={employee.name} />
+                    <AvatarFallback>
+                      {employee.name.substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-bold text-sm">{employee.name}</p>
+                    <p className="text-xs text-gray-500">
+                      {employee.department}
+                    </p>
                   </div>
                 </div>
-              </div>
-            </td>
-            {days.map((day) => {
-              const attendanceEntry = findAttendanceEntry(employee.id, day);
-              return (
-                <td
-                  key={day.toString()}
-                  className={`p-2 border text-center cursor-pointer hover:bg-gray-50 ${
-                    isToday(day) ? "bg-blue-50" : ""
-                  }`}
-                  onClick={() => onAttendanceCellClick(employee, day)}
-                >
-                  {attendanceEntry && (
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="flex flex-col items-center">
-                            <Badge
-                              variant="outline"
-                              className={`mb-1 ${getAttendanceStatusColor(
-                                attendanceEntry.status
-                              )}`}
-                            >
-                              <span className="flex items-center">
-                                <AttendanceStatusIcon
-                                  status={attendanceEntry.status}
-                                />
-                                <span className="ml-1">
-                                  {attendanceEntry.status
-                                    .charAt(0)
-                                    .toUpperCase() +
-                                    attendanceEntry.status.slice(1)}
+              </td>
+              {days.map((day) => {
+                const attendanceEntry = findAttendanceEntry(employee.id, day);
+                return (
+                  <td
+                    key={day.toString()}
+                    className={`p-2 border text-center cursor-pointer hover:bg-blue-100 ${
+                      isToday(day) ? "bg-blue-50" : ""
+                    }`}
+                    onClick={() => handleAttendanceCellClick(employee, day)}
+                  >
+                    {attendanceEntry && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex flex-col items-center">
+                              <Badge
+                                variant="outline"
+                                className={`mb-1 ${getAttendanceStatusColor(
+                                  attendanceEntry.status
+                                )}`}
+                              >
+                                <span className="flex items-center">
+                                  <AttendanceStatusIcon
+                                    status={attendanceEntry.status}
+                                  />
+                                  <span className="ml-1">
+                                    {attendanceEntry.status
+                                      .charAt(0)
+                                      .toUpperCase() +
+                                      attendanceEntry.status.slice(1)}
+                                  </span>
                                 </span>
-                              </span>
-                            </Badge>
-                            {attendanceEntry.logIn && (
-                              <div className="text-xs text-gray-500">
-                                {attendanceEntry.logIn}
-                              </div>
+                              </Badge>
+                              {attendanceEntry.checkinTime && (
+                                <div className="text-xs text-gray-500">
+                                  {attendanceEntry.checkinTime}
+                                </div>
+                              )}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {attendanceEntry.status !== "Pending" && (
+                              <>
+                                <p>Status: {attendanceEntry.status}</p>
+                                {attendanceEntry.checkinTime && (
+                                  <p>In: {attendanceEntry.checkinTime}</p>
+                                )}
+                                {attendanceEntry.checkoutTime && (
+                                  <p>Out: {attendanceEntry.checkoutTime}</p>
+                                )}
+                              </>
                             )}
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          {attendanceEntry.status !== "pending" && (
-                            <>
-                              <p>Status: {attendanceEntry.status}</p>
-                              {attendanceEntry.logIn && (
-                                <p>In: {attendanceEntry.logIn}</p>
-                              )}
-                              {attendanceEntry.logOut && (
-                                <p>Out: {attendanceEntry.logOut}</p>
-                              )}
-                            </>
-                          )}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  )}
-                </td>
-              );
-            })}
-          </tr>
-        ))}
-      </tbody>
-    </table>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 };
-
-export default EmployeeAttendance;

@@ -1,3 +1,4 @@
+// components/ScheduleAndAttendance.tsx
 import {
   addDays,
   eachDayOfInterval,
@@ -9,21 +10,15 @@ import {
   startOfMonth,
   startOfWeek,
 } from "date-fns";
-import {
-  CheckCircle,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  XCircle,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
 import { ScheduleAndAttendanceAPI } from "@/API/endpoint";
 import AddEmployee from "@/components/kit/AddEmployee";
+import { Attendance } from "@/components/kit/EmployeeAttendance";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import {
   Card,
   CardContent,
@@ -58,7 +53,7 @@ import {
 } from "@/components/ui/tooltip";
 
 // Types
-type Employee = {
+export type Employee = {
   id: string;
   name: string;
   department: string;
@@ -67,7 +62,6 @@ type Employee = {
   schedule: { date: string; shiftType: ShiftType }[];
 };
 
-// Define the specific shift type strings
 type ShiftTypeValue =
   | "shift1"
   | "shift2"
@@ -77,16 +71,30 @@ type ShiftTypeValue =
   | "paidTimeOff"
   | "plannedLeave";
 
-// Define the ShiftType object structure
-type ShiftType = {
+export type ShiftType = {
   type: ShiftTypeValue;
   startTime?: string;
   endTime?: string;
 };
 
-type AttendanceStatus = "present" | "absent" | "late" | "holiday" | "pending";
+export type AttendanceStatus =
+  | "Present"
+  | "NCNS"
+  | "Call In"
+  | "Rest Day"
+  | "Tardy"
+  | "RDOT"
+  | "Suspended"
+  | "Attrition"
+  | "LOA"
+  | "VL"
+  | "Half Day"
+  | "Early Log Out"
+  | "VTO"
+  | "TB"
+  | "Pending";
 
-type ScheduleEntry = {
+export type ScheduleEntry = {
   date: string;
   shiftType: ShiftType;
   _id: string;
@@ -102,7 +110,7 @@ type ScheduleEntry = {
   __v: number;
 };
 
-type AttendanceEntry = {
+export type AttendanceEntry = {
   employeeId: string;
   date: Date;
   status: AttendanceStatus;
@@ -141,42 +149,68 @@ const hasShiftTime = (shiftType: ShiftTypeValue): boolean => {
   return ["shift1", "shift2", "shift3", "staff"].includes(shiftType);
 };
 
-// Helper to get attendance status color
-const getAttendanceStatusColor = (status: AttendanceStatus): string => {
-  switch (status) {
-    case "present":
-      return "bg-green-100 text-green-800";
-    case "absent":
-      return "bg-red-100 text-red-800";
-    case "late":
-      return "bg-orange-100 text-orange-800";
-    case "holiday":
-      return "bg-blue-100 text-blue-800";
-    case "pending":
-      return "bg-gray-100 text-gray-500";
+// Helper function to display shift information
+const displayShiftInfo = (
+  shiftType: ShiftType
+): { name: string; time: string } => {
+  if (!shiftType || !shiftType.type) return { name: "", time: "" };
+
+  let displayName = "";
+  let displayTime = "";
+
+  // Format the shift type name
+  switch (shiftType.type) {
+    case "shift1":
+      displayName = "Shift 1";
+      break;
+    case "shift2":
+      displayName = "Shift 2";
+      break;
+    case "shift3":
+      displayName = "Shift 3";
+      break;
+    case "staff":
+      displayName = "Staff";
+      break;
+    case "restday":
+      displayName = "Rest Day";
+      break;
+    case "paidTimeOff":
+      displayName = "PTO";
+      break;
+    case "plannedLeave":
+      displayName = "Leave";
+      break;
     default:
-      return "bg-gray-100 text-gray-500";
+      displayName = shiftType.type;
   }
+
+  // Only show time for shift types that have times
+  if (
+    hasShiftTime(shiftType.type) &&
+    shiftType.startTime &&
+    shiftType.endTime
+  ) {
+    displayTime = `${formatTimeToAMPM(
+      shiftType.startTime
+    )} - ${formatTimeToAMPM(shiftType.endTime)}`;
+  }
+
+  return { name: displayName, time: displayTime };
 };
 
-// Helper to get attendance status icon
-const AttendanceStatusIcon = ({ status }: { status: AttendanceStatus }) => {
-  switch (status) {
-    case "present":
-      return <CheckCircle className="h-4 w-4 text-green-600" />;
-    case "absent":
-      return <XCircle className="h-4 w-4 text-red-600" />;
-    case "late":
-      return <Clock className="h-4 w-4 text-orange-600" />;
-    case "holiday":
-      return <Calendar className="h-4 w-4 text-blue-600" />;
-    case "pending":
-      return (
-        <div className="h-4 w-4 rounded-full border border-gray-300"></div>
-      );
-    default:
-      return null;
-  }
+// Helper function to convert 24-hour time to 12-hour AM/PM format
+const formatTimeToAMPM = (time: string): string => {
+  if (!time) return "";
+
+  const [hourStr, minuteStr] = time.split(":");
+  const hour = parseInt(hourStr, 10);
+  const minute = minuteStr || "00";
+
+  const period = hour >= 12 ? "PM" : "AM";
+  const displayHour = hour % 12 || 12; // Convert 0 to 12 for 12 AM
+
+  return `${displayHour}:${minute} ${period}`;
 };
 
 const ScheduleAndAttendance: React.FC = () => {
@@ -195,12 +229,11 @@ const ScheduleAndAttendance: React.FC = () => {
   const [selectedStartTime, setSelectedStartTime] = useState<string>("00:00");
   const [selectedEndTime, setSelectedEndTime] = useState<string>("00:00");
   const [selectedAttendanceStatus, setSelectedAttendanceStatus] =
-    useState<AttendanceStatus>("present");
+    useState<AttendanceStatus>("Present");
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [repeatDays, setRepeatDays] = useState<number>(1);
-  // Add new state variable to track active tab
   const [activeTab, setActiveTab] = useState("schedule");
 
   const resetDialogState = () => {
@@ -209,7 +242,7 @@ const ScheduleAndAttendance: React.FC = () => {
     setSelectedShiftType("shift1");
     setSelectedStartTime("00:00");
     setSelectedEndTime("00:00");
-    setSelectedAttendanceStatus("present");
+    setSelectedAttendanceStatus("Present");
     setRepeatDays(1);
   };
 
@@ -508,7 +541,7 @@ const ScheduleAndAttendance: React.FC = () => {
     setSelectedEmployee(employee);
     setSelectedDate(date);
     const entry = findAttendanceEntry(employee.id, date);
-    setSelectedAttendanceStatus(entry ? entry.status : "present");
+    setSelectedAttendanceStatus(entry ? entry.status : "Present");
     setIsAddShiftOpen(true);
   };
 
@@ -521,70 +554,6 @@ const ScheduleAndAttendance: React.FC = () => {
       );
       setIsAddShiftOpen(false);
     }
-  };
-
-  // Helper function to convert 24-hour time to 12-hour AM/PM format
-  const formatTimeToAMPM = (time: string): string => {
-    if (!time) return "";
-
-    const [hourStr, minuteStr] = time.split(":");
-    const hour = parseInt(hourStr, 10);
-    const minute = minuteStr || "00";
-
-    const period = hour >= 12 ? "PM" : "AM";
-    const displayHour = hour % 12 || 12; // Convert 0 to 12 for 12 AM
-
-    return `${displayHour}:${minute} ${period}`;
-  };
-
-  // Helper function to display shift information
-  const displayShiftInfo = (
-    shiftType: ShiftType
-  ): { name: string; time: string } => {
-    if (!shiftType || !shiftType.type) return { name: "", time: "" };
-
-    let displayName = "";
-    let displayTime = "";
-
-    // Format the shift type name
-    switch (shiftType.type) {
-      case "shift1":
-        displayName = "Shift 1";
-        break;
-      case "shift2":
-        displayName = "Shift 2";
-        break;
-      case "shift3":
-        displayName = "Shift 3";
-        break;
-      case "staff":
-        displayName = "Staff";
-        break;
-      case "restday":
-        displayName = "Rest Day";
-        break;
-      case "paidTimeOff":
-        displayName = "PTO";
-        break;
-      case "plannedLeave":
-        displayName = "Leave";
-        break;
-      default:
-        displayName = shiftType.type;
-    }
-
-    // Only show time for shift types that have times
-    if (
-      hasShiftTime(shiftType.type) &&
-      shiftType.startTime &&
-      shiftType.endTime
-    ) {
-      displayTime = `${formatTimeToAMPM(
-        shiftType.startTime
-      )} - ${formatTimeToAMPM(shiftType.endTime)}`;
-    }
-
-    return { name: displayName, time: displayTime };
   };
 
   return (
@@ -764,130 +733,14 @@ const ScheduleAndAttendance: React.FC = () => {
                 </tbody>
               </table>
             </TabsContent>
-            <TabsContent value="attendance" className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead>
-                  <tr>
-                    <th className="p-2 border sticky left-0 bg-white z-10 min-w-40">
-                      Employee
-                    </th>
-                    {days.map((day) => (
-                      <th
-                        key={day.toString()}
-                        className="p-2 border text-center min-w-32"
-                      >
-                        <div
-                          className={`font-medium ${
-                            isToday(day) ? "text-blue-600" : ""
-                          }`}
-                        >
-                          {format(day, "EEE")}
-                        </div>
-                        <div
-                          className={`text-sm ${
-                            isToday(day) ? "text-blue-600 font-bold" : ""
-                          }`}
-                        >
-                          {format(day, "MMM d")}
-                        </div>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {filteredEmployees.map((employee) => (
-                    <tr key={employee.id}>
-                      <td className="p-2 border sticky left-0 bg-white z-10">
-                        <div className="flex items-center">
-                          <Avatar className="h-8 w-8 mr-2 rounded-full overflow-hidden border-2 border-blue-200">
-                            <AvatarImage
-                              src={employee.avatarUrl}
-                              alt={employee.name}
-                            />
-                            <AvatarFallback>
-                              {employee.name.substring(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-bold text-sm">{employee.name}</p>
-                            <p className="text-xs text-gray-500">
-                              {employee.department}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-                      {days.map((day) => {
-                        const attendanceEntry = findAttendanceEntry(
-                          employee.id,
-                          day
-                        );
-                        return (
-                          <td
-                            key={day.toString()}
-                            className={`p-2 border text-center cursor-pointer hover:bg-blue-100 ${
-                              isToday(day) ? "bg-blue-50" : ""
-                            }`}
-                            onClick={() =>
-                              handleAttendanceCellClick(employee, day)
-                            }
-                          >
-                            {attendanceEntry && (
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <div className="flex flex-col items-center">
-                                      <Badge
-                                        variant="outline"
-                                        className={`mb-1 ${getAttendanceStatusColor(
-                                          attendanceEntry.status
-                                        )}`}
-                                      >
-                                        <span className="flex items-center">
-                                          <AttendanceStatusIcon
-                                            status={attendanceEntry.status}
-                                          />
-                                          <span className="ml-1">
-                                            {attendanceEntry.status
-                                              .charAt(0)
-                                              .toUpperCase() +
-                                              attendanceEntry.status.slice(1)}
-                                          </span>
-                                        </span>
-                                      </Badge>
-                                      {attendanceEntry.checkinTime && (
-                                        <div className="text-xs text-gray-500">
-                                          {attendanceEntry.checkinTime}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    {attendanceEntry.status !== "pending" && (
-                                      <>
-                                        <p>Status: {attendanceEntry.status}</p>
-                                        {attendanceEntry.checkinTime && (
-                                          <p>
-                                            In: {attendanceEntry.checkinTime}
-                                          </p>
-                                        )}
-                                        {attendanceEntry.checkoutTime && (
-                                          <p>
-                                            Out: {attendanceEntry.checkoutTime}
-                                          </p>
-                                        )}
-                                      </>
-                                    )}
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            )}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <TabsContent value="attendance">
+              <Attendance
+                viewMode={viewMode}
+                currentDate={currentDate}
+                filteredEmployees={filteredEmployees}
+                attendance={attendance}
+                handleAttendanceCellClick={handleAttendanceCellClick}
+              />
             </TabsContent>
           </Tabs>
         </CardContent>
@@ -1036,21 +889,66 @@ const ScheduleAndAttendance: React.FC = () => {
                     setSelectedAttendanceStatus(value as AttendanceStatus)
                   }
                 >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="present" id="present" />
-                    <Label htmlFor="present">Present</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="absent" id="absent" />
-                    <Label htmlFor="absent">Absent</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="late" id="late" />
-                    <Label htmlFor="late">Late</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="holiday" id="holiday" />
-                    <Label htmlFor="holiday">Holiday</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="Present" id="present" />
+                      <Label htmlFor="present">Present</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="NCNS" id="ncns" />
+                      <Label htmlFor="ncns">NCNS</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="Call In" id="call-in" />
+                      <Label htmlFor="call-in">Call In</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="Rest Day" id="rest-day" />
+                      <Label htmlFor="rest-day">Rest Day</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="Tardy" id="tardy" />
+                      <Label htmlFor="tardy">Tardy</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="RDOT" id="rdot" />
+                      <Label htmlFor="rdot">RDOT</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="Suspended" id="suspended" />
+                      <Label htmlFor="suspended">Suspended</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="Attrition" id="attrition" />
+                      <Label htmlFor="attrition">Attrition</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="LOA" id="loa" />
+                      <Label htmlFor="loa">LOA</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="VL" id="vl" />
+                      <Label htmlFor="vl">VL</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="Half Day" id="half-day" />
+                      <Label htmlFor="half-day">Half Day</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem
+                        value="Early Log Out"
+                        id="early-log-out"
+                      />
+                      <Label htmlFor="early-log-out">Early Log Out</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="VTO" id="vto" />
+                      <Label htmlFor="vto">VTO</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="TB" id="tb" />
+                      <Label htmlFor="tb">TB</Label>
+                    </div>
                   </div>
                 </RadioGroup>
               </div>
