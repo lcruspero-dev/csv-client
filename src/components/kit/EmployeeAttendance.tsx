@@ -24,8 +24,10 @@ type AttendanceEntry = {
   employeeId: string;
   date: Date;
   status: AttendanceStatus;
-  checkinTime?: string;
-  checkoutTime?: string;
+  logIn?: string;
+  logOut?: string;
+  ot?: string;
+  rdot?: string;
 };
 
 type EmployeeAttendanceProps = {
@@ -166,9 +168,9 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
                                 </span>
                               </span>
                             </Badge>
-                            {attendanceEntry.checkinTime && (
+                            {attendanceEntry.logIn && (
                               <div className="text-xs text-gray-500">
-                                {attendanceEntry.checkinTime}
+                                {attendanceEntry.logIn}
                               </div>
                             )}
                           </div>
@@ -177,11 +179,11 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
                           {attendanceEntry.status !== "pending" && (
                             <>
                               <p>Status: {attendanceEntry.status}</p>
-                              {attendanceEntry.checkinTime && (
-                                <p>In: {attendanceEntry.checkinTime}</p>
+                              {attendanceEntry.logIn && (
+                                <p>In: {attendanceEntry.logIn}</p>
                               )}
-                              {attendanceEntry.checkoutTime && (
-                                <p>Out: {attendanceEntry.checkoutTime}</p>
+                              {attendanceEntry.logOut && (
+                                <p>Out: {attendanceEntry.logOut}</p>
                               )}
                             </>
                           )}

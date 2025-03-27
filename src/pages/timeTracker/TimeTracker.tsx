@@ -770,7 +770,7 @@ export const AttendanceTracker: React.FC = () => {
 
       // Always show "Time Out" if the user is timed in
       if (isTimeIn) {
-        actions.push({ value: "timeOut", label: "Time Out" });
+        actions.push({ value: "timeOut", label: "Log Out" });
       }
     }
 
@@ -850,7 +850,7 @@ export const AttendanceTracker: React.FC = () => {
                   ) : (
                     <LogIn className="mr-2 h-4 w-4" />
                   )}
-                  Time In
+                  Log In
                 </Button>
               ) : (
                 <>
@@ -890,7 +890,7 @@ export const AttendanceTracker: React.FC = () => {
                   <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                     <DialogContent>
                       <DialogHeader>
-                        <DialogTitle>Time Out</DialogTitle>
+                        <DialogTitle>Log Out</DialogTitle>
                       </DialogHeader>
                       <div className="grid gap-4 py-4">
                         <div className="grid grid-cols-4 items-center gap-4">
@@ -916,7 +916,7 @@ export const AttendanceTracker: React.FC = () => {
                             disabled={isLoadingTimeOut}
                           >
                             {isLoadingTimeOut ? <LoadingSpinner /> : null}
-                            Confirm Time Out
+                            Confirm Log Out
                           </Button>
                         </div>
                       </div>
@@ -994,8 +994,8 @@ export const AttendanceTracker: React.FC = () => {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Date</TableHead>
-                        <TableHead>Time In</TableHead>
-                        <TableHead>Time Out</TableHead>
+                        <TableHead>Log In</TableHead>
+                        <TableHead>Log Out</TableHead>
                         <TableHead>Total Hours</TableHead>
                         <TableHead>Break Time</TableHead>
                         <TableHead>Second Break Time</TableHead>

@@ -216,150 +216,161 @@ const NteSummaryTable: React.FC = () => {
 
   return (
     <div className="w-full overflow-x-auto px-24">
-      <div className="absolute left-36 top-24">
+      <div className="absolute left-36 top-24 text-xs">
         <BackButton />
       </div>
       <div className="text-2xl text-gray-700 text-center py-4 font-bold">
-        Notice to Explain
+        Employee Notice
       </div>
-      <Table>
-        <TableHeader className="bg-slate-200">
-          <TableRow>
-            <TableHead className="font-bold text-black border-2 border-slate-300 text-center">
-              Notice to Explain
-            </TableHead>
-            <TableHead className="font-bold text-black border-2 border-slate-300 text-center">
-              Employee Feedback
-            </TableHead>
-            <TableHead className="font-bold text-black border-2 border-slate-300 text-center">
-              Notice of Decision
-            </TableHead>
-            <TableHead className="font-bold text-black text-center w-48 border-2 border-slate-300">
-              Status
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {data.map((item) => (
-            <TableRow key={item._id}>
-              <TableCell className="align-top border-2 border-slate-300">
-                <div className="space-y-1">
-                  <div className="text-sm">
-                    <span className="font-bold">Issue Date:</span>{" "}
-                    {formatDate(item.nte.dateIssued)}
-                  </div>
-                  <div className="font-medium">
-                    <span className="font-bold">Name:</span> {item.nte.name}
-                  </div>
-                  <div>
-                    <span className="font-bold">Position:</span>{" "}
-                    {item.nte.position}
-                  </div>
-                  <div className="text-sm font-medium">
-                    <span className="font-bold">Policy:</span>{" "}
-                    {item.nte.offenseType}
-                  </div>
-                  <div className="text-sm">
-                    <span className="font-bold">Description of Offense/s:</span>{" "}
-                    {truncateText(item.nte.offenseDescription, 70, item, "nte")}
-                  </div>
-                </div>
-              </TableCell>
-              <TableCell className="align-top border-2 border-slate-300">
-                {item.employeeFeedback ? (
-                  <div className="space-y-1">
-                    <div className="text-sm">
-                      <span className="font-bold">Response Date:</span>{" "}
-                      {formatDate(item.employeeFeedback.responseDate)}
-                    </div>
-                    <div className="text-sm">
-                      <span className="font-bold">Feedback:</span>{" "}
-                      {truncateText(
-                        item.employeeFeedback.responseDetail,
-                        70,
-                        item,
-                        "feedback"
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <span className="text-gray-400">No feedback yet</span>
-                )}
-              </TableCell>
-              <TableCell className="align-top border-2 border-slate-300">
-                {item.noticeOfDecision ? (
-                  <div className="space-y-1">
-                    <div className="text-sm">
-                      <span className="font-bold">Date:</span>{" "}
-                      {formatDate(item.noticeOfDecision.nteIssuanceDate)}
-                    </div>
-                    <div className="font-medium">
-                      <span className="font-bold">Decision:</span>{" "}
-                      {truncateText(
-                        item.noticeOfDecision.decision,
-                        70,
-                        item,
-                        "decision"
-                      )}
-                    </div>
-                    <div className="font-medium">
-                      <span className="font-bold">Findings:</span>{" "}
-                      {truncateText(
-                        item.noticeOfDecision.findings,
-                        70,
-                        item,
-                        "decision"
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <span className="text-gray-400">No decision yet</span>
-                )}
-              </TableCell>
-              <TableCell className="align-center border-2 border-slate-300">
-                <div className="space-y-2">
-                  <div
-                    className={`text-sm font-medium px-2 py-1 rounded-md ${getStatusColor(
-                      item.status
-                    )}`}
-                  >
-                    {getStatusText(item.status, item)}
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    {item.status === "PER" && (
-                      <>
-                        {item.nte.employeeSignatureDate === null ? (
-                          <ActionButton
-                            icon={<ClipboardCheck size={16} />}
-                            label="Confirm Receipt"
-                            onClick={() => handleConfirmReceipt(item._id, item)}
-                            className="w-auto justify-center bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 text-white border-2 border-blue-800 rounded-lg shadow-lg hover:bg-gradient-to-l hover:from-blue-600 hover:via-blue-500 hover:to-blue-400 transition duration-300 ease-in-out transform hover:scale-105"
-                          />
-                        ) : (
-                          <ActionButton
-                            icon={<MessageSquare size={16} />}
-                            label="Respond"
-                            onClick={() => handleRespond(item)}
-                            className="w-auto justify-center bg-gradient-to-r from-green-400 via-green-500 to-green-600 text-white border-2 border-green-800 rounded-lg shadow-lg hover:bg-gradient-to-l hover:from-green-600 hover:via-green-500 hover:to-green-400 transition duration-300 ease-in-out transform hover:scale-105"
-                          />
-                        )}
-                      </>
-                    )}
-                    {item.status === "PNODA" && (
-                      <ActionButton
-                        icon={<CheckSquare size={16} />}
-                        label="Agree & Sign"
-                        onClick={() => handleAcknowledge(item._id, item)}
-                        className="w-auto justify-center bg-gradient-to-r from-green-400 via-green-500 to-green-600 text-white border-2 border-green-800 rounded-lg shadow-lg hover:bg-gradient-to-l hover:from-green-600 hover:via-green-500 hover:to-green-400 transition duration-300 ease-in-out transform hover:scale-105"
-                      />
-                    )}
-                  </div>
-                </div>
-              </TableCell>
+      <div className="overflow-hidden rounded-lg border border-gray-300">
+        <Table className="w-full text-sm">
+          <TableHeader className="bg-slate-200">
+            <TableRow>
+              <TableHead className="font-bold text-black border-2 border-slate-300 text-center">
+                Notice to Explain
+              </TableHead>
+              <TableHead className="font-bold text-black border-2 border-slate-300 text-center">
+                Employee Feedback
+              </TableHead>
+              <TableHead className="font-bold text-black border-2 border-slate-300 text-center">
+                Notice of Decision
+              </TableHead>
+              <TableHead className="font-bold text-black text-center w-48 border-2 border-slate-300">
+                Status
+              </TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {data.map((item) => (
+              <TableRow key={item._id}>
+                <TableCell className="align-top border-2 border-slate-300">
+                  <div className="space-y-1">
+                    <div className="text-sm">
+                      <span className="font-bold">Issue Date:</span>{" "}
+                      {formatDate(item.nte.dateIssued)}
+                    </div>
+                    <div className="font-medium">
+                      <span className="font-bold">Name:</span> {item.nte.name}
+                    </div>
+                    <div>
+                      <span className="font-bold">Position:</span>{" "}
+                      {item.nte.position}
+                    </div>
+                    <div className="text-sm font-medium">
+                      <span className="font-bold">Policy:</span>{" "}
+                      {item.nte.offenseType}
+                    </div>
+                    <div className="text-sm">
+                      <span className="font-bold">
+                        Description of Offense/s:
+                      </span>{" "}
+                      {truncateText(
+                        item.nte.offenseDescription,
+                        70,
+                        item,
+                        "nte"
+                      )}
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell className="align-top border-2 border-slate-300">
+                  {item.employeeFeedback ? (
+                    <div className="space-y-1">
+                      <div className="text-sm">
+                        <span className="font-bold">Response Date:</span>{" "}
+                        {formatDate(item.employeeFeedback.responseDate)}
+                      </div>
+                      <div className="text-sm">
+                        <span className="font-bold">Feedback:</span>{" "}
+                        {truncateText(
+                          item.employeeFeedback.responseDetail,
+                          70,
+                          item,
+                          "feedback"
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="text-gray-400">No feedback yet</span>
+                  )}
+                </TableCell>
+                <TableCell className="align-top border-2 border-slate-300">
+                  {item.noticeOfDecision ? (
+                    <div className="space-y-1">
+                      <div className="text-sm">
+                        <span className="font-bold">Date:</span>{" "}
+                        {formatDate(item.noticeOfDecision.nteIssuanceDate)}
+                      </div>
+                      <div className="font-medium">
+                        <span className="font-bold">Decision:</span>{" "}
+                        {truncateText(
+                          item.noticeOfDecision.decision,
+                          70,
+                          item,
+                          "decision"
+                        )}
+                      </div>
+                      <div className="font-medium">
+                        <span className="font-bold">Findings:</span>{" "}
+                        {truncateText(
+                          item.noticeOfDecision.findings,
+                          70,
+                          item,
+                          "decision"
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="text-gray-400">No decision yet</span>
+                  )}
+                </TableCell>
+                <TableCell className="align-center border-2 border-slate-300">
+                  <div className="space-y-2">
+                    <div
+                      className={`text-sm font-medium px-2 py-1 rounded-md ${getStatusColor(
+                        item.status
+                      )}`}
+                    >
+                      {getStatusText(item.status, item)}
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      {item.status === "PER" && (
+                        <>
+                          {item.nte.employeeSignatureDate === null ? (
+                            <ActionButton
+                              icon={<ClipboardCheck size={16} />}
+                              label="Confirm Receipt"
+                              onClick={() =>
+                                handleConfirmReceipt(item._id, item)
+                              }
+                              className="w-auto justify-center bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 text-white border-2 border-blue-800 rounded-lg shadow-lg hover:bg-gradient-to-l hover:from-blue-600 hover:via-blue-500 hover:to-blue-400 transition duration-300 ease-in-out transform hover:scale-105"
+                            />
+                          ) : (
+                            <ActionButton
+                              icon={<MessageSquare size={16} />}
+                              label="Respond"
+                              onClick={() => handleRespond(item)}
+                              className="w-auto justify-center bg-gradient-to-r from-green-400 via-green-500 to-green-600 text-white border-2 border-green-800 rounded-lg shadow-lg hover:bg-gradient-to-l hover:from-green-600 hover:via-green-500 hover:to-green-400 transition duration-300 ease-in-out transform hover:scale-105"
+                            />
+                          )}
+                        </>
+                      )}
+                      {item.status === "PNODA" && (
+                        <ActionButton
+                          icon={<CheckSquare size={16} />}
+                          label="Agree & Sign"
+                          onClick={() => handleAcknowledge(item._id, item)}
+                          className="w-auto justify-center bg-gradient-to-r from-green-400 via-green-500 to-green-600 text-white border-2 border-green-800 rounded-lg shadow-lg hover:bg-gradient-to-l hover:from-green-600 hover:via-green-500 hover:to-green-400 transition duration-300 ease-in-out transform hover:scale-105"
+                        />
+                      )}
+                    </div>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
       {selectedNte && (
         <PdfNteViewer
           nteData={{

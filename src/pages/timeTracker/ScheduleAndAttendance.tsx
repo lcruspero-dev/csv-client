@@ -229,7 +229,7 @@ const ScheduleAndAttendance: React.FC = () => {
           name: entry.employeeName,
           department: entry.position,
           teamLeader: entry.teamLeader,
-          avatarUrl: `https://i.pravatar.cc/150?u=${entry.employeeId}`,
+          avatarUrl: `https://ui-avatars.com/api/?background=2563EB&color=fff&name=${entry.employeeName}`,
           schedule: schedule,
         };
       });

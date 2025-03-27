@@ -346,7 +346,7 @@ const AddEmployee: React.FC<AddEmployeeProps> = ({
           <DialogHeader>
             <DialogTitle>Confirm Changes</DialogTitle>
           </DialogHeader>
-          <p>
+          <p className="text-sm">
             {existingEntry?.employeeName} is already a member of{" "}
             {existingEntry?.teamLeader}. Do you want to continue the changes?
           </p>

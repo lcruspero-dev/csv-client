@@ -22,7 +22,7 @@ import {
   parse,
   startOfWeek,
 } from "date-fns";
-import { Calendar, CalendarDays } from "lucide-react";
+import { Calendar, CalendarCheck, CalendarDays } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
 interface ScheduleItem {
@@ -47,7 +47,7 @@ interface ServerTimeResponse {
 
 export const ViewScheduleButton: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<"weekly" | "monthly">("weekly");
+  const [viewMode, setViewMode] = useState<"weekly" | "monthly">("monthly");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [today, setToday] = useState(new Date()); // Store today's date separately
   const [scheduleData, setScheduleData] = useState<EmployeeSchedule | null>(
@@ -143,13 +143,16 @@ export const ViewScheduleButton: React.FC = () => {
 
   return (
     <>
-      <Button
-        variant="link"
-        className="text-blue-600 hover:text-blue-800 underline p-0"
-        onClick={() => setIsOpen(true)}
-      >
-        View Schedule
-      </Button>
+      <div className="flex items-center text-blue-600 hover:text-blue-800">
+        <CalendarCheck className="h-4 w-4 mr-1" />
+        <Button
+          variant="link"
+          className="underline p-0 text-sm text-inherit"
+          onClick={() => setIsOpen(true)}
+        >
+          View Schedule
+        </Button>
+      </div>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
