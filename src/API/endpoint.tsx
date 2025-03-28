@@ -151,6 +151,7 @@ export const UserProfileAPI = {
   updateProfile: (body: object) => apiHelper("/api/userprofiles", "PUT", body),
   deleteProfile: () => apiHelper("/api/userprofiles", "DELETE"),
   getProfileById: (id: any) => apiHelper(`/api/userprofiles/${id}`, "GET"),
+  getAllUserAvatar: () => apiHelper(`/api/userprofiles/avatar/all`, "GET"),
 };
 
 export const ScheduleAndAttendanceAPI = {

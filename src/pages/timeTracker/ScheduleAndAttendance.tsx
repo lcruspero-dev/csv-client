@@ -13,7 +13,7 @@ import {
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
-import { ScheduleAndAttendanceAPI } from "@/API/endpoint";
+import { ScheduleAndAttendanceAPI, UserProfileAPI } from "@/API/endpoint";
 import AddEmployee from "@/components/kit/AddEmployee";
 import { Attendance } from "@/components/kit/EmployeeAttendance";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -235,6 +235,7 @@ const ScheduleAndAttendance: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [repeatDays, setRepeatDays] = useState<number>(1);
   const [activeTab, setActiveTab] = useState("schedule");
+  const [avatars, setAvatars] = useState<Record<string, string>>({});
 
   const resetDialogState = () => {
     setSelectedEmployee(null);
@@ -246,43 +247,43 @@ const ScheduleAndAttendance: React.FC = () => {
     setRepeatDays(1);
   };
 
-  const fetchEmployees = async () => {
+  const fetchEmployees = async (avatarMap: Record<string, string>) => {
     try {
       setLoading(true);
       const response = await ScheduleAndAttendanceAPI.getScheduleEntries();
 
-      // Normalize employee data according to the backend schema
+      // Normalize employee data with avatar URLs
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const formattedEmployees = response.data.map((entry: any) => {
-        // Ensure correct data structure
         const schedule = Array.isArray(entry.schedule) ? entry.schedule : [];
+        const avatarFilename = avatarMap[entry.employeeId];
+        const avatarUrl = avatarFilename
+          ? `${import.meta.env.VITE_UPLOADFILES_URL}/avatars/${avatarFilename}`
+          : `https://ui-avatars.com/api/?background=2563EB&color=fff&name=${entry.employeeName}`;
 
         return {
           id: entry.employeeId,
           name: entry.employeeName,
           department: entry.position,
           teamLeader: entry.teamLeader,
-          avatarUrl: `https://ui-avatars.com/api/?background=2563EB&color=fff&name=${entry.employeeName}`,
+          avatarUrl: avatarUrl,
           schedule: schedule,
         };
       });
 
       setEmployees(formattedEmployees);
 
-      // Normalize schedule data based on the backend schema
+      // Normalize schedule data
       let flattenedSchedule: ScheduleEntry[] = [];
-
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       response.data.forEach((entry: any) => {
         if (Array.isArray(entry.schedule)) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const employeeSchedules = entry.schedule.map((sched: any) => {
-            // Convert the backend schema format to our frontend format
             const shiftType: ShiftType = {
               type: sched.shiftType as ShiftTypeValue,
             };
 
-            // Add time properties if they exist and are applicable to this shift type
             if (hasShiftTime(sched.shiftType as ShiftTypeValue)) {
               if (sched.startTime) shiftType.startTime = sched.startTime;
               if (sched.endTime) shiftType.endTime = sched.endTime;
@@ -306,19 +307,15 @@ const ScheduleAndAttendance: React.FC = () => {
       });
 
       setSchedule(flattenedSchedule);
-      console.log("Schedules loaded:", flattenedSchedule.length);
     } catch (err) {
       console.error("Error fetching employee data:", err);
       setError("Failed to fetch employee data");
-    } finally {
-      setLoading(false);
     }
   };
 
   const fetchAttendance = async () => {
     try {
       const response = await ScheduleAndAttendanceAPI.getAttendanceEntries();
-      // Convert date strings to Date objects
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const formattedAttendance = response.data.map((entry: any) => ({
         ...entry,
@@ -332,8 +329,36 @@ const ScheduleAndAttendance: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchEmployees();
-    fetchAttendance();
+    const fetchAllData = async () => {
+      try {
+        // First fetch avatars
+        const avatarResponse = await UserProfileAPI.getAllUserAvatar();
+        const avatarMap = avatarResponse.data.reduce(
+          (
+            acc: Record<string, string>,
+            curr: { userId: string; avatar: string }
+          ) => {
+            acc[curr.userId] = curr.avatar;
+            return acc;
+          },
+          {}
+        );
+        setAvatars(avatarMap);
+
+        // Then fetch employees with avatar data
+        await fetchEmployees(avatarMap);
+
+        // Finally fetch attendance
+        await fetchAttendance();
+      } catch (err) {
+        console.error("Error fetching data:", err);
+        setError("Failed to fetch data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAllData();
   }, []);
 
   const filteredEmployees =
@@ -702,6 +727,7 @@ const ScheduleAndAttendance: React.FC = () => {
                             <AvatarImage
                               src={employee.avatarUrl}
                               alt={employee.name}
+                              className="object-cover"
                             />
                             <AvatarFallback>
                               {employee.name.substring(0, 2).toUpperCase()}
@@ -793,7 +819,7 @@ const ScheduleAndAttendance: React.FC = () => {
           </div>
           <div className="flex gap-2 text-xs">
             <Button variant="outline">Export Data</Button>
-            <AddEmployee onEmployeeAdded={fetchEmployees} />
+            <AddEmployee onEmployeeAdded={() => fetchEmployees(avatars)} />
           </div>
         </CardFooter>
       </Card>
