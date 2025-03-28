@@ -87,7 +87,7 @@ export type AttendanceStatus =
   | "Suspended"
   | "Attrition"
   | "LOA"
-  | "VL"
+  | "PTO"
   | "Half Day"
   | "Early Log Out"
   | "VTO"
@@ -134,7 +134,7 @@ const getShiftColor = (shiftType: ShiftType): string => {
     case "staff":
       return "bg-green-100 text-green-800";
     case "restday":
-      return "bg-gray-200 text-gray-500";
+      return "bg-orange-100 text-orange-800";
     case "paidTimeOff":
       return "bg-pink-100 text-pink-800";
     case "plannedLeave":
@@ -315,8 +315,25 @@ const ScheduleAndAttendance: React.FC = () => {
     }
   };
 
+  const fetchAttendance = async () => {
+    try {
+      const response = await ScheduleAndAttendanceAPI.getAttendanceEntries();
+      // Convert date strings to Date objects
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const formattedAttendance = response.data.map((entry: any) => ({
+        ...entry,
+        date: new Date(entry.date),
+      }));
+      setAttendance(formattedAttendance);
+    } catch (err) {
+      console.error("Error fetching attendance data:", err);
+      setError("Failed to fetch attendance data");
+    }
+  };
+
   useEffect(() => {
     fetchEmployees();
+    fetchAttendance();
   }, []);
 
   const filteredEmployees =
@@ -545,14 +562,39 @@ const ScheduleAndAttendance: React.FC = () => {
     setIsAddShiftOpen(true);
   };
 
-  const handleUpdateAttendance = () => {
+  const handleUpdateAttendance = async () => {
     if (selectedEmployee && selectedDate) {
-      updateAttendance(
-        selectedEmployee.id,
-        selectedDate,
-        selectedAttendanceStatus
-      );
-      setIsAddShiftOpen(false);
+      try {
+        // Format the date for the API
+        const formattedDate = `${selectedDate.getFullYear()}-${String(
+          selectedDate.getMonth() + 1
+        ).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`;
+
+        // Create the attendance data object
+        const attendanceData = {
+          employeeId: selectedEmployee.id,
+          date: formattedDate,
+          status: selectedAttendanceStatus,
+        };
+
+        // Call the API to create/update the attendance entry
+        await ScheduleAndAttendanceAPI.createAttendanceEntry(attendanceData);
+
+        // Update local state
+        updateAttendance(
+          selectedEmployee.id,
+          selectedDate,
+          selectedAttendanceStatus
+        );
+
+        // Refresh attendance data
+        await fetchAttendance();
+
+        setIsAddShiftOpen(false);
+      } catch (err) {
+        console.error("Error updating attendance:", err);
+        setError("Failed to update attendance");
+      }
     }
   };
 
@@ -740,6 +782,7 @@ const ScheduleAndAttendance: React.FC = () => {
                 filteredEmployees={filteredEmployees}
                 attendance={attendance}
                 handleAttendanceCellClick={handleAttendanceCellClick}
+                refreshAttendance={fetchAttendance} // Add this prop
               />
             </TabsContent>
           </Tabs>
@@ -927,8 +970,8 @@ const ScheduleAndAttendance: React.FC = () => {
                       <Label htmlFor="loa">LOA</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="VL" id="vl" />
-                      <Label htmlFor="vl">VL</Label>
+                      <RadioGroupItem value="PTO" id="pto" />
+                      <Label htmlFor="pto">PTO</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="Half Day" id="half-day" />

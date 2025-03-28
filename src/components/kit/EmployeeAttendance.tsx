@@ -51,9 +51,9 @@ const getAttendanceStatusColor = (status: AttendanceStatus): string => {
     case "Call In":
       return "bg-purple-100 text-purple-800";
     case "Rest Day":
-      return "bg-blue-100 text-blue-800";
-    case "Tardy":
       return "bg-orange-100 text-orange-800";
+    case "Tardy":
+      return "bg-teal-100 text-teal-800";
     case "RDOT":
       return "bg-yellow-100 text-yellow-800";
     case "Suspended":
@@ -62,7 +62,7 @@ const getAttendanceStatusColor = (status: AttendanceStatus): string => {
       return "bg-pink-100 text-pink-800";
     case "LOA":
       return "bg-indigo-100 text-indigo-800";
-    case "VL":
+    case "PTO":
       return "bg-teal-100 text-teal-800";
     case "Half Day":
       return "bg-amber-100 text-amber-800";
@@ -87,9 +87,9 @@ const AttendanceStatusIcon = ({ status }: { status: AttendanceStatus }) => {
     case "Call In":
       return <Phone className="h-4 w-4 text-purple-600" />;
     case "Rest Day":
-      return <Calendar className="h-4 w-4 text-blue-600" />;
+      return <Calendar className="h-4 w-4 text-orange-600" />;
     case "Tardy":
-      return <Clock className="h-4 w-4 text-orange-600" />;
+      return <Clock className="h-4 w-4 text-teal-600" />;
     case "RDOT":
       return <Sun className="h-4 w-4 text-yellow-600" />;
     case "Suspended":
@@ -98,7 +98,7 @@ const AttendanceStatusIcon = ({ status }: { status: AttendanceStatus }) => {
       return <UserX className="h-4 w-4 text-pink-600" />;
     case "LOA":
       return <ClipboardList className="h-4 w-4 text-indigo-600" />;
-    case "VL":
+    case "PTO":
       return <TreePalm className="h-4 w-4 text-teal-600" />;
     case "Half Day":
       return <Clock4 className="h-4 w-4 text-amber-600" />;
@@ -119,6 +119,7 @@ type AttendanceProps = {
   filteredEmployees: Employee[];
   attendance: AttendanceEntry[];
   handleAttendanceCellClick: (employee: Employee, date: Date) => void;
+  refreshAttendance: () => void; // Add this prop
 };
 
 export const Attendance: React.FC<AttendanceProps> = ({
@@ -126,7 +127,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
   currentDate,
   filteredEmployees,
   attendance,
-  handleAttendanceCellClick,
+  handleAttendanceCellClick, // Add this prop
 }) => {
   const getDaysInView = () => {
     const start =
