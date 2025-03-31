@@ -33,8 +33,7 @@ interface TeamLeader {
 }
 
 interface AddEmployeeProps {
-  // onAdd: (employee: Employee) => void;
-  onEmployeeAdded: () => void;
+  onEmployeeAdded: () => Promise<void>;
 }
 
 const AddEmployee: React.FC<AddEmployeeProps> = ({
@@ -159,7 +158,11 @@ const AddEmployee: React.FC<AddEmployeeProps> = ({
 
       // Reset and close the dialog
       resetForm();
-      onEmployeeAdded();
+
+      // Call the onEmployeeAdded callback after successful addition
+      if (onEmployeeAdded) {
+        await onEmployeeAdded(); // Make sure to await this if it's async
+      }
     } catch (error) {
       console.error("Error creating schedule entry", error);
       toast({
@@ -167,6 +170,8 @@ const AddEmployee: React.FC<AddEmployeeProps> = ({
         description: "Failed to add employee to schedule. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -188,7 +193,15 @@ const AddEmployee: React.FC<AddEmployeeProps> = ({
   return (
     <>
       <Button onClick={() => setIsOpen(true)}>Add Employee</Button>
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <Dialog
+        open={isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            resetForm();
+          }
+          setIsOpen(open);
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add New Employee</DialogTitle>
@@ -354,15 +367,18 @@ const AddEmployee: React.FC<AddEmployeeProps> = ({
             <Button
               className="text-xs w-16"
               variant="outline"
-              onClick={() => setShowConfirmation(false)}
+              onClick={() => {
+                setShowConfirmation(false);
+                setIsSubmitting(false); // Make sure to reset submitting state
+              }}
             >
               No
             </Button>
             <Button
               className="text-xs w-16"
-              onClick={() => {
+              onClick={async () => {
                 setShowConfirmation(false);
-                proceedWithAddEmployee();
+                await proceedWithAddEmployee(); // Make sure to await this
               }}
             >
               Yes

@@ -30,6 +30,9 @@ interface ScheduleItem {
   shiftType: string;
   startTime: string;
   endTime: string;
+  break1: string;
+  break2: string;
+  lunch: string;
   _id: string;
 }
 
@@ -47,7 +50,7 @@ interface ServerTimeResponse {
 
 export const ViewScheduleButton: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<"weekly" | "monthly">("monthly");
+  const [viewMode, setViewMode] = useState<"weekly" | "monthly">("weekly");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [today, setToday] = useState(new Date()); // Store today's date separately
   const [scheduleData, setScheduleData] = useState<EmployeeSchedule | null>(
@@ -136,9 +139,27 @@ export const ViewScheduleButton: React.FC = () => {
   };
 
   const navigateMonth = (direction: "prev" | "next") => {
-    const newDate = new Date(currentDate);
-    newDate.setMonth(newDate.getMonth() + (direction === "prev" ? -1 : 1));
-    setCurrentDate(newDate);
+    setCurrentDate((prevDate) => {
+      const newDate = new Date(prevDate);
+      newDate.setMonth(newDate.getMonth() + (direction === "prev" ? -1 : 1));
+      return newDate;
+    });
+  };
+
+  const renderBreakTimes = (schedule: ScheduleItem | null) => {
+    if (!schedule) return null;
+
+    return (
+      <div className="text-xs text-gray-600 mt-1 space-y-0.5">
+        {schedule.break1 && (
+          <div>Break 1: {formatTimeToAMPM(schedule.break1)}</div>
+        )}
+        {schedule.break2 && (
+          <div>Break 2: {formatTimeToAMPM(schedule.break2)}</div>
+        )}
+        {schedule.lunch && <div>Lunch: {formatTimeToAMPM(schedule.lunch)}</div>}
+      </div>
+    );
   };
 
   return (
@@ -223,6 +244,7 @@ export const ViewScheduleButton: React.FC = () => {
                         <TableHead>Shift</TableHead>
                         <TableHead>Start Time</TableHead>
                         <TableHead>End Time</TableHead>
+                        <TableHead>Break Times</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -262,6 +284,35 @@ export const ViewScheduleButton: React.FC = () => {
                                 ? formatTimeToAMPM(schedule.endTime)
                                 : "-"}
                             </TableCell>
+                            <TableCell>
+                              {schedule ? (
+                                <>
+                                  {schedule.break1 && (
+                                    <div>
+                                      Break 1:{" "}
+                                      {formatTimeToAMPM(schedule.break1)}
+                                    </div>
+                                  )}
+                                  {schedule.break2 && (
+                                    <div>
+                                      Break 2:{" "}
+                                      {formatTimeToAMPM(schedule.break2)}
+                                    </div>
+                                  )}
+                                  {schedule.lunch && (
+                                    <div>
+                                      Lunch: {formatTimeToAMPM(schedule.lunch)}
+                                    </div>
+                                  )}
+                                  {!schedule.break1 &&
+                                    !schedule.break2 &&
+                                    !schedule.lunch &&
+                                    "-"}
+                                </>
+                              ) : (
+                                "-"
+                              )}
+                            </TableCell>
                           </TableRow>
                         );
                       })}
@@ -278,7 +329,7 @@ export const ViewScheduleButton: React.FC = () => {
                     >
                       Previous Month
                     </Button>
-                    <div className="font-medium text-lg">
+                    <div className="font-medium text-lg text-gray-900">
                       {format(currentDate, "MMMM yyyy")}
                     </div>
                     <Button
@@ -290,10 +341,13 @@ export const ViewScheduleButton: React.FC = () => {
                     </Button>
                   </div>
 
-                  <div className="grid grid-cols-7 gap-1">
+                  <div className="grid grid-cols-7 gap-1 text-sm">
                     {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
                       (day) => (
-                        <div key={day} className="font-medium text-center py-2">
+                        <div
+                          key={day}
+                          className="font-medium text-center py-2 text-gray-800"
+                        >
                           {day}
                         </div>
                       )
@@ -306,7 +360,7 @@ export const ViewScheduleButton: React.FC = () => {
                         1
                       ).getDay(),
                     }).map((_, index) => (
-                      <div key={`empty-${index}`} className="h-12"></div>
+                      <div key={`empty-${index}`} className="h-32"></div>
                     ))}
 
                     {Array.from({
@@ -323,23 +377,40 @@ export const ViewScheduleButton: React.FC = () => {
                         day
                       );
                       const schedule = getScheduleForDate(date);
-                      const isToday = isSameDay(date, today); // Compare with today's date
+                      const isToday = isSameDay(date, today);
 
                       return (
                         <div
                           key={day}
-                          className={`border rounded p-2 h-24 overflow-y-auto ${
-                            isToday ? "bg-blue-50 border-blue-300" : ""
+                          className={`border rounded p-1 h-32 overflow-y-auto text-gray-900 bg-white ${
+                            isToday
+                              ? "bg-blue-50 border-blue-300 font-medium"
+                              : ""
                           }`}
                         >
                           <div className="font-medium">{day}</div>
                           {schedule && (
-                            <div className="text-xs mt-1">
-                              <div>{schedule.shiftType}</div>
+                            <div className="text-xs mt-1 space-y-0.5">
+                              <div>
+                                {schedule.shiftType === "restday"
+                                  ? "Rest Day"
+                                  : schedule.shiftType === "paidTimeOff"
+                                  ? "PTO"
+                                  : schedule.shiftType === "plannedLeave"
+                                  ? "Leave"
+                                  : schedule.shiftType === "shift1"
+                                  ? "Shift 1"
+                                  : schedule.shiftType === "shift2"
+                                  ? "Shift 2"
+                                  : schedule.shiftType === "shift3"
+                                  ? "Shift 3"
+                                  : schedule.shiftType}
+                              </div>
                               <div>
                                 {formatTimeToAMPM(schedule.startTime)} -{" "}
                                 {formatTimeToAMPM(schedule.endTime)}
                               </div>
+                              {renderBreakTimes(schedule)}
                             </div>
                           )}
                         </div>

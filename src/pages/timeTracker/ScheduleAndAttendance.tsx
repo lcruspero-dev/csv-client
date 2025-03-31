@@ -75,6 +75,9 @@ export type ShiftType = {
   type: ShiftTypeValue;
   startTime?: string;
   endTime?: string;
+  break1?: string;
+  break2?: string;
+  lunch?: string;
 };
 
 export type AttendanceStatus =
@@ -149,14 +152,28 @@ const hasShiftTime = (shiftType: ShiftTypeValue): boolean => {
   return ["shift1", "shift2", "shift3", "staff"].includes(shiftType);
 };
 
+const formatTimeToAMPM = (time: string): string => {
+  if (!time) return "";
+
+  const [hourStr, minuteStr] = time.split(":");
+  const hour = parseInt(hourStr, 10);
+  const minute = minuteStr || "00";
+
+  const period = hour >= 12 ? "PM" : "AM";
+  const displayHour = hour % 12 || 12; // Convert 0 to 12 for 12 AM
+
+  return `${displayHour}:${minute} ${period}`;
+};
+
 // Helper function to display shift information
 const displayShiftInfo = (
   shiftType: ShiftType
-): { name: string; time: string } => {
+): { name: string; time: string; details?: string } => {
   if (!shiftType || !shiftType.type) return { name: "", time: "" };
 
   let displayName = "";
   let displayTime = "";
+  let details = "";
 
   // Format the shift type name
   switch (shiftType.type) {
@@ -194,24 +211,31 @@ const displayShiftInfo = (
     displayTime = `${formatTimeToAMPM(
       shiftType.startTime
     )} - ${formatTimeToAMPM(shiftType.endTime)}`;
+
+    // Build details string with all available times
+    const detailsParts = [];
+    if (shiftType.startTime)
+      detailsParts.push(`Login: ${formatTimeToAMPM(shiftType.startTime)}`);
+    if (shiftType.endTime)
+      detailsParts.push(`Logout: ${formatTimeToAMPM(shiftType.endTime)}`);
+    if (shiftType.break1)
+      detailsParts.push(`Break1: ${formatTimeToAMPM(shiftType.break1)}`);
+    if (shiftType.break2)
+      detailsParts.push(`Break2: ${formatTimeToAMPM(shiftType.break2)}`);
+    if (shiftType.lunch)
+      detailsParts.push(`Lunch: ${formatTimeToAMPM(shiftType.lunch)}`);
+
+    details = detailsParts.join("\n");
   }
 
-  return { name: displayName, time: displayTime };
+  return {
+    name: displayName,
+    time: displayTime,
+    details,
+  };
 };
 
 // Helper function to convert 24-hour time to 12-hour AM/PM format
-const formatTimeToAMPM = (time: string): string => {
-  if (!time) return "";
-
-  const [hourStr, minuteStr] = time.split(":");
-  const hour = parseInt(hourStr, 10);
-  const minute = minuteStr || "00";
-
-  const period = hour >= 12 ? "PM" : "AM";
-  const displayHour = hour % 12 || 12; // Convert 0 to 12 for 12 AM
-
-  return `${displayHour}:${minute} ${period}`;
-};
 
 const ScheduleAndAttendance: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>("weekly");
@@ -235,7 +259,9 @@ const ScheduleAndAttendance: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [repeatDays, setRepeatDays] = useState<number>(1);
   const [activeTab, setActiveTab] = useState("schedule");
-  const [avatars, setAvatars] = useState<Record<string, string>>({});
+  const [selectedBreak1, setSelectedBreak1] = useState<string | undefined>();
+  const [selectedBreak2, setSelectedBreak2] = useState<string | undefined>();
+  const [selectedLunch, setSelectedLunch] = useState<string | undefined>();
 
   const resetDialogState = () => {
     setSelectedEmployee(null);
@@ -243,6 +269,9 @@ const ScheduleAndAttendance: React.FC = () => {
     setSelectedShiftType("shift1");
     setSelectedStartTime("00:00");
     setSelectedEndTime("00:00");
+    setSelectedBreak1(undefined);
+    setSelectedLunch(undefined);
+    setSelectedBreak2(undefined);
     setSelectedAttendanceStatus("Present");
     setRepeatDays(1);
   };
@@ -287,6 +316,9 @@ const ScheduleAndAttendance: React.FC = () => {
             if (hasShiftTime(sched.shiftType as ShiftTypeValue)) {
               if (sched.startTime) shiftType.startTime = sched.startTime;
               if (sched.endTime) shiftType.endTime = sched.endTime;
+              if (sched.break1) shiftType.break1 = sched.break1;
+              if (sched.break2) shiftType.break2 = sched.break2;
+              if (sched.lunch) shiftType.lunch = sched.lunch;
             }
 
             return {
@@ -343,7 +375,7 @@ const ScheduleAndAttendance: React.FC = () => {
           },
           {}
         );
-        setAvatars(avatarMap);
+        // setAvatars(avatarMap);
 
         // Then fetch employees with avatar data
         await fetchEmployees(avatarMap);
@@ -453,6 +485,9 @@ const ScheduleAndAttendance: React.FC = () => {
         shiftType: selectedShiftType,
         startTime: "",
         endTime: "",
+        break1: selectedBreak1 || "",
+        break2: selectedBreak2 || "",
+        lunch: selectedLunch || "",
       };
 
       // Add time properties only for shift types that need them
@@ -463,6 +498,9 @@ const ScheduleAndAttendance: React.FC = () => {
         // For non-time shift types, still include empty strings to match schema
         scheduleData.startTime = "";
         scheduleData.endTime = "";
+        scheduleData.break1 = "";
+        scheduleData.break2 = "";
+        scheduleData.lunch = "";
       }
 
       for (let i = 0; i < repeatDays; i++) {
@@ -546,14 +584,11 @@ const ScheduleAndAttendance: React.FC = () => {
     setSelectedEmployee(employee);
     setSelectedDate(date);
 
-    // Find the schedule entry for the selected employee and date
     const entry = findScheduleEntry(employee.id, date);
 
     if (entry && entry.shiftType) {
-      // Use the existing shift type if available
       setSelectedShiftType(entry.shiftType.type);
 
-      // Set times if they exist and the shift type has times
       if (hasShiftTime(entry.shiftType.type)) {
         if (entry.shiftType.startTime) {
           setSelectedStartTime(entry.shiftType.startTime);
@@ -566,15 +601,21 @@ const ScheduleAndAttendance: React.FC = () => {
         } else {
           setSelectedEndTime("00:00");
         }
+
+        // Set break times if they exist
+        setSelectedBreak1(entry.shiftType.break1 || undefined);
+        setSelectedLunch(entry.shiftType.lunch || undefined);
+        setSelectedBreak2(entry.shiftType.break2 || undefined);
       }
     } else {
-      // Default shift type and times
       setSelectedShiftType("shift1");
       setSelectedStartTime("00:00");
       setSelectedEndTime("00:00");
+      setSelectedBreak1(undefined);
+      setSelectedLunch(undefined);
+      setSelectedBreak2(undefined);
     }
 
-    // Open the dialog
     setIsAddShiftOpen(true);
   };
 
@@ -787,8 +828,21 @@ const ScheduleAndAttendance: React.FC = () => {
                                       )}
                                     </div>
                                   </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Click to update</p>
+                                  <TooltipContent className="max-w-xs whitespace-pre-line text-sm">
+                                    <div className="space-y-1">
+                                      <p className="font-semibold">
+                                        {
+                                          displayShiftInfo(
+                                            scheduleEntry.shiftType
+                                          ).name
+                                        }
+                                      </p>
+                                      {displayShiftInfo(scheduleEntry.shiftType)
+                                        .details?.split("\n")
+                                        .map((line, i) => (
+                                          <p key={i}>{line}</p>
+                                        ))}
+                                    </div>
                                   </TooltipContent>
                                 </Tooltip>
                               </TooltipProvider>
@@ -819,7 +873,36 @@ const ScheduleAndAttendance: React.FC = () => {
           </div>
           <div className="flex gap-2 text-xs">
             <Button variant="outline">Export Data</Button>
-            <AddEmployee onEmployeeAdded={() => fetchEmployees(avatars)} />
+            <AddEmployee
+              onEmployeeAdded={async () => {
+                try {
+                  setLoading(true);
+                  // First refresh avatars in case new employee has one
+                  const avatarResponse =
+                    await UserProfileAPI.getAllUserAvatar();
+                  const avatarMap = avatarResponse.data.reduce(
+                    (
+                      acc: Record<string, string>,
+                      curr: { userId: string; avatar: string }
+                    ) => {
+                      acc[curr.userId] = curr.avatar;
+                      return acc;
+                    },
+                    {}
+                  );
+                  // setAvatars(avatarMap);
+
+                  // Then refresh employee data
+                  await fetchEmployees(avatarMap);
+                  await fetchAttendance(); // Also refresh attendance data
+                } catch (err) {
+                  console.error("Error refreshing after adding employee:", err);
+                  setError("Failed to refresh data after adding employee");
+                } finally {
+                  setLoading(false);
+                }
+              }}
+            />
           </div>
         </CardFooter>
       </Card>
@@ -864,8 +947,14 @@ const ScheduleAndAttendance: React.FC = () => {
 
                     // Set default times based on whether this shift type has time or not
                     if (hasShiftTime(value as ShiftTypeValue)) {
+                      // Set default shift times
                       setSelectedStartTime("00:00");
                       setSelectedEndTime("00:00");
+                    } else {
+                      // Clear break times for non-time shift types
+                      setSelectedBreak1(undefined);
+                      setSelectedLunch(undefined);
+                      setSelectedBreak2(undefined);
                     }
                   }}
                 >
@@ -901,28 +990,70 @@ const ScheduleAndAttendance: React.FC = () => {
 
                 {/* Input fields for custom start and end times - only show for shift types that have times */}
                 {hasShiftTime(selectedShiftType) && (
-                  <div className="flex space-x-4">
-                    <div>
-                      <Label htmlFor="start-time">Start Time</Label>
-                      <input
-                        id="start-time"
-                        type="time"
-                        value={selectedStartTime}
-                        onChange={(e) => setSelectedStartTime(e.target.value)}
-                        className="border p-2 rounded text-sm"
-                      />
+                  <>
+                    <div className="flex space-x-4">
+                      <div>
+                        <Label htmlFor="start-time">Shift Start </Label>
+                        <input
+                          id="start-time"
+                          type="time"
+                          value={selectedStartTime}
+                          onChange={(e) => setSelectedStartTime(e.target.value)}
+                          className="border p-2 rounded text-sm"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="end-time">Shift End </Label>
+                        <input
+                          id="end-time"
+                          type="time"
+                          value={selectedEndTime}
+                          onChange={(e) => setSelectedEndTime(e.target.value)}
+                          className="border p-2 rounded text-sm"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <Label htmlFor="end-time">End Time</Label>
-                      <input
-                        id="end-time"
-                        type="time"
-                        value={selectedEndTime}
-                        onChange={(e) => setSelectedEndTime(e.target.value)}
-                        className="border p-2 rounded text-sm"
-                      />
+
+                    {/* Break and lunch times */}
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="break1">Break 1</Label>
+                        <input
+                          id="break1"
+                          type="time"
+                          value={selectedBreak1 || ""}
+                          onChange={(e) =>
+                            setSelectedBreak1(e.target.value || undefined)
+                          }
+                          className="border p-2 rounded text-sm w-full"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="lunch">Lunch</Label>
+                        <input
+                          id="lunch"
+                          type="time"
+                          value={selectedLunch || ""}
+                          onChange={(e) =>
+                            setSelectedLunch(e.target.value || undefined)
+                          }
+                          className="border p-2 rounded text-sm w-full"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="break2">Break 2</Label>
+                        <input
+                          id="break2"
+                          type="time"
+                          value={selectedBreak2 || ""}
+                          onChange={(e) =>
+                            setSelectedBreak2(e.target.value || undefined)
+                          }
+                          className="border p-2 rounded text-sm w-full"
+                        />
+                      </div>
                     </div>
-                  </div>
+                  </>
                 )}
 
                 {/* Repeat days selector */}
