@@ -397,7 +397,7 @@ const ScheduleAndAttendance: React.FC = () => {
   const filteredEmployees =
     selectedDepartment === "all"
       ? employees
-      : employees.filter((emp) => emp.department === selectedDepartment);
+      : employees.filter((emp) => emp.teamLeader === selectedDepartment);
 
   if (loading) return <p>Loading employees...</p>;
   if (error) return <p className="text-red-500">{error}</p>;
@@ -695,14 +695,17 @@ const ScheduleAndAttendance: React.FC = () => {
                 onValueChange={setSelectedDepartment}
               >
                 <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Department" />
+                  <SelectValue placeholder="Team Leader" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Departments</SelectItem>
-                  <SelectItem value="Engineering">Engineering</SelectItem>
-                  <SelectItem value="Design">Design</SelectItem>
-                  <SelectItem value="Marketing">Marketing</SelectItem>
-                  <SelectItem value="HR">HR</SelectItem>
+                  <SelectItem value="all">All Employees</SelectItem>
+                  {Array.from(new Set(employees.map((emp) => emp.teamLeader)))
+                    .filter((leader) => leader) // Filter out empty/null team leaders
+                    .map((leader) => (
+                      <SelectItem key={leader} value={leader}>
+                        {leader}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
               <Tabs
@@ -731,8 +734,8 @@ const ScheduleAndAttendance: React.FC = () => {
             schedule={schedule}
             viewMode={viewMode}
             currentDate={currentDate}
+            filteredEmployees={filteredEmployees.map((emp) => emp.id)} // Pass filtered employee IDs
           />
-
           <Tabs defaultValue="schedule" onValueChange={setActiveTab}>
             <TabsList className="mb-4">
               <TabsTrigger value="schedule">Schedule</TabsTrigger>
