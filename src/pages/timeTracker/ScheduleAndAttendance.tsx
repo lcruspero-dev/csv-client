@@ -14,6 +14,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
 import { ScheduleAndAttendanceAPI, UserProfileAPI } from "@/API/endpoint";
+import { AbsenteeismAnalytics } from "@/components/kit/AbsenteeismAnalytics";
 import AddEmployee from "@/components/kit/AddEmployee";
 import { Attendance } from "@/components/kit/EmployeeAttendance";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -724,6 +725,14 @@ const ScheduleAndAttendance: React.FC = () => {
           </div>
         </CardHeader>
         <CardContent>
+          <AbsenteeismAnalytics
+            employees={employees}
+            attendance={attendance}
+            schedule={schedule}
+            viewMode={viewMode}
+            currentDate={currentDate}
+          />
+
           <Tabs defaultValue="schedule" onValueChange={setActiveTab}>
             <TabsList className="mb-4">
               <TabsTrigger value="schedule">Schedule</TabsTrigger>
