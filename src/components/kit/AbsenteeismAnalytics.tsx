@@ -8,7 +8,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { endOfMonth, endOfWeek, startOfMonth, startOfWeek } from "date-fns";
+import {
+  endOfMonth,
+  endOfWeek,
+  isWithinInterval,
+  startOfMonth,
+  startOfWeek,
+} from "date-fns";
 import { ChevronDown, ChevronUp, Info } from "lucide-react";
 import React from "react";
 import {
@@ -40,9 +46,11 @@ interface AbsenteeismAnalyticsProps {
       type: string;
     };
   }[];
-  viewMode: "weekly" | "monthly";
+  viewMode: "weekly" | "monthly" | "dateRange";
   currentDate: Date;
   filteredEmployees: string[];
+  fromDate?: Date; // Add fromDate prop
+  toDate?: Date; // Add toDate prop
 }
 
 export const AbsenteeismAnalytics: React.FC<AbsenteeismAnalyticsProps> = ({
@@ -52,21 +60,37 @@ export const AbsenteeismAnalytics: React.FC<AbsenteeismAnalyticsProps> = ({
   viewMode,
   currentDate,
   filteredEmployees,
+  fromDate,
+  toDate,
 }) => {
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [displayMode, setDisplayMode] = React.useState<"chart" | "list">(
     "chart"
   );
 
-  // Calculate absenteeism for each employee
+  // Calculate date range based on view mode
   const getDateRange = () => {
-    const start =
-      viewMode === "weekly"
-        ? startOfWeek(currentDate)
-        : startOfMonth(currentDate);
-    const end =
-      viewMode === "weekly" ? endOfWeek(currentDate) : endOfMonth(currentDate);
-    return { start, end };
+    if (viewMode === "weekly") {
+      return {
+        start: startOfWeek(currentDate),
+        end: endOfWeek(currentDate),
+      };
+    } else if (viewMode === "monthly") {
+      return {
+        start: startOfMonth(currentDate),
+        end: endOfMonth(currentDate),
+      };
+    } else if (viewMode === "dateRange" && fromDate && toDate) {
+      return {
+        start: fromDate,
+        end: toDate,
+      };
+    }
+    // Fallback to current week
+    return {
+      start: startOfWeek(new Date()),
+      end: endOfWeek(new Date()),
+    };
   };
 
   const calculateAbsenteeism = () => {
@@ -75,21 +99,22 @@ export const AbsenteeismAnalytics: React.FC<AbsenteeismAnalyticsProps> = ({
     return employees
       .filter((employee) => filteredEmployees.includes(employee.id))
       .map((employee) => {
+        // Filter scheduled days within date range and exclude rest days
         const scheduledDays = schedule.filter(
           (entry) =>
             entry.employeeId === employee.id &&
             entry.shiftType.type !== "restday" &&
-            new Date(entry.date) >= start &&
-            new Date(entry.date) <= end
+            isWithinInterval(new Date(entry.date), { start, end })
         );
 
+        // Filter attendance records within date range
         const attendanceRecords = attendance.filter(
           (record) =>
             record.employeeId === employee.id &&
-            record.date >= start &&
-            record.date <= end
+            isWithinInterval(record.date, { start, end })
         );
 
+        // Count absences (NCNS or Call In)
         const absences = attendanceRecords.filter((record) =>
           ["NCNS", "Call In"].includes(record.status)
         ).length;
@@ -269,8 +294,6 @@ export const AbsenteeismAnalytics: React.FC<AbsenteeismAnalyticsProps> = ({
           ) : (
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                {" "}
-                {/* Changed from 3 to 4 columns */}
                 {absenteeismData.map((data) => (
                   <div
                     key={data.employeeId}

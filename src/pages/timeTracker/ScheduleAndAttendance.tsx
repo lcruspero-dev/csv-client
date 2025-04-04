@@ -10,16 +10,18 @@ import {
   startOfMonth,
   startOfWeek,
 } from "date-fns";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
 import { ScheduleAndAttendanceAPI, UserProfileAPI } from "@/API/endpoint";
 import { AbsenteeismAnalytics } from "@/components/kit/AbsenteeismAnalytics";
 import AddEmployee from "@/components/kit/AddEmployee";
 import { Attendance } from "@/components/kit/EmployeeAttendance";
+import { ExportDataDialog } from "@/components/kit/ExportDataDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Card,
   CardContent,
@@ -70,7 +72,9 @@ type ShiftTypeValue =
   | "staff"
   | "restday"
   | "paidTimeOff"
-  | "plannedLeave";
+  | "plannedLeave"
+  | "holiday"
+  | "rdot";
 
 export type ShiftType = {
   type: ShiftTypeValue;
@@ -122,7 +126,7 @@ export type AttendanceEntry = {
   checkoutTime?: string;
 };
 
-type ViewMode = "weekly" | "monthly";
+type ViewMode = "weekly" | "monthly" | "dateRange";
 
 // Helper to get shift color
 const getShiftColor = (shiftType: ShiftType): string => {
@@ -143,6 +147,10 @@ const getShiftColor = (shiftType: ShiftType): string => {
       return "bg-pink-100 text-pink-800";
     case "plannedLeave":
       return "bg-orange-100 text-orange-800";
+    case "holiday":
+      return "bg-red-100 text-red-800";
+    case "rdot":
+      return "bg-red-100 text-red-800";
     default:
       return "bg-gray-100 text-gray-500";
   }
@@ -150,7 +158,7 @@ const getShiftColor = (shiftType: ShiftType): string => {
 
 // Helper to check if a shift type has time
 const hasShiftTime = (shiftType: ShiftTypeValue): boolean => {
-  return ["shift1", "shift2", "shift3", "staff"].includes(shiftType);
+  return ["shift1", "shift2", "shift3", "staff", "rdot"].includes(shiftType);
 };
 
 const formatTimeToAMPM = (time: string): string => {
@@ -199,6 +207,12 @@ const displayShiftInfo = (
     case "plannedLeave":
       displayName = "Leave";
       break;
+    case "holiday":
+      displayName = "Holiday";
+      break;
+    case "rdot":
+      displayName = "RDOT";
+      break;
     default:
       displayName = shiftType.type;
   }
@@ -241,6 +255,10 @@ const displayShiftInfo = (
 const ScheduleAndAttendance: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>("weekly");
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [fromDate, setFromDate] = useState<Date>(startOfWeek(new Date()));
+  const [toDate, setToDate] = useState<Date>(endOfWeek(new Date()));
+  const [showFromCalendar, setShowFromCalendar] = useState(false);
+  const [showToCalendar, setShowToCalendar] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
   const [schedule, setSchedule] = useState<ScheduleEntry[]>([]);
   const [attendance, setAttendance] = useState<AttendanceEntry[]>([]);
@@ -403,35 +421,126 @@ const ScheduleAndAttendance: React.FC = () => {
   if (error) return <p className="text-red-500">{error}</p>;
 
   const getDaysInView = () => {
-    const start =
-      viewMode === "weekly"
-        ? startOfWeek(currentDate)
-        : startOfMonth(currentDate);
-    const end =
-      viewMode === "weekly" ? endOfWeek(currentDate) : endOfMonth(currentDate);
+    if (viewMode === "weekly") {
+      const start = startOfWeek(currentDate);
+      const end = endOfWeek(currentDate);
+      return eachDayOfInterval({ start, end });
+    } else if (viewMode === "monthly") {
+      const start = startOfMonth(currentDate);
+      const end = endOfMonth(currentDate);
+      return eachDayOfInterval({ start, end });
+    } else if (viewMode === "dateRange") {
+      // For date range view
+      if (fromDate && toDate) {
+        return eachDayOfInterval({ start: fromDate, end: toDate });
+      }
+      // Fallback to current week if dates are invalid
+      const start = startOfWeek(new Date());
+      const end = endOfWeek(new Date());
+      return eachDayOfInterval({ start, end });
+    }
+    // Default fallback
+    const start = startOfWeek(currentDate);
+    const end = endOfWeek(currentDate);
     return eachDayOfInterval({ start, end });
   };
 
   const days = getDaysInView();
 
   const goToPreviousPeriod = () => {
-    setCurrentDate((prevDate) =>
-      viewMode === "weekly"
-        ? addDays(prevDate, -7)
-        : new Date(prevDate.setMonth(prevDate.getMonth() - 1))
-    );
+    if (viewMode === "weekly") {
+      setCurrentDate((prevDate) => addDays(prevDate, -7));
+    } else if (viewMode === "monthly") {
+      setCurrentDate(
+        (prevDate) => new Date(prevDate.setMonth(prevDate.getMonth() - 1))
+      );
+    } else if (viewMode === "dateRange" && fromDate && toDate) {
+      const dayCount =
+        Math.ceil(
+          (toDate.getTime() - fromDate.getTime()) / (1000 * 60 * 60 * 24)
+        ) + 1;
+      setFromDate(addDays(fromDate, -dayCount));
+      setToDate(addDays(toDate, -dayCount));
+    }
   };
-
   const goToNextPeriod = () => {
-    setCurrentDate((prevDate) =>
-      viewMode === "weekly"
-        ? addDays(prevDate, 7)
-        : new Date(prevDate.setMonth(prevDate.getMonth() + 1))
-    );
+    if (viewMode === "weekly") {
+      setCurrentDate((prevDate) => addDays(prevDate, 7));
+    } else if (viewMode === "monthly") {
+      setCurrentDate(
+        (prevDate) => new Date(prevDate.setMonth(prevDate.getMonth() + 1))
+      );
+    } else if (viewMode === "dateRange" && fromDate && toDate) {
+      const dayCount =
+        Math.ceil(
+          (toDate.getTime() - fromDate.getTime()) / (1000 * 60 * 60 * 24)
+        ) + 1;
+      setFromDate(addDays(fromDate, dayCount));
+      setToDate(addDays(toDate, dayCount));
+    }
   };
 
   const goToToday = () => {
     setCurrentDate(new Date());
+    if (viewMode === "weekly") {
+      setFromDate(startOfWeek(new Date()));
+      setToDate(endOfWeek(new Date()));
+    } else if (viewMode === "monthly") {
+      setFromDate(startOfMonth(new Date()));
+      setToDate(endOfMonth(new Date()));
+    } else {
+      // For date range view, default to current week
+      setFromDate(startOfWeek(new Date()));
+      setToDate(endOfWeek(new Date()));
+    }
+  };
+
+  // const handleViewModeChange = (mode: ViewMode) => {
+  //   setViewMode(mode);
+  //   if (mode === "weekly") {
+  //     setFromDate(startOfWeek(currentDate));
+  //     setToDate(endOfWeek(currentDate));
+  //   } else if (mode === "monthly") {
+  //     setFromDate(startOfMonth(currentDate));
+  //     setToDate(endOfMonth(currentDate));
+  //   }
+  //   // For dateRange mode, keep the existing from/to dates
+  // };
+
+  const handleFromDateSelect = (date: Date | undefined) => {
+    if (date) {
+      setFromDate(date);
+      setShowFromCalendar(false);
+      // If toDate is before the new fromDate, adjust toDate to be the same as fromDate
+      if (toDate && date > toDate) {
+        setToDate(date);
+      }
+    }
+  };
+
+  const handleToDateSelect = (date: Date | undefined) => {
+    if (date) {
+      setToDate(date);
+      setShowToCalendar(false);
+      // If fromDate is after the new toDate, adjust fromDate to be the same as toDate
+      if (fromDate && date < fromDate) {
+        setFromDate(date);
+      }
+    }
+  };
+
+  const getHeaderText = () => {
+    if (viewMode === "weekly") {
+      return `Week of ${format(startOfWeek(currentDate), "MMM d, yyyy")}`;
+    } else if (viewMode === "monthly") {
+      return format(currentDate, "MMMM yyyy");
+    } else if (fromDate && toDate) {
+      if (isSameDay(fromDate, toDate)) {
+        return format(fromDate, "MMM d, yyyy");
+      }
+      return `${format(fromDate, "MMM d")} - ${format(toDate, "MMM d, yyyy")}`;
+    }
+    return "Select Date Range";
   };
 
   const findScheduleEntry = (
@@ -700,7 +809,7 @@ const ScheduleAndAttendance: React.FC = () => {
                 <SelectContent>
                   <SelectItem value="all">All Employees</SelectItem>
                   {Array.from(new Set(employees.map((emp) => emp.teamLeader)))
-                    .filter((leader) => leader) // Filter out empty/null team leaders
+                    .filter((leader) => leader)
                     .map((leader) => (
                       <SelectItem key={leader} value={leader}>
                         {leader}
@@ -708,22 +817,134 @@ const ScheduleAndAttendance: React.FC = () => {
                     ))}
                 </SelectContent>
               </Select>
+
               <Tabs
                 value={viewMode}
-                onValueChange={(value) => setViewMode(value as ViewMode)}
+                onValueChange={(value) => {
+                  // Add type assertion to ensure value is ViewMode
+                  const mode = value as ViewMode;
+                  setViewMode(mode);
+                  if (mode === "weekly") {
+                    setFromDate(startOfWeek(currentDate));
+                    setToDate(endOfWeek(currentDate));
+                  } else if (mode === "monthly") {
+                    setFromDate(startOfMonth(currentDate));
+                    setToDate(endOfMonth(currentDate));
+                  }
+                  // For dateRange mode, keep the existing from/to dates
+                }}
               >
                 <TabsList>
                   <TabsTrigger value="weekly">Weekly</TabsTrigger>
                   <TabsTrigger value="monthly">Monthly</TabsTrigger>
+                  <TabsTrigger value="dateRange">Date Range</TabsTrigger>
                 </TabsList>
               </Tabs>
+
+              {viewMode === "dateRange" && (
+                <div className="flex items-center space-x-2 text-sm">
+                  {/* From Date Picker */}
+                  <div className="relative">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setShowToCalendar(false); // Close other calendar if open
+                        setShowFromCalendar(!showFromCalendar);
+                      }}
+                      className="w-[120px] justify-start text-left font-normal"
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {fromDate ? format(fromDate, "MMM d") : "From"}
+                    </Button>
+                    {showFromCalendar && (
+                      <div
+                        className="absolute z-10 mt-1 bg-white border rounded-md shadow-lg"
+                        ref={(node) => {
+                          // Close calendar when clicking outside
+                          if (node) {
+                            const handleClickOutside = (event: MouseEvent) => {
+                              if (!node.contains(event.target as Node)) {
+                                setShowFromCalendar(false);
+                                document.removeEventListener(
+                                  "mousedown",
+                                  handleClickOutside
+                                );
+                              }
+                            };
+                            document.addEventListener(
+                              "mousedown",
+                              handleClickOutside
+                            );
+                          }
+                        }}
+                      >
+                        <Calendar
+                          mode="single"
+                          selected={fromDate}
+                          onSelect={(date) => {
+                            handleFromDateSelect(date);
+                            setShowFromCalendar(false);
+                          }}
+                          initialFocus
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <span>to</span>
+
+                  {/* To Date Picker */}
+                  <div className="relative">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setShowFromCalendar(false); // Close other calendar if open
+                        setShowToCalendar(!showToCalendar);
+                      }}
+                      className="w-[120px] justify-start text-left font-normal"
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {toDate ? format(toDate, "MMM d") : "To"}
+                    </Button>
+                    {showToCalendar && (
+                      <div
+                        className="absolute z-10 mt-1 bg-white border rounded-md shadow-lg"
+                        ref={(node) => {
+                          // Close calendar when clicking outside
+                          if (node) {
+                            const handleClickOutside = (event: MouseEvent) => {
+                              if (!node.contains(event.target as Node)) {
+                                setShowToCalendar(false);
+                                document.removeEventListener(
+                                  "mousedown",
+                                  handleClickOutside
+                                );
+                              }
+                            };
+                            document.addEventListener(
+                              "mousedown",
+                              handleClickOutside
+                            );
+                          }
+                        }}
+                      >
+                        <Calendar
+                          mode="single"
+                          selected={toDate}
+                          onSelect={(date) => {
+                            handleToDateSelect(date);
+                            setShowToCalendar(false);
+                          }}
+                          initialFocus
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
             <div>
-              <h2 className="text-xl font-bold">
-                {viewMode === "weekly"
-                  ? `Week of ${format(startOfWeek(currentDate), "MMM d, yyyy")}`
-                  : format(currentDate, "MMMM yyyy")}
-              </h2>
+              <h2 className="text-xl font-bold">{getHeaderText()}</h2>
             </div>
           </div>
         </CardHeader>
@@ -734,7 +955,9 @@ const ScheduleAndAttendance: React.FC = () => {
             schedule={schedule}
             viewMode={viewMode}
             currentDate={currentDate}
-            filteredEmployees={filteredEmployees.map((emp) => emp.id)} // Pass filtered employee IDs
+            filteredEmployees={filteredEmployees.map((emp) => emp.id)}
+            fromDate={fromDate} // Pass fromDate
+            toDate={toDate} // Pass toDate
           />
           <Tabs defaultValue="schedule" onValueChange={setActiveTab}>
             <TabsList className="mb-4">
@@ -874,7 +1097,9 @@ const ScheduleAndAttendance: React.FC = () => {
                 filteredEmployees={filteredEmployees}
                 attendance={attendance}
                 handleAttendanceCellClick={handleAttendanceCellClick}
-                refreshAttendance={fetchAttendance} // Add this prop
+                // refreshAttendance={fetchAttendance}
+                fromDate={fromDate} // Pass fromDate
+                toDate={toDate} // Pass toDate
               />
             </TabsContent>
           </Tabs>
@@ -884,12 +1109,14 @@ const ScheduleAndAttendance: React.FC = () => {
             Showing {filteredEmployees.length} employees
           </div>
           <div className="flex gap-2 text-xs">
-            <Button variant="outline">Export Data</Button>
+            <ExportDataDialog
+              attendance={attendance}
+              filteredEmployees={filteredEmployees}
+            />
             <AddEmployee
               onEmployeeAdded={async () => {
                 try {
                   setLoading(true);
-                  // First refresh avatars in case new employee has one
                   const avatarResponse =
                     await UserProfileAPI.getAllUserAvatar();
                   const avatarMap = avatarResponse.data.reduce(
@@ -902,11 +1129,8 @@ const ScheduleAndAttendance: React.FC = () => {
                     },
                     {}
                   );
-                  // setAvatars(avatarMap);
-
-                  // Then refresh employee data
                   await fetchEmployees(avatarMap);
-                  await fetchAttendance(); // Also refresh attendance data
+                  await fetchAttendance();
                 } catch (err) {
                   console.error("Error refreshing after adding employee:", err);
                   setError("Failed to refresh data after adding employee");
@@ -918,6 +1142,8 @@ const ScheduleAndAttendance: React.FC = () => {
           </div>
         </CardFooter>
       </Card>
+
+      {/* Dialog for adding/editing shifts and attendance */}
       <Dialog
         open={isAddShiftOpen}
         onOpenChange={(open) => {
@@ -956,14 +1182,10 @@ const ScheduleAndAttendance: React.FC = () => {
                   value={selectedShiftType}
                   onValueChange={(value: string) => {
                     setSelectedShiftType(value as ShiftTypeValue);
-
-                    // Set default times based on whether this shift type has time or not
                     if (hasShiftTime(value as ShiftTypeValue)) {
-                      // Set default shift times
                       setSelectedStartTime("00:00");
                       setSelectedEndTime("00:00");
                     } else {
-                      // Clear break times for non-time shift types
                       setSelectedBreak1(undefined);
                       setSelectedLunch(undefined);
                       setSelectedBreak2(undefined);
@@ -998,9 +1220,16 @@ const ScheduleAndAttendance: React.FC = () => {
                     <RadioGroupItem value="plannedLeave" id="plannedLeave" />
                     <Label htmlFor="plannedLeave">Planned Leave</Label>
                   </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="holiday" id="holiday" />
+                    <Label htmlFor="holiday">Holiday</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="rdot" id="rdot" />
+                    <Label htmlFor="rdot">RDOT</Label>
+                  </div>
                 </RadioGroup>
 
-                {/* Input fields for custom start and end times - only show for shift types that have times */}
                 {hasShiftTime(selectedShiftType) && (
                   <>
                     <div className="flex space-x-4">
@@ -1026,7 +1255,6 @@ const ScheduleAndAttendance: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Break and lunch times */}
                     <div className="grid grid-cols-3 gap-4">
                       <div>
                         <Label htmlFor="break1">Break 1</Label>
@@ -1068,7 +1296,6 @@ const ScheduleAndAttendance: React.FC = () => {
                   </>
                 )}
 
-                {/* Repeat days selector */}
                 <div className="flex items-center space-x-2 text-sm">
                   <span>Repeat for</span>
                   <Select
@@ -1170,8 +1397,8 @@ const ScheduleAndAttendance: React.FC = () => {
             <Button
               variant="outline"
               onClick={() => {
-                resetDialogState(); // Reset all state data
-                setIsAddShiftOpen(false); // Close the dialog
+                resetDialogState();
+                setIsAddShiftOpen(false);
               }}
             >
               Cancel

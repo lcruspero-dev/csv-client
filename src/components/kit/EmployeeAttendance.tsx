@@ -114,12 +114,13 @@ const AttendanceStatusIcon = ({ status }: { status: AttendanceStatus }) => {
 };
 
 type AttendanceProps = {
-  viewMode: "weekly" | "monthly";
+  viewMode: "weekly" | "monthly" | "dateRange";
   currentDate: Date;
   filteredEmployees: Employee[];
   attendance: AttendanceEntry[];
   handleAttendanceCellClick: (employee: Employee, date: Date) => void;
-  refreshAttendance: () => void; // Add this prop
+  fromDate?: Date;
+  toDate?: Date;
 };
 
 export const Attendance: React.FC<AttendanceProps> = ({
@@ -127,15 +128,25 @@ export const Attendance: React.FC<AttendanceProps> = ({
   currentDate,
   filteredEmployees,
   attendance,
-  handleAttendanceCellClick, // Add this prop
+  handleAttendanceCellClick,
+  fromDate,
+  toDate,
 }) => {
   const getDaysInView = () => {
-    const start =
-      viewMode === "weekly"
-        ? startOfWeek(currentDate)
-        : startOfMonth(currentDate);
-    const end =
-      viewMode === "weekly" ? endOfWeek(currentDate) : endOfMonth(currentDate);
+    if (viewMode === "weekly") {
+      const start = startOfWeek(currentDate);
+      const end = endOfWeek(currentDate);
+      return eachDayOfInterval({ start, end });
+    } else if (viewMode === "monthly") {
+      const start = startOfMonth(currentDate);
+      const end = endOfMonth(currentDate);
+      return eachDayOfInterval({ start, end });
+    } else if (viewMode === "dateRange" && fromDate && toDate) {
+      return eachDayOfInterval({ start: fromDate, end: toDate });
+    }
+    // Fallback to current week if dates are invalid
+    const start = startOfWeek(new Date());
+    const end = endOfWeek(new Date());
     return eachDayOfInterval({ start, end });
   };
 
