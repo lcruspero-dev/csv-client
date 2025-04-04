@@ -87,11 +87,11 @@ function ViewMemo() {
     <>
       <div className="container mx-auto">
         <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="absolute left-36 top-12">
+          <div className="absolute left-36 top-12 text-xs">
             <BackButton />
           </div>
           {user?.isAdmin && (
-            <div className="absolute right-36 top-12">
+            <div className="absolute right-36 top-12 text-xs">
               <CreateMemo setMemos={setMemos} setLoading={setLoading} />
             </div>
           )}

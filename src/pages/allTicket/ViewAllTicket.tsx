@@ -69,9 +69,9 @@ const ViewAllTicket: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto">
+    <div className="container mx-auto text-sm">
       <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="absolute left-0 top-12">
+        <div className="absolute left-0 top-12 text-xs">
           <BackButton />
         </div>
         <h1 className="text-3xl font-bold text-center py-7">My Tickets</h1>

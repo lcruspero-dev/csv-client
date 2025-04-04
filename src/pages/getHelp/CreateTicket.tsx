@@ -18,7 +18,7 @@ import { Paperclip } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BackButton from "../../components/kit/BackButton";
- 
+
 const CreateTicket = () => {
   const userLogin = JSON.parse(localStorage.getItem("user")!);
   const [form, setForm] = useState({
@@ -27,7 +27,7 @@ const CreateTicket = () => {
     category: "",
     description: "",
     file: null,
-     department:"IT"
+    department: "IT",
   });
   const [categories, setCatergories] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -101,7 +101,7 @@ const CreateTicket = () => {
       setCatergories(response.data.categories);
     } catch (error) {
       console.error(error);
-    }  
+    }
   };
 
   useEffect(() => {
@@ -110,20 +110,22 @@ const CreateTicket = () => {
 
   return (
     <div className="container flex justify-center p-3">
-      <BackButton />
-      <form className="mt-5 w-1/2" onSubmit={handleSubmit}>
+      <div className="text-xs">
+        <BackButton />
+      </div>
+      <form className="w-1/2" onSubmit={handleSubmit}>
         <div className="text-center">
           <div className="mb-3"></div>
-          <h1 className="text-xl sm:text-xl md:text-2xl lg:text-3xl font-bold py-1 sm:py-1 md:py-2 bg-clip-text text-transparent bg-gradient-to-r from-[#1638df] to-[#192fb4]">
+          <h1 className="text-xl sm:text-xl md:text-xl lg:text-2xl font-bold py-1 sm:py-1 md:py-2 bg-clip-text text-transparent bg-gradient-to-r from-[#1638df] to-[#192fb4]">
             Create IT Support Ticket
           </h1>
-          <p className="text-lg sm:text-xl md:text-1xl lg:text-2xl font-bold text-black">
+          <p className="text-lg sm:text-xl md:text-xl lg:text-xl font-bold text-black">
             Please fill out the form below
           </p>
         </div>
         <Label
           htmlFor="attachment"
-          className="text-base font-bold flex items-center mt-2"
+          className="text-sm font-bold flex items-center mt-2"
         >
           <Paperclip className="mr-2" size={20} />
           Attach File (Optional)
@@ -135,7 +137,7 @@ const CreateTicket = () => {
           onChange={handleFileUpload}
           className="mt-1"
         />
-        <Label htmlFor="name" className="text-base font-bold">
+        <Label htmlFor="name" className="text-sm font-bold">
           <p>Name</p>
         </Label>
         <Input
@@ -147,7 +149,7 @@ const CreateTicket = () => {
           value={form.name}
           readOnly
         />
-        <Label htmlFor="email" className="text-base font-bold">
+        <Label htmlFor="email" className="text-sm font-bold">
           Email
         </Label>
         <Input
@@ -159,7 +161,7 @@ const CreateTicket = () => {
           value={form.email}
           readOnly
         />
-        <Label htmlFor="category" className="text-base font-bold">
+        <Label htmlFor="category" className="text-sm font-bold">
           Category
         </Label>
         <Select onValueChange={handleCategoryChange} required>
@@ -167,16 +169,16 @@ const CreateTicket = () => {
             <SelectValue placeholder="Category" />
           </SelectTrigger>
           <SelectContent>
-          <SelectGroup> 
+            <SelectGroup>
               {categories.map((category: any) => (
                 <SelectItem key={category.category} value={category.category}>
                   {category.category}
                 </SelectItem>
-              ))} 
+              ))}
             </SelectGroup>
           </SelectContent>
         </Select>
-        <Label htmlFor="description" className="text-base font-bold">
+        <Label htmlFor="description" className="text-sm font-bold">
           Description of the issue / request
         </Label>
         <Textarea

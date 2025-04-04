@@ -192,10 +192,12 @@ const AdminViewIndovidualTicket: React.FC = () => {
   }
 
   return (
-    <div className="container">
-      <div className="px-36 pt-5">
+    <div className="container text-sm">
+      <div className="px-36 pt-1">
         <div className="flex justify-between px-10 items-center mt-5 ">
-          <BackButton />
+          <div className="text-xs">
+            <BackButton />
+          </div>
           <form>
             <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
               <SheetTrigger asChild>

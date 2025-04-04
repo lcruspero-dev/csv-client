@@ -165,7 +165,7 @@ const CreateMemo: React.FC<CreateMemoProps> = ({ setMemos, setLoading }) => {
         <DialogFooter>
           <Button
             type="submit"
-            className="mr-10 px-10"
+            className="mr-10 px-8 text-xs"
             onClick={handleSave}
             disabled={isSaving}
           >

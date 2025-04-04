@@ -249,9 +249,9 @@ const ViewAllRaisedTickets: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto">
+    <div className="container mx-auto text-sm">
       <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="absolute left-0 top-3">
+        <div className="absolute left-0 top-3 text-xs">
           <BackButton />
         </div>
         <h1 className="text-4xl font-bold text-center pt-7 pb-2">
@@ -320,7 +320,7 @@ const ViewAllRaisedTickets: React.FC = () => {
               </div>
               <Button
                 onClick={handleSearchSubmit}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-blue-600 hover:bg-blue-700 text-xs"
               >
                 Search
               </Button>

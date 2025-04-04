@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Category, TicketAPi } from "@/API/endpoint";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -29,11 +28,16 @@ const Request = () => {
     description: "",
     purpose: "",
     file: null,
-    department: "HR",
+    department: "HR", // Static HR value for backend
+    leaveType: "",
+    leaveCategory: "",
+    leaveReason: "",
+    startDate: "",
+    endDate: "",
+    delegatedTasks: "",
+    formDepartment: "Marketing", // Department selected in form
   });
-  const [categories, setCatergories] = useState([]);
-  const [isLeaveFormOpened, setIsLeaveFormOpened] = useState(false);
-  const [isConfirmed, setIsConfirmed] = useState(false);
+  const [categories, setCategories] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -74,41 +78,45 @@ const Request = () => {
 
   const handleCategoryChange = (value: string) => {
     setForm({ ...form, category: value });
-    setIsLeaveFormOpened(false);
-    setIsConfirmed(false);
   };
 
-  const openLeaveForm = () => {
-    window.open(
-      "https://forms.clickup.com/9011215196/f/8chreuw-4371/UA7PRKOIVL9H5J9MHQ",
-      "_blank"
-    );
-    setIsLeaveFormOpened(true);
+  const formatDateToMMDDYYYY = (dateString: string) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const year = date.getFullYear();
+    return `${month}/${day}/${year}`;
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (isSubmitting) return;
 
-    if (form.category === "Leave Request" && !isConfirmed) {
-      toast({
-        title: "Error",
-        description: "Please confirm that you have submitted the ClickUp form",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsSubmitting(true);
     try {
+      let description = "";
+
+      if (form.category === "Leave Request") {
+        description = `Leave Request Details:
+• Leave Type: ${form.leaveType}
+• Leave Category: ${form.leaveCategory}
+• Department: ${form.formDepartment}
+• Dates: ${formatDateToMMDDYYYY(form.startDate)} to ${formatDateToMMDDYYYY(
+          form.endDate
+        )}
+• Reason: ${form.leaveReason}
+• Tasks to be Delegated: ${form.delegatedTasks}`;
+      } else if (form.category === "Certificate of Employment") {
+        description = `Purpose: ${form.purpose}\nDetails: ${form.description}`;
+      } else {
+        description = form.description;
+      }
+
       await TicketAPi.createTicket({
         ...form,
-        description:
-          form.category === "Leave Request"
-            ? "[Automated Message] Leave request has been submitted via ClickUp form."
-            : form.category === "Certificate of Employment"
-            ? `Purpose: ${form.purpose}\nDetails: ${form.description}`
-            : form.description,
+        description,
+        // department: "HR" is automatically included from form state
       });
 
       toast({
@@ -132,7 +140,7 @@ const Request = () => {
   const getCategory = async () => {
     try {
       const response = await Category.getHrCategories();
-      setCatergories(response.data.categories);
+      setCategories(response.data.categories);
     } catch (error) {
       console.error(error);
     }
@@ -143,103 +151,126 @@ const Request = () => {
   }, []);
 
   const renderLeaveRequestContent = () => {
-    if (!isLeaveFormOpened) {
-      return (
-        <div className="space-y-4">
-          <h2 className="text-lg font-bold text-blue-800 mb-3">
-            Guidelines for Filing Planned Leave
-          </h2>
-
-          <section>
-            <h3 className="font-semibold text-blue-700 mb-2">
-              Submission Process
-            </h3>
-            <ul className="list-disc list-inside text-blue-600">
-              <li>Submit your leave request via the ClickUp Leave Form</li>
-              <li>
-                Select your Team Manager as the Immediate Head when completing
-                the form
-              </li>
-            </ul>
-          </section>
-
-          <section>
-            <h3 className="font-semibold text-blue-700 mb-2">
-              Submission Timeline
-            </h3>
-            <ul className="list-disc list-inside text-blue-600">
-              <li>
-                Vacation Leave (VL) must be filed at least 14 calendar days in
-                advance
-              </li>
-              <li>
-                Emergency Leave (EL) must be communicated to your Team Leader
-                immediately, with the leave request filed within 24 hours of
-                your absence
-              </li>
-            </ul>
-          </section>
-
-          <section>
-            <h3 className="font-semibold text-blue-700 mb-2">
-              Required Documentation
-            </h3>
-            <ul className="list-disc list-inside text-blue-600">
-              <li>
-                Documentation must be submitted along with the leave form (e.g.,
-                Medical Certificate for SL, proof of emergency for EL)
-              </li>
-              <li>
-                Leave requests without proper documentation will not be approved
-              </li>
-            </ul>
-          </section>
-
-          <section>
-            <h3 className="font-semibold text-blue-700 mb-2">
-              Approval Process
-            </h3>
-            <ul className="list-disc list-inside text-blue-600">
-              <li>
-                All leave requests are subject to approval by your Immediate
-                Head and HR
-              </li>
-              <li>
-                Do not finalize any personal arrangements until you receive
-                confirmation
-              </li>
-            </ul>
-          </section>
-
-          <Button type="button" className="w-full mt-4" onClick={openLeaveForm}>
-            Open Leave Form
-          </Button>
-        </div>
-      );
-    }
-
     return (
-      <div className="space-y-4">
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="confirmation"
-            checked={isConfirmed}
-            onCheckedChange={(checked) => setIsConfirmed(checked as boolean)}
-          />
-          <Label
-            htmlFor="confirmation"
-            className="text-sm text-blue-800 font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-          >
-            I confirm that I have completed and submitted the ClickUp leave form
-          </Label>
+      <div className="mt-4">
+        <Label htmlFor="leaveType" className="text-sm font-bold">
+          Leave Type *
+        </Label>
+        <Select
+          onValueChange={(value) => setForm({ ...form, leaveType: value })}
+          required
+        >
+          <SelectTrigger className="mb-2">
+            <SelectValue placeholder="Select leave type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="Maternity Leave">Maternity Leave</SelectItem>
+              <SelectItem value="Paternity Leave">Paternity Leave</SelectItem>
+              <SelectItem value="Vacation Leave">Vacation Leave</SelectItem>
+              <SelectItem value="Sick Leave">Sick Leave</SelectItem>
+              <SelectItem value="Emergency Leave">Emergency Leave</SelectItem>
+              <SelectItem value="Bereavement Leave">
+                Bereavement Leave
+              </SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+
+        <Label htmlFor="leaveCategory" className="text-sm font-bold">
+          Leave Category *
+        </Label>
+        <Select
+          onValueChange={(value) => setForm({ ...form, leaveCategory: value })}
+          required
+        >
+          <SelectTrigger className="mb-2">
+            <SelectValue placeholder="Select leave category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="AM Leave">AM Leave</SelectItem>
+              <SelectItem value="PM Leave">PM Leave</SelectItem>
+              <SelectItem value="Full-Day Leave">Full-Day Leave</SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+
+        <Label htmlFor="department" className="text-sm font-bold">
+          Department *
+        </Label>
+        <Select
+          value={form.formDepartment}
+          onValueChange={(value) => setForm({ ...form, formDepartment: value })}
+          required
+        >
+          <SelectTrigger className="mb-2">
+            <SelectValue placeholder="Select department" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="Marketing">Marketing</SelectItem>
+              <SelectItem value="IT">IT</SelectItem>
+              <SelectItem value="Operations">Operations</SelectItem>
+              <SelectItem value="Admin">Admin</SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="startDate" className="text-sm font-bold">
+              Start Date *
+            </Label>
+            <Input
+              name="startDate"
+              type="date"
+              required
+              className="!mb-2"
+              onChange={handleChange}
+              disabled={isSubmitting}
+            />
+          </div>
+          <div>
+            <Label htmlFor="endDate" className="text-sm font-bold">
+              End Date *
+            </Label>
+            <Input
+              name="endDate"
+              type="date"
+              required
+              className="!mb-2"
+              onChange={handleChange}
+              disabled={isSubmitting}
+            />
+          </div>
         </div>
 
-        <Button
-          className="w-full mt-4"
-          type="submit"
-          disabled={isSubmitting || !isConfirmed}
-        >
-          {isSubmitting ? "Creating Ticket..." : "Create Ticket"}
+        <Label htmlFor="leaveReason" className="text-sm font-bold">
+          Why are you requesting for a leave? *
+        </Label>
+        <Textarea
+          className="h-24"
+          name="leaveReason"
+          placeholder="Please provide the reason for your leave"
+          required
+          onChange={handleChange}
+          disabled={isSubmitting}
+        />
+
+        <Label htmlFor="delegatedTasks" className="text-sm font-bold">
+          Tasks to be delegated while out of office
+        </Label>
+        <Textarea
+          className="h-24"
+          name="delegatedTasks"
+          placeholder="List tasks that need to be handled by others during your absence"
+          onChange={handleChange}
+          disabled={isSubmitting}
+        />
+
+        <Button className="w-full mt-4" type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Submitting..." : "Submit Leave Request"}
         </Button>
       </div>
     );
@@ -247,20 +278,22 @@ const Request = () => {
 
   return (
     <div className="container flex justify-center p-3">
-      <BackButton />
-      <form className="mt-5 w-1/2" onSubmit={handleSubmit}>
+      <div className="text-xs">
+        <BackButton />
+      </div>
+      <form className="w-1/2" onSubmit={handleSubmit}>
         <div className="text-center">
           <div className="mb-3"></div>
-          <h1 className="text-xl sm:text-xl md:text-2xl lg:text-3xl font-bold py-1 sm:py-1 md:py-2 bg-clip-text text-transparent bg-gradient-to-r from-[#1638df] to-[#192fb4]">
+          <h1 className="text-xl sm:text-xl md:text-xl lg:text-2xl font-bold py-1 sm:py-1 md:py-2 bg-clip-text text-transparent bg-gradient-to-r from-[#1638df] to-[#192fb4]">
             Create HR Request Ticket
           </h1>
-          <p className="text-lg sm:text-xl md:text-xl lg:text-2xl font-bold text-black">
+          <p className="text-lg sm:text-xl md:text-xl lg:text-xl font-bold text-black">
             Please fill out the form below
           </p>
         </div>
         <Label
           htmlFor="attachment"
-          className="text-base font-bold flex items-center mt-2"
+          className="text-sm font-bold flex items-center mt-2"
         >
           <Paperclip className="mr-2" size={20} />
           Attach File (Optional)
@@ -272,7 +305,7 @@ const Request = () => {
           onChange={handleFileUpload}
           className="mt-1"
         />
-        <Label htmlFor="name" className="text-base font-bold">
+        <Label htmlFor="name" className="text-sm font-bold">
           <p>Name</p>
         </Label>
         <Input
@@ -284,7 +317,7 @@ const Request = () => {
           value={form.name}
           readOnly
         />
-        <Label htmlFor="email" className="text-base font-bold">
+        <Label htmlFor="email" className="text-sm font-bold">
           Email
         </Label>
         <Input
@@ -296,8 +329,8 @@ const Request = () => {
           value={form.email}
           readOnly
         />
-        <Label htmlFor="category" className="text-base font-bold">
-          Category
+        <Label htmlFor="category" className="text-sm font-bold">
+          Category *
         </Label>
         <Select onValueChange={handleCategoryChange} required>
           <SelectTrigger className="mb-2">
@@ -318,8 +351,8 @@ const Request = () => {
           <>
             {form.category === "Certificate of Employment" && (
               <>
-                <Label htmlFor="purpose" className="text-base font-bold">
-                  Purpose
+                <Label htmlFor="purpose" className="text-sm font-bold">
+                  Purpose *
                 </Label>
                 <Input
                   name="purpose"
@@ -332,8 +365,8 @@ const Request = () => {
                 />
               </>
             )}
-            <Label htmlFor="description" className="text-base font-bold">
-              Description of the request
+            <Label htmlFor="description" className="text-sm font-bold">
+              Description of the request *
             </Label>
             <Textarea
               className="h-36"
@@ -354,9 +387,7 @@ const Request = () => {
         )}
 
         {form.category === "Leave Request" && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
-            {renderLeaveRequestContent()}
-          </div>
+          <div>{renderLeaveRequestContent()}</div>
         )}
       </form>
     </div>

@@ -85,9 +85,11 @@ const UserViewIndovidualTicket: React.FC = () => {
   };
 
   return (
-    <div className="container">
-      <div className="px-36 pt-5">
-        <BackButton />
+    <div className="container text-sm">
+      <div className="px-36 pt-1">
+        <div className="text-xs">
+          <BackButton />
+        </div>
         <div className="flex justify-between px-10 items-center mt-5 ">
           <div>
             <h1 className="font-bold text-base">Ticket ID: {details?._id}</h1>
@@ -143,7 +145,7 @@ const UserViewIndovidualTicket: React.FC = () => {
               onChange={handleChange}
               disabled={isSubmitting}
             />
-            <div className="flex justify-end my-2">
+            <div className="flex justify-end my-2 text-xs">
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? "Submitting..." : "Submit"}
               </Button>
