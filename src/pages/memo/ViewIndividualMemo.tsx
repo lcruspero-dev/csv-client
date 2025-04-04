@@ -285,7 +285,9 @@ const ViewIndividualMemo = () => {
   return (
     <div className="container">
       <div className="px-36 pt-5">
-        <BackButton />
+        <div className="text-xs">
+          <BackButton />
+        </div>
         <div className="flex justify-between items-center mt-5">
           <div className="max-w-3xl">
             <p className="font-bold text-base">Re: {memos?.subject}</p>

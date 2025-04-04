@@ -250,7 +250,7 @@ const Request = () => {
           Why are you requesting for a leave? *
         </Label>
         <Textarea
-          className="h-24"
+          className="h-24 mb-2"
           name="leaveReason"
           placeholder="Please provide the reason for your leave"
           required
