@@ -163,6 +163,12 @@ export const Attendance: React.FC<AttendanceProps> = ({
         isSameDay(entry.date, date)
     );
   };
+  const formatTime = (timeString: string) => {
+    if (!timeString) return "";
+    const [time, period] = timeString.split(" ");
+    const [hours, minutes] = time.split(":");
+    return `${hours}:${minutes} ${period}`;
+  };
 
   return (
     <div className="overflow-x-auto">
@@ -247,9 +253,28 @@ export const Attendance: React.FC<AttendanceProps> = ({
                                   </span>
                                 </span>
                               </Badge>
-                              {attendanceEntry.checkinTime && (
+                              {(attendanceEntry.logIn ||
+                                attendanceEntry.logOut) && (
                                 <div className="text-xs text-gray-500">
-                                  {attendanceEntry.checkinTime}
+                                  {attendanceEntry.logIn && (
+                                    <span>
+                                      {formatTime(attendanceEntry.logIn)}
+                                    </span>
+                                  )}
+                                  {attendanceEntry.logOut && (
+                                    <span
+                                      className={
+                                        attendanceEntry.logIn ? "ml-2" : ""
+                                      }
+                                    >
+                                      - {formatTime(attendanceEntry.logOut)}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                              {attendanceEntry.ot && (
+                                <div className="text-xs text-blue-500">
+                                  OT: {attendanceEntry.ot}
                                 </div>
                               )}
                             </div>
@@ -258,11 +283,14 @@ export const Attendance: React.FC<AttendanceProps> = ({
                             {attendanceEntry.status !== "Pending" && (
                               <>
                                 <p>Status: {attendanceEntry.status}</p>
-                                {attendanceEntry.checkinTime && (
-                                  <p>In: {attendanceEntry.checkinTime}</p>
+                                {attendanceEntry.logIn && (
+                                  <p>In: {attendanceEntry.logIn}</p>
                                 )}
-                                {attendanceEntry.checkoutTime && (
-                                  <p>Out: {attendanceEntry.checkoutTime}</p>
+                                {attendanceEntry.logOut && (
+                                  <p>Out: {attendanceEntry.logOut}</p>
+                                )}
+                                {attendanceEntry.ot && (
+                                  <p>OT: {attendanceEntry.ot}</p>
                                 )}
                               </>
                             )}

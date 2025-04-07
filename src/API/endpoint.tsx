@@ -112,6 +112,8 @@ export const TimeRecordAPI = {
     apiHelper(`/api/employeeTimes/${id}`, "PATCH", body),
   deleteTimeRecord: (id: string) =>
     apiHelper(`/api/employeeTimes/${id}`, "DELETE"),
+  getEmployeeTimeByEmployeeIdandDate: (id: string, date: string) =>
+    apiHelper(`/api/employeeTimes/search/${id}?date=${date}`, "GET"),
 };
 
 export const SurveyAPI = {

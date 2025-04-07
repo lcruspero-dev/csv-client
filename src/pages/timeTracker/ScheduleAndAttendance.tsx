@@ -13,7 +13,11 @@ import {
 import { CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
-import { ScheduleAndAttendanceAPI, UserProfileAPI } from "@/API/endpoint";
+import {
+  ScheduleAndAttendanceAPI,
+  TimeRecordAPI,
+  UserProfileAPI,
+} from "@/API/endpoint";
 import { AbsenteeismAnalytics } from "@/components/kit/AbsenteeismAnalytics";
 import AddEmployee from "@/components/kit/AddEmployee";
 import { Attendance } from "@/components/kit/EmployeeAttendance";
@@ -30,6 +34,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -122,8 +127,10 @@ export type AttendanceEntry = {
   employeeId: string;
   date: Date;
   status: AttendanceStatus;
-  checkinTime?: string;
-  checkoutTime?: string;
+  logIn?: string;
+  logOut?: string;
+  totalHours?: string;
+  ot?: string;
 };
 
 type ViewMode = "weekly" | "monthly" | "dateRange";
@@ -281,6 +288,9 @@ const ScheduleAndAttendance: React.FC = () => {
   const [selectedBreak1, setSelectedBreak1] = useState<string | undefined>();
   const [selectedBreak2, setSelectedBreak2] = useState<string | undefined>();
   const [selectedLunch, setSelectedLunch] = useState<string | undefined>();
+  const [otHours, setOtHours] = useState<string>("");
+  const [otMinutes, setOtMinutes] = useState<string>("");
+  const [showOtInput, setShowOtInput] = useState<boolean>(false);
 
   const resetDialogState = () => {
     setSelectedEmployee(null);
@@ -293,6 +303,9 @@ const ScheduleAndAttendance: React.FC = () => {
     setSelectedBreak2(undefined);
     setSelectedAttendanceStatus("Present");
     setRepeatDays(1);
+    setShowOtInput(false);
+    setOtHours("");
+    setOtMinutes("");
   };
 
   const fetchEmployees = async (avatarMap: Record<string, string>) => {
@@ -495,18 +508,6 @@ const ScheduleAndAttendance: React.FC = () => {
     }
   };
 
-  // const handleViewModeChange = (mode: ViewMode) => {
-  //   setViewMode(mode);
-  //   if (mode === "weekly") {
-  //     setFromDate(startOfWeek(currentDate));
-  //     setToDate(endOfWeek(currentDate));
-  //   } else if (mode === "monthly") {
-  //     setFromDate(startOfMonth(currentDate));
-  //     setToDate(endOfMonth(currentDate));
-  //   }
-  //   // For dateRange mode, keep the existing from/to dates
-  // };
-
   const handleFromDateSelect = (date: Date | undefined) => {
     if (date) {
       setFromDate(date);
@@ -567,18 +568,18 @@ const ScheduleAndAttendance: React.FC = () => {
     );
   };
 
-  const updateAttendance = (
-    employeeId: string,
-    date: Date,
-    status: AttendanceStatus
-  ) => {
-    const updatedAttendance = attendance.map((entry) =>
-      entry.employeeId === employeeId && isSameDay(entry.date, date)
-        ? { ...entry, status }
-        : entry
-    );
-    setAttendance(updatedAttendance);
-  };
+  // const updateAttendance = (
+  //   employeeId: string,
+  //   date: Date,
+  //   status: AttendanceStatus
+  // ) => {
+  //   const updatedAttendance = attendance.map((entry) =>
+  //     entry.employeeId === employeeId && isSameDay(entry.date, date)
+  //       ? { ...entry, status }
+  //       : entry
+  //   );
+  //   setAttendance(updatedAttendance);
+  // };
 
   const handleAddShift = async () => {
     if (selectedEmployee && selectedDate) {
@@ -742,29 +743,105 @@ const ScheduleAndAttendance: React.FC = () => {
     if (selectedEmployee && selectedDate) {
       try {
         // Format the date for the API
-        const formattedDate = `${selectedDate.getFullYear()}-${String(
+        const formattedDate = `${
           selectedDate.getMonth() + 1
-        ).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`;
+        }/${selectedDate.getDate()}/${selectedDate.getFullYear()}`;
+
+        // Determine if the status requires time data
+        const needsTimeData = [
+          "Tardy",
+          "Half Day",
+          "RDOT",
+          "Early Log Out",
+          "Present",
+        ].includes(selectedAttendanceStatus);
+
+        // Get time record data only if needed
+        let timeRecordData = null;
+        if (needsTimeData) {
+          try {
+            const response =
+              await TimeRecordAPI.getEmployeeTimeByEmployeeIdandDate(
+                selectedEmployee.id,
+                formattedDate
+              );
+            timeRecordData = response.data;
+          } catch (err) {
+            console.error("Error fetching time record:", err);
+            // Continue without time data if there's an error
+          }
+        }
 
         // Create the attendance data object
-        const attendanceData = {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const attendanceData: any = {
           employeeId: selectedEmployee.id,
           date: formattedDate,
           status: selectedAttendanceStatus,
         };
 
-        // Call the API to create/update the attendance entry
+        // Only include OT if the status requires it
+        if (needsTimeData && showOtInput && (otHours || otMinutes)) {
+          const hours = otHours || "0";
+          const minutes = otMinutes || "0";
+          attendanceData.ot = `${hours.padStart(2, "0")}:${minutes.padStart(
+            2,
+            "0"
+          )}`;
+        } else if (!needsTimeData) {
+          // Explicitly remove OT if the status doesn't need it
+          attendanceData.ot = null; // or "" depending on API expectations
+        }
+
+        // Add time data only if the status requires it
+        if (needsTimeData && timeRecordData) {
+          if (timeRecordData.timeIn) {
+            attendanceData.logIn = timeRecordData.timeIn;
+          }
+          if (timeRecordData.timeOut) {
+            attendanceData.logOut = timeRecordData.timeOut;
+          }
+          if (timeRecordData.totalHours) {
+            attendanceData.totalHours = timeRecordData.totalHours;
+          }
+        } else if (!needsTimeData) {
+          // Explicitly remove time-related fields if the status doesn't need them
+          attendanceData.logIn = null;
+          attendanceData.logOut = null;
+          attendanceData.totalHours = null;
+        }
+
+        // Call the API to update the attendance entry (this should overwrite existing fields)
         await ScheduleAndAttendanceAPI.createAttendanceEntry(attendanceData);
 
-        // Update local state
-        updateAttendance(
-          selectedEmployee.id,
-          selectedDate,
-          selectedAttendanceStatus
-        );
+        // Update local state (remove time fields if status doesn't need them)
+        const updatedEntry = {
+          employeeId: selectedEmployee.id,
+          date: selectedDate,
+          status: selectedAttendanceStatus,
+          ...(needsTimeData && {
+            ...(attendanceData.logIn && { logIn: attendanceData.logIn }),
+            ...(attendanceData.logOut && { logOut: attendanceData.logOut }),
+            ...(attendanceData.totalHours && {
+              totalHours: attendanceData.totalHours,
+            }),
+            ...(attendanceData.ot && { ot: attendanceData.ot }),
+          }),
+        };
 
-        // Refresh attendance data
-        await fetchAttendance();
+        setAttendance((prev) => {
+          const existingIndex = prev.findIndex(
+            (entry) =>
+              entry.employeeId === selectedEmployee.id &&
+              isSameDay(entry.date, selectedDate)
+          );
+          if (existingIndex >= 0) {
+            const newAttendance = [...prev];
+            newAttendance[existingIndex] = updatedEntry;
+            return newAttendance;
+          }
+          return [...prev, updatedEntry];
+        });
 
         setIsAddShiftOpen(false);
       } catch (err) {
@@ -1053,7 +1130,7 @@ const ScheduleAndAttendance: React.FC = () => {
                                       </Badge>
                                       {displayShiftInfo(scheduleEntry.shiftType)
                                         .time && (
-                                        <span className="text-[11px] text-gray-500">
+                                        <span className="text-xs text-gray-500">
                                           {
                                             displayShiftInfo(
                                               scheduleEntry.shiftType
@@ -1324,9 +1401,9 @@ const ScheduleAndAttendance: React.FC = () => {
                 <RadioGroup
                   id="attendance-status"
                   value={selectedAttendanceStatus}
-                  onValueChange={(value: string) =>
-                    setSelectedAttendanceStatus(value as AttendanceStatus)
-                  }
+                  onValueChange={(value: string) => {
+                    setSelectedAttendanceStatus(value as AttendanceStatus);
+                  }}
                 >
                   <div className="grid grid-cols-2 gap-2">
                     <div className="flex items-center space-x-2">
@@ -1390,6 +1467,69 @@ const ScheduleAndAttendance: React.FC = () => {
                     </div>
                   </div>
                 </RadioGroup>
+                {selectedAttendanceStatus === "Present" && (
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center space-x-2 mt-6">
+                      <Checkbox
+                        id="has-ot"
+                        checked={showOtInput}
+                        onCheckedChange={(checked) => {
+                          setShowOtInput(!!checked);
+                          // Clear OT values when unchecking
+                          if (!checked) {
+                            setOtHours("");
+                            setOtMinutes("");
+                          }
+                        }}
+                      />
+                      <Label htmlFor="has-ot">With Overtime?</Label>
+                    </div>
+
+                    {showOtInput && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="ot-hours">OT Hours</Label>
+                          <input
+                            id="ot-hours"
+                            type="number"
+                            min="0"
+                            max="24"
+                            value={otHours}
+                            onChange={(e) => setOtHours(e.target.value)}
+                            className="border p-2 rounded text-sm w-full"
+                            placeholder="Hours"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="ot-minutes">OT Minutes</Label>
+                          <input
+                            id="ot-minutes"
+                            type="number"
+                            min="0"
+                            max="59"
+                            value={otMinutes}
+                            onChange={(e) => setOtMinutes(e.target.value)}
+                            className="border p-2 rounded text-sm w-full"
+                            placeholder="Minutes"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Auto-fill time data for specific statuses */}
+                {(selectedAttendanceStatus === "Tardy" ||
+                  selectedAttendanceStatus === "Half Day" ||
+                  selectedAttendanceStatus === "Present" ||
+                  selectedAttendanceStatus === "RDOT" ||
+                  selectedAttendanceStatus === "Early Log Out") && (
+                  <div className="text-sm text-gray-600">
+                    <p>
+                      Time data will be automatically filled from time records.
+                    </p>
+                  </div>
+                )}
               </div>
             </TabsContent>
           </Tabs>
