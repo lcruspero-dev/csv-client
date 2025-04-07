@@ -569,19 +569,6 @@ const ScheduleAndAttendance: React.FC = () => {
     );
   };
 
-  // const updateAttendance = (
-  //   employeeId: string,
-  //   date: Date,
-  //   status: AttendanceStatus
-  // ) => {
-  //   const updatedAttendance = attendance.map((entry) =>
-  //     entry.employeeId === employeeId && isSameDay(entry.date, date)
-  //       ? { ...entry, status }
-  //       : entry
-  //   );
-  //   setAttendance(updatedAttendance);
-  // };
-
   const handleAddShift = async () => {
     if (selectedEmployee && selectedDate) {
       const updatedSchedule = [...schedule]; // Create a copy of the current schedule
@@ -1136,7 +1123,7 @@ const ScheduleAndAttendance: React.FC = () => {
                                       </Badge>
                                       {displayShiftInfo(scheduleEntry.shiftType)
                                         .time && (
-                                        <span className="text-xs text-gray-500">
+                                        <span className="text-xs text-gray-500 mt-1">
                                           {
                                             displayShiftInfo(
                                               scheduleEntry.shiftType
