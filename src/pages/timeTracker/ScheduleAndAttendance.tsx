@@ -124,6 +124,7 @@ export type ScheduleEntry = {
 };
 
 export type AttendanceEntry = {
+  shift?: string;
   employeeId: string;
   date: Date;
   status: AttendanceStatus;
@@ -804,11 +805,15 @@ const ScheduleAndAttendance: React.FC = () => {
           if (timeRecordData.totalHours) {
             attendanceData.totalHours = timeRecordData.totalHours;
           }
+          if (timeRecordData.shift) {
+            attendanceData.shift = timeRecordData.shift;
+          }
         } else if (!needsTimeData) {
           // Explicitly remove time-related fields if the status doesn't need them
           attendanceData.logIn = null;
           attendanceData.logOut = null;
           attendanceData.totalHours = null;
+          attendanceData.shift = null;
         }
 
         // Call the API to update the attendance entry (this should overwrite existing fields)
@@ -826,6 +831,7 @@ const ScheduleAndAttendance: React.FC = () => {
               totalHours: attendanceData.totalHours,
             }),
             ...(attendanceData.ot && { ot: attendanceData.ot }),
+            ...(attendanceData.shift && { shift: attendanceData.shift }),
           }),
         };
 

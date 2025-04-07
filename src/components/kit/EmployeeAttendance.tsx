@@ -283,6 +283,9 @@ export const Attendance: React.FC<AttendanceProps> = ({
                             {attendanceEntry.status !== "Pending" && (
                               <>
                                 <p>Status: {attendanceEntry.status}</p>
+                                {attendanceEntry.shift && (
+                                  <p>Shift: {attendanceEntry.shift}</p>
+                                )}
                                 {attendanceEntry.logIn && (
                                   <p>In: {attendanceEntry.logIn}</p>
                                 )}
