@@ -222,7 +222,9 @@ export default function EditProfileForm({
         <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3">
           <CardTitle className="text-sm font-bold">Profile Photo</CardTitle>
           <CardDescription className="text-blue-100 text-sm">
-            Update your profile picture
+            {userData?.avatar
+              ? "Your profile picture"
+              : "Upload your profile picture"}
           </CardDescription>
         </CardHeader>
         <CardContent className="p-3 flex flex-col items-center justify-center">
@@ -239,12 +241,15 @@ export default function EditProfileForm({
                   <User className="h-16 w-16 text-gray-400" />
                 </div>
               )}
-              <label
-                htmlFor="avatar-upload"
-                className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 transition-opacity duration-200 opacity-0 group-hover:opacity-100 cursor-pointer"
-              >
-                <Camera className="h-6 w-6 text-white" />
-              </label>
+              {/* Only show upload overlay if no avatar exists */}
+              {!userData?.avatar && (
+                <label
+                  htmlFor="avatar-upload"
+                  className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 transition-opacity duration-200 opacity-0 group-hover:opacity-100 cursor-pointer"
+                >
+                  <Camera className="h-6 w-6 text-white" />
+                </label>
+              )}
             </div>
 
             <input
@@ -253,6 +258,7 @@ export default function EditProfileForm({
               accept="image/*"
               className="hidden"
               onChange={handleAvatarChange}
+              disabled={!!userData?.avatar} // Disable if avatar exists
             />
 
             <div className="text-center">
@@ -261,17 +267,23 @@ export default function EditProfileForm({
                 {form.watch("lastName") || "Profile"}
               </h3>
               <p className="text-gray-500 text-sm">
-                {form.watch("personalEmail") || "Upload a professional photo"}
+                {form.watch("personalEmail") ||
+                  (userData?.avatar
+                    ? "Profile photo uploaded"
+                    : "Upload a professional photo")}
               </p>
             </div>
 
-            <label
-              htmlFor="avatar-upload"
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-50 text-blue-700 rounded-md cursor-pointer hover:bg-blue-100 transition-colors h-10"
-            >
-              <Upload className="h-3 w-3" />
-              Upload New Photo
-            </label>
+            {/* Only show upload button if no avatar exists */}
+            {!userData?.avatar && (
+              <label
+                htmlFor="avatar-upload"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-50 text-blue-700 rounded-md cursor-pointer hover:bg-blue-100 transition-colors h-10"
+              >
+                <Upload className="h-3 w-3" />
+                Upload New Photo
+              </label>
+            )}
           </div>
 
           <div className="w-full mt-2 space-y-1">
