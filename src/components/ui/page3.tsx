@@ -232,6 +232,15 @@ const Page3: React.FC<NoticeOfDecisionProps> = ({ noticeOfDecision, id }) => {
                 <input
                   type="checkbox"
                   className="form-checkbox"
+                  checked={noticeOfDecision?.decision === "Written Warning"}
+                  readOnly
+                />
+                <span className="ml-2">Written Warning</span>
+              </label>
+              <label className="inline-flex items-center">
+                <input
+                  type="checkbox"
+                  className="form-checkbox"
                   checked={
                     noticeOfDecision?.decision === "Final Written Warning"
                   }
