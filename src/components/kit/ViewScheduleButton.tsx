@@ -182,7 +182,7 @@ export const ViewScheduleButton: React.FC = () => {
               <div>
                 {scheduleData?.employeeName}'s Schedule
                 <div className="text-sm font-normal mt-1">
-                  Position: {scheduleData?.position} | Team Leader:{" "}
+                  Position: {scheduleData?.position} | Group:{" "}
                   {scheduleData?.teamLeader}
                 </div>
               </div>

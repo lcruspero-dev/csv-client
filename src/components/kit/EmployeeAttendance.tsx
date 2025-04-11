@@ -53,9 +53,9 @@ const getAttendanceStatusColor = (status: AttendanceStatus): string => {
     case "Rest Day":
       return "bg-orange-100 text-orange-800";
     case "Tardy":
-      return "bg-teal-100 text-teal-800";
-    case "RDOT":
       return "bg-yellow-100 text-yellow-800";
+    case "RDOT":
+      return "bg-violet-100 text-violet-800";
     case "Suspended":
       return "bg-gray-100 text-gray-800";
     case "Attrition":
@@ -89,9 +89,9 @@ const AttendanceStatusIcon = ({ status }: { status: AttendanceStatus }) => {
     case "Rest Day":
       return <Calendar className="h-4 w-4 text-orange-600" />;
     case "Tardy":
-      return <Clock className="h-4 w-4 text-teal-600" />;
+      return <Clock className="h-4 w-4 text-yellow-600" />;
     case "RDOT":
-      return <Sun className="h-4 w-4 text-yellow-600" />;
+      return <Sun className="h-4 w-4 text-violet-600" />;
     case "Suspended":
       return <Ban className="h-4 w-4 text-gray-600" />;
     case "Attrition":
