@@ -229,7 +229,7 @@ const UserManagement: React.FC = () => {
           <Tabs defaultValue="reset" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="reset">Reset Password</TabsTrigger>
-              <TabsTrigger value="deactivate">Deactivate User</TabsTrigger>
+              <TabsTrigger value="deactivate">Manage User</TabsTrigger>
             </TabsList>
 
             <TabsContent value="reset">

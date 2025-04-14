@@ -304,13 +304,13 @@ const AddEmployee: React.FC<AddEmployeeProps> = ({
 
                   {/* Team Leader selection */}
                   <div className="mt-4 mb-2">
-                    <Label>Team Leader</Label>
+                    <Label>Group</Label>
                     <Select
                       value={selectedTeamLeader}
                       onValueChange={setSelectedTeamLeader}
                     >
                       <SelectTrigger className="w-full mt-1">
-                        <SelectValue placeholder="Select Team Leader" />
+                        <SelectValue placeholder="Select Group" />
                       </SelectTrigger>
                       <SelectContent>
                         {teamLeaders.map((leader) => (

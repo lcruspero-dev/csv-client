@@ -154,7 +154,7 @@ const Request = () => {
     return (
       <div className="mt-4">
         <Label htmlFor="leaveType" className="text-sm font-bold">
-          Leave Type *
+          Leave Type <span className="text-red-500">*</span>
         </Label>
         <Select
           onValueChange={(value) => setForm({ ...form, leaveType: value })}
@@ -178,7 +178,7 @@ const Request = () => {
         </Select>
 
         <Label htmlFor="leaveCategory" className="text-sm font-bold">
-          Leave Category *
+          Leave Category <span className="text-red-500">*</span>
         </Label>
         <Select
           onValueChange={(value) => setForm({ ...form, leaveCategory: value })}
@@ -197,7 +197,7 @@ const Request = () => {
         </Select>
 
         <Label htmlFor="department" className="text-sm font-bold">
-          Department *
+          Department <span className="text-red-500">*</span>
         </Label>
         <Select
           value={form.formDepartment}
@@ -220,7 +220,7 @@ const Request = () => {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <Label htmlFor="startDate" className="text-sm font-bold">
-              Start Date *
+              Start Date <span className="text-red-500">*</span>
             </Label>
             <Input
               name="startDate"
@@ -233,7 +233,7 @@ const Request = () => {
           </div>
           <div>
             <Label htmlFor="endDate" className="text-sm font-bold">
-              End Date *
+              End Date <span className="text-red-500">*</span>
             </Label>
             <Input
               name="endDate"
@@ -247,7 +247,8 @@ const Request = () => {
         </div>
 
         <Label htmlFor="leaveReason" className="text-sm font-bold">
-          Why are you requesting for a leave? *
+          Why are you requesting for a leave?{" "}
+          <span className="text-red-500">*</span>
         </Label>
         <Textarea
           className="h-24 mb-2"
@@ -259,7 +260,8 @@ const Request = () => {
         />
 
         <Label htmlFor="delegatedTasks" className="text-sm font-bold">
-          Tasks to be delegated while out of office
+          Tasks to be delegated while out of office{" "}
+          <span className="text-red-500">*</span>
         </Label>
         <Textarea
           className="h-24"
@@ -330,7 +332,7 @@ const Request = () => {
           readOnly
         />
         <Label htmlFor="category" className="text-sm font-bold">
-          Category *
+          Category
         </Label>
         <Select onValueChange={handleCategoryChange} required>
           <SelectTrigger className="mb-2">
@@ -366,7 +368,7 @@ const Request = () => {
               </>
             )}
             <Label htmlFor="description" className="text-sm font-bold">
-              Description of the request *
+              Description of the request
             </Label>
             <Textarea
               className="h-36"

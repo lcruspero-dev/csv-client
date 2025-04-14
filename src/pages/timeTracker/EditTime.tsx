@@ -14,6 +14,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -38,17 +45,30 @@ interface TimeRecord {
   breakStart?: string | null;
   breakEnd?: string | null;
   totalBreakTime?: string | null;
+  lunchStart?: string | null;
+  lunchEnd?: string | null;
+  totalLunchTime?: string | null;
+  secondBreakStart?: string | null;
+  secondBreakEnd?: string | null;
+  totalSecondBreakTime?: string | null;
   secretKey?: string | null;
 }
 
 const calculateTotalHours = (
   record: TimeRecord
-): { totalHours: string; totalBreakTime: string } => {
+): {
+  totalHours: string;
+  totalBreakTime: string;
+  totalLunchTime: string;
+  totalSecondBreakTime: string;
+} => {
   // Guard clause for invalid or incomplete data
   if (!record.timeIn || !record.timeOut) {
     return {
       totalHours: "0.00",
       totalBreakTime: "0.00",
+      totalLunchTime: "0.00",
+      totalSecondBreakTime: "0.00",
     };
   }
 
@@ -77,6 +97,8 @@ const calculateTotalHours = (
     return {
       totalHours: "0.00",
       totalBreakTime: "0.00",
+      totalLunchTime: "0.00",
+      totalSecondBreakTime: "0.00",
     };
   }
 
@@ -85,14 +107,17 @@ const calculateTotalHours = (
     outTotalSeconds += 24 * 3600;
   }
 
-  // Calculate break duration if break times exist and are valid
+  // Calculate break durations if break times exist and are valid
   let breakTimeSeconds = 0;
+  let lunchTimeSeconds = 0;
+  let secondBreakTimeSeconds = 0;
+
+  // First break calculation
   if (record.breakStart && record.breakEnd) {
     let breakStartSeconds = convertToSeconds(record.breakStart);
     let breakEndSeconds = convertToSeconds(record.breakEnd);
 
     if (breakStartSeconds > 0 && breakEndSeconds > 0) {
-      // Adjust break time for midnight crossing
       if (breakEndSeconds < breakStartSeconds) {
         breakEndSeconds += 24 * 3600;
       }
@@ -100,20 +125,62 @@ const calculateTotalHours = (
     }
   }
 
+  // Lunch break calculation
+  if (record.lunchStart && record.lunchEnd) {
+    let lunchStartSeconds = convertToSeconds(record.lunchStart);
+    let lunchEndSeconds = convertToSeconds(record.lunchEnd);
+
+    if (lunchStartSeconds > 0 && lunchEndSeconds > 0) {
+      if (lunchEndSeconds < lunchStartSeconds) {
+        lunchEndSeconds += 24 * 3600;
+      }
+      lunchTimeSeconds = lunchEndSeconds - lunchStartSeconds;
+    }
+  }
+
+  // Second break calculation
+  if (record.secondBreakStart && record.secondBreakEnd) {
+    let secondBreakStartSeconds = convertToSeconds(record.secondBreakStart);
+    let secondBreakEndSeconds = convertToSeconds(record.secondBreakEnd);
+
+    if (secondBreakStartSeconds > 0 && secondBreakEndSeconds > 0) {
+      if (secondBreakEndSeconds < secondBreakStartSeconds) {
+        secondBreakEndSeconds += 24 * 3600;
+      }
+      secondBreakTimeSeconds = secondBreakEndSeconds - secondBreakStartSeconds;
+    }
+  }
+
   const totalWorkSeconds = outTotalSeconds - inTotalSeconds;
-  const netWorkSeconds = Math.max(0, totalWorkSeconds - breakTimeSeconds);
+  const totalBreakSeconds =
+    breakTimeSeconds + lunchTimeSeconds + secondBreakTimeSeconds;
+  const netWorkSeconds = Math.max(0, totalWorkSeconds - totalBreakSeconds);
 
   // Convert to hours with 2 decimal places, ensuring non-negative values
   const totalHours = (netWorkSeconds / 3600).toFixed(2);
   const totalBreakTime = (breakTimeSeconds / 3600).toFixed(2);
+  const totalLunchTime = (lunchTimeSeconds / 3600).toFixed(2);
+  const totalSecondBreakTime = (secondBreakTimeSeconds / 3600).toFixed(2);
 
   return {
     totalHours,
     totalBreakTime,
+    totalLunchTime,
+    totalSecondBreakTime,
   };
 };
 
+const employeeGroupOptions = [
+  { label: "All", value: "csv-all" },
+  { label: "Shift 1", value: "csv-shift1" },
+  { label: "Shift 2", value: "csv-shift2" },
+  { label: "Shift 3", value: "csv-shift3" },
+  { label: "Staff", value: "csv-staff" },
+  { label: "Search by Name", value: "search-by-name" },
+];
+
 const AdminTimeRecordEdit: React.FC = () => {
+  const [searchType, setSearchType] = useState("search-by-name");
   const [searchName, setSearchName] = useState("");
   const [searchDate, setSearchDate] = useState("");
   const [timeRecords, setTimeRecords] = useState<TimeRecord[]>([]);
@@ -138,26 +205,45 @@ const AdminTimeRecordEdit: React.FC = () => {
   };
 
   const handleSearch = async () => {
-    if (!searchName || !searchDate) {
+    if (!searchDate) {
       toast({
         title: "Validation Error",
-        description: "Please enter both name and date",
+        description: "Please enter a date",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (searchType === "search-by-name" && !searchName) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter an employee name",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      const response = await TimeRecordAPI.getTimeRecordsByNameAndDate(
-        searchName,
-        formatDate(searchDate)
-      );
+      let response;
+      if (searchType === "search-by-name") {
+        response = await TimeRecordAPI.getTimeRecordsByNameAndDate(
+          searchName,
+          formatDate(searchDate)
+        );
+      } else {
+        // Search by group
+        response = await TimeRecordAPI.getTimeRecordsByNameAndDate(
+          searchType,
+          formatDate(searchDate)
+        );
+      }
+
       setTimeRecords(response.data);
 
       if (response.data.length === 0) {
         toast({
           title: "No Records",
-          description: "No time records found for the given name and date",
+          description: "No time records found for the given criteria",
           variant: "default",
         });
       }
@@ -190,16 +276,27 @@ const AdminTimeRecordEdit: React.FC = () => {
     }
 
     try {
-      // Calculate updated total hours and break time before saving
-      const { totalHours, totalBreakTime } = calculateTotalHours(editingRecord);
+      // Calculate updated total hours and break times before saving
+      const {
+        totalHours,
+        totalBreakTime,
+        totalLunchTime,
+        totalSecondBreakTime,
+      } = calculateTotalHours(editingRecord);
 
       // Create the complete updated record with all fields
       const updatedRecord = {
         ...editingRecord,
         breakStart: editingRecord.breakStart || null,
         breakEnd: editingRecord.breakEnd || null,
+        lunchStart: editingRecord.lunchStart || null,
+        lunchEnd: editingRecord.lunchEnd || null,
+        secondBreakStart: editingRecord.secondBreakStart || null,
+        secondBreakEnd: editingRecord.secondBreakEnd || null,
         totalHours,
         totalBreakTime,
+        totalLunchTime,
+        totalSecondBreakTime,
       };
 
       // Make the API call with the complete record and secret key
@@ -264,11 +361,14 @@ const AdminTimeRecordEdit: React.FC = () => {
       [field]: value || null,
     };
 
-    const { totalHours, totalBreakTime } = calculateTotalHours(updatedRecord);
+    const { totalHours, totalBreakTime, totalLunchTime, totalSecondBreakTime } =
+      calculateTotalHours(updatedRecord);
     setEditingRecord({
       ...updatedRecord,
       totalHours,
       totalBreakTime,
+      totalLunchTime,
+      totalSecondBreakTime,
     });
   };
 
@@ -288,13 +388,30 @@ const AdminTimeRecordEdit: React.FC = () => {
         <CardContent>
           <div className="flex space-x-4 mb-6">
             <div className="flex-grow">
-              <Label>Employee Name</Label>
-              <Input
-                placeholder="Enter employee name"
-                value={searchName}
-                onChange={(e) => setSearchName(e.target.value)}
-              />
+              <Label>Search Type</Label>
+              <Select onValueChange={setSearchType} value={searchType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select search type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {employeeGroupOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+            {searchType === "search-by-name" && (
+              <div className="flex-grow">
+                <Label>Employee Name</Label>
+                <Input
+                  placeholder="Enter employee name"
+                  value={searchName}
+                  onChange={(e) => setSearchName(e.target.value)}
+                />
+              </div>
+            )}
             <div className="flex-grow">
               <Label>Date</Label>
               <Input
@@ -401,6 +518,62 @@ const AdminTimeRecordEdit: React.FC = () => {
                     />
                   </div>
                   <div>
+                    <Label>Lunch Start</Label>
+                    <Input
+                      type="text"
+                      value={editingRecord.lunchStart || ""}
+                      onChange={(e) =>
+                        handleTimeInputChange(
+                          "lunchStart",
+                          e.target.value,
+                          editingRecord
+                        )
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label>Lunch End</Label>
+                    <Input
+                      type="text"
+                      value={editingRecord.lunchEnd || ""}
+                      onChange={(e) =>
+                        handleTimeInputChange(
+                          "lunchEnd",
+                          e.target.value,
+                          editingRecord
+                        )
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label>Second Break Start</Label>
+                    <Input
+                      type="text"
+                      value={editingRecord.secondBreakStart || ""}
+                      onChange={(e) =>
+                        handleTimeInputChange(
+                          "secondBreakStart",
+                          e.target.value,
+                          editingRecord
+                        )
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label>Second Break End</Label>
+                    <Input
+                      type="text"
+                      value={editingRecord.secondBreakEnd || ""}
+                      onChange={(e) =>
+                        handleTimeInputChange(
+                          "secondBreakEnd",
+                          e.target.value,
+                          editingRecord
+                        )
+                      }
+                    />
+                  </div>
+                  <div>
                     <Label>Total Hours</Label>
                     <Input
                       type="text"
@@ -413,6 +586,22 @@ const AdminTimeRecordEdit: React.FC = () => {
                     <Input
                       type="text"
                       value={editingRecord.totalBreakTime || "0.00"}
+                      readOnly
+                    />
+                  </div>
+                  <div>
+                    <Label>Total Lunch Time</Label>
+                    <Input
+                      type="text"
+                      value={editingRecord.totalLunchTime || "0.00"}
+                      readOnly
+                    />
+                  </div>
+                  <div>
+                    <Label>Total Second Break Time</Label>
+                    <Input
+                      type="text"
+                      value={editingRecord.totalSecondBreakTime || "0.00"}
                       readOnly
                     />
                   </div>
@@ -483,6 +672,8 @@ const AdminTimeRecordEdit: React.FC = () => {
                   <TableHead>Time Out</TableHead>
                   <TableHead>Total Hours</TableHead>
                   <TableHead>Total Break</TableHead>
+                  <TableHead>Total Lunch</TableHead>
+                  <TableHead>Total 2nd Break</TableHead>
                   <TableHead>Shift</TableHead>
                   <TableHead>Notes</TableHead>
                   <TableHead>Actions</TableHead>
@@ -497,6 +688,10 @@ const AdminTimeRecordEdit: React.FC = () => {
                     <TableCell>{record.timeOut || "-"}</TableCell>
                     <TableCell>{record.totalHours}</TableCell>
                     <TableCell>{record.totalBreakTime || "0.00"}</TableCell>
+                    <TableCell>{record.totalLunchTime || "0.00"}</TableCell>
+                    <TableCell>
+                      {record.totalSecondBreakTime || "0.00"}
+                    </TableCell>
                     <TableCell>{record.shift || "-"}</TableCell>
                     <TableCell>{record.notes || "-"}</TableCell>
                     <TableCell>
