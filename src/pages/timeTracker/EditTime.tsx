@@ -386,7 +386,11 @@ const AdminTimeRecordEdit: React.FC = () => {
           <CardTitle className="text-center">Time Record Management</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex space-x-4 mb-6">
+          <div
+            className={`flex space-x-4 mb-6 ${
+              searchType === "search-by-name" ? "w-3/4" : "w-1/2"
+            }`}
+          >
             <div className="flex-grow">
               <Label>Search Type</Label>
               <Select onValueChange={setSearchType} value={searchType}>
