@@ -9,7 +9,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requiresAdmin = false,
 }) => {
   const location = useLocation();
-  const { isAuthenticated: authState } = useAuth();
+  const authState: { isAuthenticated: boolean; isAdmin: boolean } = useAuth();
   const { isAdmin } = authState;
 
   const isAuthorized = requiresAdmin ? isAdmin : true;

@@ -84,11 +84,22 @@ const Registration = () => {
         description: "We've created your account for you.",
       });
 
-      // Store user data in localStorage
-      localStorage.setItem("user", JSON.stringify(response.data));
+      // Create user object that matches the User interface
+      const userData = {
+        _id: response.data._id,
+        name: fullName,
+        email: form.email,
+        isAdmin: response.data.isAdmin || false,
+        role: response.data.role || "user",
+        token: response.data.token,
+        profileImage: response.data.profileImage,
+      };
 
-      // Update the authentication context
-      login({ isAuthenticated: true, isAdmin: response.data.isAdmin });
+      // Store user data in localStorage
+      localStorage.setItem("user", JSON.stringify(userData));
+
+      // Update the authentication context with the proper User object
+      login(userData);
 
       navigate("/");
     } catch (error) {
