@@ -1,6 +1,7 @@
 import { Route, Routes } from "react-router-dom";
 import Header from "./components/kit/Header";
 import { Toaster } from "./components/ui/toaster";
+import { AuthProvider } from "./context/AuthProvider";
 import "./index.css";
 import ViewAllRaisedTickets from "./pages/allTicket/AdminViewAllTicket";
 import ViewAllTicket from "./pages/allTicket/ViewAllTicket";
@@ -29,59 +30,63 @@ import AdminTimeRecordEdit from "./pages/timeTracker/EditTime";
 import ScheduleAndAttendance from "./pages/timeTracker/ScheduleAndAttendance";
 import TimeTracker from "./pages/timeTracker/TimeTracker";
 import ProtectedRoute2 from "./utils/protectedRoutes";
-
 function App() {
   return (
-    <>
-      <Header />
-      <div className="bg-gradient-to-b from-[#eef4ff] to-white">
-        <Routes>
-          {/* Public Routes */}
+    <AuthProvider>
+      <>
+        <Header />
+        <div className="bg-gradient-to-b from-[#eef4ff] to-white">
+          <Routes>
+            {/* Public Routes */}
 
-          <Route element={<Layout />}>
-            <Route path="/sign-in" element={<Login />} />
-            <Route path="/sign-up" element={<Registration />} />
-          </Route>
+            <Route element={<Layout />}>
+              <Route path="/sign-in" element={<Login />} />
+              <Route path="/sign-up" element={<Registration />} />
+            </Route>
 
-          {/* Protected Routes */}
-          <Route element={<ProtectedRoute requiresAdmin={false} />}>
-            <Route path="/" element={<Homepage />} />
-            <Route path="/create-ticket" element={<CreateTicket />} />
-            <Route path="/view-ticket" element={<ViewAllTicket />} />
-            <Route path="/request-something" element={<Request />} />
-            <Route path="/ticket/:id" element={<ViewIndividualTicket />} />
-            <Route path="/all-tickets" element={<ViewAllRaisedTickets />} />
-            <Route path="/all-memo" element={<ViewMemo />} />
-            <Route path="/memo/:id" element={<ViewIndividualMemo />} />
-            <Route path="/addcategory" element={<CreateCategory />} />
-            <Route path="/addassign" element={<CreateAssign />} />
-            <Route path="/exportdata" element={<ExportData />} />
-            <Route path="/timetracker" element={<TimeTracker />} />
-            <Route path="/exporttimetracker" element={<ExportDataTime />} />
-            <Route path="/resetuserpassword" element={<AdminResetPassword />} />
-            <Route path="/timerecord" element={<AdminTimeRecordEdit />} />
-            <Route path="/exportsurveydata" element={<ExportSurveyData />} />
-            <Route path="/createsurvey" element={<CreateSurvey />} />
-            <Route path="/exportmemo" element={<ExportMemoData />} />
-            <Route path="/nte" element={<UserNte />} />
-            <Route
-              path="/profile/change-password"
-              element={<ChangePassword />}
-            />
-            <Route path="profile/edit" element={<ProfilePage />} />
-            <Route
-              path="/schedule-and-attendance"
-              element={
-                <ProtectedRoute2>
-                  <ScheduleAndAttendance />
-                </ProtectedRoute2>
-              }
-            />
-          </Route>
-        </Routes>
-      </div>
-      <Toaster />
-    </>
+            {/* Protected Routes */}
+            <Route element={<ProtectedRoute requiresAdmin={false} />}>
+              <Route path="/" element={<Homepage />} />
+              <Route path="/create-ticket" element={<CreateTicket />} />
+              <Route path="/view-ticket" element={<ViewAllTicket />} />
+              <Route path="/request-something" element={<Request />} />
+              <Route path="/ticket/:id" element={<ViewIndividualTicket />} />
+              <Route path="/all-tickets" element={<ViewAllRaisedTickets />} />
+              <Route path="/all-memo" element={<ViewMemo />} />
+              <Route path="/memo/:id" element={<ViewIndividualMemo />} />
+              <Route path="/addcategory" element={<CreateCategory />} />
+              <Route path="/addassign" element={<CreateAssign />} />
+              <Route path="/exportdata" element={<ExportData />} />
+              <Route path="/timetracker" element={<TimeTracker />} />
+              <Route path="/exporttimetracker" element={<ExportDataTime />} />
+              <Route
+                path="/resetuserpassword"
+                element={<AdminResetPassword />}
+              />
+              <Route path="/timerecord" element={<AdminTimeRecordEdit />} />
+              <Route path="/exportsurveydata" element={<ExportSurveyData />} />
+              <Route path="/createsurvey" element={<CreateSurvey />} />
+              <Route path="/exportmemo" element={<ExportMemoData />} />
+              <Route path="/nte" element={<UserNte />} />
+              <Route
+                path="/profile/change-password"
+                element={<ChangePassword />}
+              />
+              <Route path="profile/edit" element={<ProfilePage />} />
+              <Route
+                path="/schedule-and-attendance"
+                element={
+                  <ProtectedRoute2>
+                    <ScheduleAndAttendance />
+                  </ProtectedRoute2>
+                }
+              />
+            </Route>
+          </Routes>
+        </div>
+        <Toaster />
+      </>
+    </AuthProvider>
   );
 }
 

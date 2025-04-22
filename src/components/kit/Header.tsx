@@ -1,6 +1,7 @@
 import { UserProfileAPI } from "@/API/endpoint";
 import logo from "@/assets/logo.webp";
 import NotificationBell from "@/components/kit/NotificationBell";
+import { useViewMode } from "@/components/kit/ViewModeContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -15,34 +16,23 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../ui/button";
 
-interface User {
-  profileImage: string | undefined;
-  _id: string;
-  name: string;
-  email: string;
-  isAdmin: boolean;
-  role: string;
-  token: string;
-  decodedToken?: string;
-}
-
 const Header: React.FC = () => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
-  const user: User = JSON.parse(localStorage.getItem("user")!);
-  const { isAuthenticated } = useAuth();
+  const { logout, isAuthenticated, isLoading, user } = useAuth();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-
-  // Fetch user profile data (including avatar filename) when the component mounts
+  const { setAdminView } = useViewMode();
+  // Fetch user profile when authenticated or user changes
   useEffect(() => {
     const fetchProfile = async () => {
+      if (!isAuthenticated || !user) return;
+
       try {
         const response = await UserProfileAPI.getProfile();
         if (response.data?.avatar) {
-          // Construct the avatar URL using the filename from the API response
-          const avatarFilename = response.data.avatar;
           setAvatarUrl(
-            `${import.meta.env.VITE_UPLOADFILES_URL}/avatars/${avatarFilename}`
+            `${import.meta.env.VITE_UPLOADFILES_URL}/avatars/${
+              response.data.avatar
+            }`
           );
         }
       } catch (error) {
@@ -50,28 +40,18 @@ const Header: React.FC = () => {
       }
     };
 
-    if (isAuthenticated.isAuthenticated) {
-      fetchProfile();
-    }
-  }, [isAuthenticated.isAuthenticated]);
+    fetchProfile();
+  }, [isAuthenticated, user]);
 
   const handleLogout = () => {
-    localStorage.clear();
     setAvatarUrl(null);
-    logout();
-    navigate("/sign-in");
+    logout(); // This already handles localStorage clearing
   };
 
-  const handleEditProfile = () => {
-    navigate("/profile/edit");
-  };
+  const handleEditProfile = () => navigate("/profile/edit");
+  const handleChangePassword = () => navigate("/profile/change-password");
 
-  const handleChangePassword = () => {
-    navigate("/profile/change-password");
-  };
-
-  // Get initials from user name for avatar fallback
-  const getInitials = (name: string) => {
+  const getInitials = (name?: string) => {
     if (!name) return "U";
     return name
       .split(" ")
@@ -81,6 +61,22 @@ const Header: React.FC = () => {
       .substring(0, 2);
   };
 
+  if (isLoading) {
+    return (
+      <div className="bg-gradient-to-b from-[#5a95ff] to-[#bdd5ff]">
+        <div className="container p-5">
+          <div className="flex flex-row justify-between">
+            <img src={logo} alt="Logo" width={75} height={50} />
+            <div className="flex items-center gap-4">
+              <div className="w-32 h-6 bg-gray-200 rounded animate-pulse"></div>
+              <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-gradient-to-b from-[#5a95ff] to-[#bdd5ff]">
       <div className="container p-5">
@@ -88,7 +84,7 @@ const Header: React.FC = () => {
           <div>
             <img
               src={logo}
-              alt="test"
+              alt="Company Logo"
               width={75}
               height={50}
               onClick={() => navigate("/")}
@@ -96,12 +92,12 @@ const Header: React.FC = () => {
             />
           </div>
           <div className="flex gap-2">
-            {isAuthenticated.isAuthenticated ? (
+            {isAuthenticated && user ? (
               <div className="flex items-center space-x-4">
                 <span className="text-1xl drop-shadow-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#1638df] to-[#192fb4]">
-                  Welcome, {user?.name}
+                  Welcome, {user.name}
                 </span>
-                {user?.isAdmin && (
+                {user.isAdmin && (
                   <div className="pr-4">
                     <NotificationBell />
                   </div>
@@ -111,10 +107,10 @@ const Header: React.FC = () => {
                     <Avatar className="h-10 w-10 cursor-pointer border-2 border-white hover:border-blue-300 transition-all">
                       <AvatarImage
                         src={avatarUrl || undefined}
-                        alt={user?.name}
+                        alt={user.name}
                       />
                       <AvatarFallback className="bg-blue-600 text-white">
-                        {getInitials(user?.name)}
+                        {getInitials(user.name)}
                       </AvatarFallback>
                     </Avatar>
                   </DropdownMenuTrigger>
@@ -123,16 +119,16 @@ const Header: React.FC = () => {
                       <Avatar className="h-8 w-8">
                         <AvatarImage
                           src={avatarUrl || undefined}
-                          alt={user?.name}
+                          alt={user.name}
                         />
                         <AvatarFallback className="bg-blue-600 text-white text-xs">
-                          {getInitials(user?.name)}
+                          {getInitials(user.name)}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex flex-col space-y-0.5">
-                        <p className="text-sm font-medium">{user?.name}</p>
+                        <p className="text-sm font-medium">{user.name}</p>
                         <p className="text-xs text-gray-500 truncate w-40">
-                          {user?.email}
+                          {user.email}
                         </p>
                       </div>
                     </div>
@@ -144,9 +140,9 @@ const Header: React.FC = () => {
                       <User className="mr-2 h-4 w-4" />
                       <span>Profile Settings</span>
                     </DropdownMenuItem>
-                    {user?.isAdmin ||
-                    user?.role === "TM" ||
-                    user?.role === "TL" ? (
+                    {(user.isAdmin ||
+                      user.role === "TM" ||
+                      user.role === "TL") && (
                       <DropdownMenuItem
                         onClick={() => navigate("/schedule-and-attendance")}
                         className="cursor-pointer"
@@ -154,7 +150,7 @@ const Header: React.FC = () => {
                         <NotebookPenIcon className="mr-2 h-4 w-4" />
                         <span>Shift & Attendance</span>
                       </DropdownMenuItem>
-                    ) : null}
+                    )}
                     <DropdownMenuItem
                       onClick={handleChangePassword}
                       className="cursor-pointer"
@@ -162,15 +158,11 @@ const Header: React.FC = () => {
                       <Key className="mr-2 h-4 w-4" />
                       <span>Change Password</span>
                     </DropdownMenuItem>
-                    {user?.isAdmin && (
+                    {user.isAdmin && (
                       <DropdownMenuItem
                         onClick={() => {
-                          localStorage.setItem(
-                            "viewAsUser",
-                            JSON.stringify(false)
-                          ); // Ensure admin mode
-                          navigate("/"); // Navigate to AdminHome
-                          window.location.reload(); // Force update (if needed)
+                          setAdminView(true); // This will set viewAsUser to false
+                          navigate("/");
                         }}
                         className="cursor-pointer"
                       >
@@ -178,7 +170,6 @@ const Header: React.FC = () => {
                         <span>Admin Dashboard</span>
                       </DropdownMenuItem>
                     )}
-
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onClick={handleLogout}

@@ -19,17 +19,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
 
   const navItems: NavItem[] = [
     { title: "Time Tracker", path: "/timetracker" },
-    { title: "Memo", path: "/all-memo" },
+    { title: "Add Ticket Assignee", path: "/addassign" },
+    { title: "Add Ticket Category", path: "/addcategory" },
+    { title: "Edit Time Record", path: "/timerecord" },
+    { title: "Export Memo Data", path: "/exportmemo" },
+    { title: "Export Survey Data", path: "/exportsurveydata" },
+    { title: "Export tickets Data", path: "/exportdata" },
+    { title: "Export Time Tracker Data", path: "/exporttimetracker" },
     { title: "Manage Survey", path: "/createsurvey" },
     { title: "Manage Tickets", path: "/all-tickets" },
     { title: "Manage Users", path: "/resetuserpassword" },
-    { title: "Add Ticket Category", path: "/addcategory" },
-    { title: "Add Ticket Assignee", path: "/addassign" },
-    { title: "Export Survey Data", path: "/exportsurveydata" },
-    { title: "Export tickets Data", path: "/exportdata" },
-    { title: "Export Memo Data", path: "/exportmemo" },
-    { title: "Export Time Tracker Data", path: "/exporttimetracker" },
-    { title: "Edit Time Record", path: "/timerecord" },
   ];
 
   return (

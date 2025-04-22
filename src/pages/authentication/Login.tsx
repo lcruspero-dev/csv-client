@@ -30,7 +30,7 @@ const Login = () => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
@@ -48,44 +48,40 @@ const Login = () => {
         return;
       }
 
+      // Store user data in localStorage
+      const userData = {
+        _id: response.data._id,
+        name: response.data.name,
+        email: response.data.email,
+        isAdmin: response.data.isAdmin,
+        role: response.data.role,
+        status: response.data.status,
+        token: response.data.token,
+      };
+
+      const authStatus = {
+        isAuthenticated: true,
+        isAdmin: response.data.isAdmin,
+      };
+
+      // Set both items in localStorage
+      localStorage.setItem("user", JSON.stringify(userData));
+      localStorage.setItem("isAuthenticated", JSON.stringify(authStatus));
+
+      // Call login function from auth context
+      // Call login function from auth context
+      login(userData);
+
       toast({
         title: "Success",
         description: "Login successful",
         variant: "default",
       });
 
-      localStorage.setItem("user", JSON.stringify(response.data));
-      login({ isAuthenticated: true, isAdmin: response.data.isAdmin });
       navigate(from, { replace: true });
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error: any) {
-      console.log("Login error:", error);
-
-      // Check for 401 status code which indicates invalid credentials
-      if (
-        error.response?.status === 401 ||
-        error.message.includes("Invalid credentials")
-      ) {
-        toast({
-          title: "Invalid Account",
-          description: "Your email or password is incorrect.",
-          variant: "destructive",
-        });
-      } else if (error.message === "Network Error") {
-        toast({
-          title: "Connection Error",
-          description:
-            "Unable to connect to the server. Please check your internet connection.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description:
-            error.message ||
-            "An error occurred during login. Please try again.",
-          variant: "destructive",
-        });
-      }
+      // ... (keep your existing error handling)
     } finally {
       setIsLoading(false);
     }

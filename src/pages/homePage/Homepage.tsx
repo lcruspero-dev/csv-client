@@ -1,8 +1,9 @@
+import { useViewMode } from "@/components/kit/ViewModeContext";
 import { Button } from "@/components/ui/button";
 import AdminHome from "@/pages/homePage/AdminHomePage";
 import UserHome from "@/pages/homePage/UserHomePage";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
-import React, { useState } from "react";
+import React from "react";
 
 interface User {
   _id: string;
@@ -13,11 +14,7 @@ interface User {
 }
 
 const Homepage: React.FC = () => {
-  const [viewAsUser, setViewAsUser] = useState<boolean>(() => {
-    // Retrieve initial state from localStorage or default to false
-    const storedView = localStorage.getItem("viewAsUser");
-    return storedView ? JSON.parse(storedView) : true;
-  });
+  const { viewAsUser, toggleView } = useViewMode();
 
   const getUserFromLocalStorage = (): User | null => {
     try {
@@ -31,14 +28,6 @@ const Homepage: React.FC = () => {
   };
 
   const user = getUserFromLocalStorage();
-
-  const toggleView = () => {
-    setViewAsUser((prev) => {
-      const newState = !prev;
-      localStorage.setItem("viewAsUser", JSON.stringify(newState)); // Persist state to localStorage
-      return newState;
-    });
-  };
 
   if (!user) {
     return (
