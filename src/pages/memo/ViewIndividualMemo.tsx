@@ -1,6 +1,14 @@
 import { TicketAPi } from "@/API/endpoint";
 import BackButton from "@/components/kit/BackButton";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import Loading from "@/components/ui/loading";
 import {
   Pagination,
@@ -20,6 +28,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
+import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
@@ -223,9 +232,17 @@ const ViewIndividualMemo = () => {
   const user: User | null = userString ? JSON.parse(userString) : null;
   const { toast } = useToast();
   const [isChecked, setIsChecked] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [tempChecked, setTempChecked] = useState(false);
 
   const handleCheckboxChange = () => {
-    setIsChecked(!isChecked);
+    setTempChecked(true);
+    setIsDialogOpen(true);
+  };
+
+  const handleCancelAcknowledgment = () => {
+    setTempChecked(false);
+    setIsDialogOpen(false);
   };
 
   const getIndividualMemo = async (id: string) => {
@@ -258,8 +275,11 @@ const ViewIndividualMemo = () => {
         title: "Success",
         description: "Your acknowledgement of this memo has been recorded",
       });
+      setIsDialogOpen(false);
+      setIsChecked(true);
     } catch (error) {
       console.error(error);
+      setTempChecked(false);
     }
   };
 
@@ -309,22 +329,25 @@ const ViewIndividualMemo = () => {
             <div></div>
           ) : (
             <div>
-              <p className="text-sm">
-                <input
-                  type="checkbox"
-                  className="w-4 h-4"
-                  onChange={handleCheckboxChange}
-                  checked={isChecked}
-                />{" "}
-                I hereby acknowledge receipt of this memo
+              <p className="text-sm flex items-center">
+                <label className="relative flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 appearance-none border border-gray-400 rounded-sm checked:bg-blue-600 checked:border-blue-600 focus:outline-none transition-colors duration-200"
+                    onChange={handleCheckboxChange}
+                    checked={isChecked || tempChecked}
+                  />
+                  {(isChecked || tempChecked) && (
+                    <Check className="w-3 h-3 absolute left-0.5 text-white pointer-events-none" />
+                  )}
+                </label>
+                <span
+                  className="ml-2 cursor-pointer"
+                  onClick={handleCheckboxChange}
+                >
+                  Acknowledged Receipt
+                </span>
               </p>
-              <Button
-                className="text-xs ml-5 mt-2"
-                onClick={() => handleAcknowldged(id as string)}
-                disabled={!isChecked}
-              >
-                Confirm
-              </Button>
             </div>
           )}
         </div>
@@ -346,6 +369,41 @@ const ViewIndividualMemo = () => {
           </div>
         )}
       </div>
+
+      <Dialog open={isDialogOpen} onOpenChange={handleCancelAcknowledgment}>
+        <DialogContent className="bg-[#eef4ff]">
+          <DialogHeader>
+            <DialogTitle>Memorandum Acknowledgment</DialogTitle>
+            <DialogDescription className="py-4">
+              <p className="mb-4 italic text-gray-700">
+                "I acknowledge that I have received and read the memorandum. I
+                understand the information provided and accept responsibility
+                for staying informed and following any updates, changes, or
+                instructions it includes.
+              </p>
+              <p className="italic text-gray-700">
+                I will seek clarification if needed to ensure proper
+                understanding and compliance."
+              </p>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={handleCancelAcknowledgment}
+              className="text-xs"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => handleAcknowldged(id as string)}
+              className="text-xs"
+            >
+              Confirm
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
