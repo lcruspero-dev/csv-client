@@ -48,7 +48,7 @@ const Login = () => {
         return;
       }
 
-      // Store user data in localStorage
+      // Handle successful login
       const userData = {
         _id: response.data._id,
         name: response.data.name,
@@ -59,17 +59,15 @@ const Login = () => {
         token: response.data.token,
       };
 
-      const authStatus = {
-        isAuthenticated: true,
-        isAdmin: response.data.isAdmin,
-      };
-
-      // Set both items in localStorage
       localStorage.setItem("user", JSON.stringify(userData));
-      localStorage.setItem("isAuthenticated", JSON.stringify(authStatus));
+      localStorage.setItem(
+        "isAuthenticated",
+        JSON.stringify({
+          isAuthenticated: true,
+          isAdmin: response.data.isAdmin,
+        })
+      );
 
-      // Call login function from auth context
-      // Call login function from auth context
       login(userData);
 
       toast({
@@ -79,9 +77,23 @@ const Login = () => {
       });
 
       navigate(from, { replace: true });
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error: any) {
-      // ... (keep your existing error handling)
+      // Handle 401 Unauthorized with invalid credentials
+      if (error.message === "Invalid credentials") {
+        toast({
+          title: "Login Failed",
+          description: "Invalid email or password. Please try again.",
+          variant: "destructive",
+        });
+      }
+      // Handle other errors
+      else {
+        toast({
+          title: "Error",
+          description: error.message || "An error occurred during login",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsLoading(false);
     }
