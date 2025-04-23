@@ -234,6 +234,7 @@ const ViewIndividualMemo = () => {
   const [isChecked, setIsChecked] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [tempChecked, setTempChecked] = useState(false);
+  const [showPdfPreview, setShowPdfPreview] = useState(false); // Add this line
 
   const handleCheckboxChange = () => {
     setTempChecked(true);
@@ -291,11 +292,8 @@ const ViewIndividualMemo = () => {
     }
   }, [id]);
 
-  const handleFileDownload = (file: string) => {
-    window.open(
-      `${import.meta.env.VITE_UPLOADFILES_URL}/files/${file}`,
-      "_blank"
-    );
+  const handleFilePreview = () => {
+    setShowPdfPreview(true);
   };
 
   if (isLoading) {
@@ -318,7 +316,7 @@ const ViewIndividualMemo = () => {
               File Attachment:{" "}
               <span
                 className="text-blue-700 cursor-pointer hover:underline hover:decoration-solid"
-                onClick={() => handleFileDownload(memos?.file as string)}
+                onClick={handleFilePreview}
               >
                 {memos?.file}
               </span>
@@ -369,7 +367,55 @@ const ViewIndividualMemo = () => {
           </div>
         )}
       </div>
-
+      <Dialog open={showPdfPreview} onOpenChange={setShowPdfPreview}>
+        <DialogContent className="max-w-[65vw] h-[90vh] bg-[#eef4ff] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="text-sm">
+              PDF Preview: {memos?.file}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden">
+            <iframe
+              src={`${import.meta.env.VITE_UPLOADFILES_URL}/files/${
+                memos?.file
+              }#toolbar=0`}
+              width="100%"
+              height="100%"
+              style={{ border: "none" }}
+              title="PDF Preview"
+            >
+              <p>
+                Your browser does not support PDF preview.{" "}
+                <a
+                  href={`${import.meta.env.VITE_UPLOADFILES_URL}/files/${
+                    memos?.file
+                  }`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Download instead
+                </a>
+                .
+              </p>
+            </iframe>
+          </div>
+          {/* <DialogFooter>
+            <Button
+              onClick={() => {
+                window.open(
+                  `${import.meta.env.VITE_UPLOADFILES_URL}/files/${
+                    memos?.file
+                  }`,
+                  "_blank"
+                );
+              }}
+              variant="outline"
+            >
+              Open in New Tab
+            </Button>
+          </DialogFooter> */}
+        </DialogContent>
+      </Dialog>
       <Dialog open={isDialogOpen} onOpenChange={handleCancelAcknowledgment}>
         <DialogContent className="bg-[#eef4ff]">
           <DialogHeader>
