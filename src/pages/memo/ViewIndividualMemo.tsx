@@ -399,21 +399,6 @@ const ViewIndividualMemo = () => {
               </p>
             </iframe>
           </div>
-          {/* <DialogFooter>
-            <Button
-              onClick={() => {
-                window.open(
-                  `${import.meta.env.VITE_UPLOADFILES_URL}/files/${
-                    memos?.file
-                  }`,
-                  "_blank"
-                );
-              }}
-              variant="outline"
-            >
-              Open in New Tab
-            </Button>
-          </DialogFooter> */}
         </DialogContent>
       </Dialog>
       <Dialog open={isDialogOpen} onOpenChange={handleCancelAcknowledgment}>

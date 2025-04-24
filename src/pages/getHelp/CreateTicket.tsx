@@ -29,7 +29,7 @@ const CreateTicket = () => {
     file: null,
     department: "IT",
   });
-  const [categories, setCatergories] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -61,11 +61,15 @@ const CreateTicket = () => {
           },
         }
       );
-      console.log("Upload response:", response.data);
       const newFilename = response.data.filename;
-      setForm((prevForm) => ({ ...prevForm, file: newFilename })); // Update form state
+      setForm((prevForm) => ({ ...prevForm, file: newFilename }));
     } catch (error) {
       console.error("Error uploading file:", error);
+      toast({
+        title: "File upload failed",
+        description: "Could not upload attachment",
+        variant: "destructive",
+      });
     }
   };
 
@@ -75,21 +79,34 @@ const CreateTicket = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (isSubmitting) return; // Prevent multiple submissions
+    if (isSubmitting) return;
+
+    // Validate required fields
+    if (!form.category || !form.description) {
+      toast({
+        title: "Missing required fields",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsSubmitting(true);
     try {
       const response = await TicketAPi.createTicket(form);
-      console.log(response.data);
       toast({
-        title: "Success",
-        description: "Ticket created successfully",
+        title: "Ticket created successfully",
+        description: `Ticket #${response.data.ticketNumber} has been created`,
         variant: "default",
       });
       navigate("/view-ticket");
     } catch (error) {
-      toast({ title: "Failed to create ticket" });
       console.error(error);
+      toast({
+        title: "Failed to create ticket",
+        description: "Please try again later",
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -98,14 +115,20 @@ const CreateTicket = () => {
   const getCategory = async () => {
     try {
       const response = await Category.getItCategories();
-      setCatergories(response.data.categories);
+      setCategories(response.data.categories);
     } catch (error) {
       console.error(error);
+      toast({
+        title: "Failed to load categories",
+        description: "Could not fetch ticket categories",
+        variant: "destructive",
+      });
     }
   };
 
   useEffect(() => {
     getCategory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -113,21 +136,23 @@ const CreateTicket = () => {
       <div className="text-xs">
         <BackButton />
       </div>
-      <form className="w-1/2" onSubmit={handleSubmit}>
-        <div className="text-center">
-          <div className="mb-3"></div>
-          <h1 className="text-xl sm:text-xl md:text-xl lg:text-2xl font-bold py-1 sm:py-1 md:py-2 bg-clip-text text-transparent bg-gradient-to-r from-[#1638df] to-[#192fb4]">
+      <form className="w-full max-w-2xl" onSubmit={handleSubmit}>
+        <div className="text-center mb-6">
+          <h1 className="text-2xl font-bold py-2 bg-clip-text text-transparent bg-gradient-to-r from-[#1638df] to-[#192fb4]">
             Create IT Support Ticket
           </h1>
-          <p className="text-lg sm:text-xl md:text-xl lg:text-xl font-bold text-black">
+          <p className="text-lg font-bold text-black">
             Please fill out the form below
           </p>
         </div>
+
+        {/* Attachment */}
+
         <Label
           htmlFor="attachment"
-          className="text-sm font-bold flex items-center mt-2"
+          className="text-sm font-bold flex items-center"
         >
-          <Paperclip className="mr-2" size={20} />
+          <Paperclip className="mr-2" size={16} />
           Attach File (Optional)
         </Label>
         <Input
@@ -136,37 +161,49 @@ const CreateTicket = () => {
           type="file"
           onChange={handleFileUpload}
           className="mt-1"
+          disabled={isSubmitting}
         />
+
+        {/* Name */}
+
         <Label htmlFor="name" className="text-sm font-bold">
-          <p>Name</p>
+          Name
         </Label>
         <Input
           name="name"
-          placeholder="Name"
           type="text"
           required
           className="!mb-2"
           value={form.name}
           readOnly
         />
+
+        {/* Email */}
+
         <Label htmlFor="email" className="text-sm font-bold">
           Email
         </Label>
         <Input
           name="email"
-          placeholder="Email"
           type="email"
           required
           className="!mb-2"
           value={form.email}
           readOnly
         />
+
+        {/* Category */}
+
         <Label htmlFor="category" className="text-sm font-bold">
-          Category
+          Category *
         </Label>
-        <Select onValueChange={handleCategoryChange} required>
-          <SelectTrigger className="mb-2">
-            <SelectValue placeholder="Category" />
+        <Select
+          onValueChange={handleCategoryChange}
+          required
+          disabled={isSubmitting}
+        >
+          <SelectTrigger className="mt-1">
+            <SelectValue placeholder="Select a category" />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
@@ -178,20 +215,51 @@ const CreateTicket = () => {
             </SelectGroup>
           </SelectContent>
         </Select>
-        <Label htmlFor="description" className="text-sm font-bold">
-          Description of the issue / request
-        </Label>
-        <Textarea
-          className="h-36"
-          name="description"
-          placeholder="Description"
-          required
-          onChange={handleChange}
-          disabled={isSubmitting}
-        />
 
-        <Button className="w-full mt-4" type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Creating Ticket..." : "Create Ticket"}
+        {/* Description */}
+        <div className="mb-6">
+          <Label htmlFor="description" className="text-sm font-bold">
+            Description of the issue/request *
+          </Label>
+          <Textarea
+            className="h-36 mt-1"
+            name="description"
+            placeholder="Please describe your issue or request in detail..."
+            required
+            onChange={handleChange}
+            disabled={isSubmitting}
+          />
+        </div>
+
+        {/* Submit Button */}
+        <Button className="w-full py-6" type="submit" disabled={isSubmitting}>
+          {isSubmitting ? (
+            <span className="flex items-center justify-center">
+              <svg
+                className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+              Creating Ticket...
+            </span>
+          ) : (
+            "Create Ticket"
+          )}
         </Button>
       </form>
     </div>

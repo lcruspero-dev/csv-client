@@ -19,6 +19,7 @@ import { Assigned } from "../assigns/CreateAssigns";
 
 export interface Ticket {
   _id: string;
+  ticketNumber: string;
   assignedTo: string;
   category: string;
   createdAt: string;
@@ -41,7 +42,7 @@ const ViewAllRaisedTickets: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [statusFilter, setStatusFilter] = useState<string>("open");
   const [assignedToFilter, setAssignedToFilter] = useState<string>("all");
-  const [searchTicketId, setSearchTicketId] = useState<string>("");
+  const [searchTicketNumber, setSearchTicketNumber] = useState<string>("");
   const [, setAssignedToOptions] = useState<string[]>([]);
   const [userRole, setUserRole] = useState<string>("");
   const [itCategories, setItCategories] = useState<string[]>([]);
@@ -177,6 +178,7 @@ const ViewAllRaisedTickets: React.FC = () => {
     if (userRole) {
       getAllRaisedTickets();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userRole]);
 
   const getAssigns = async () => {
@@ -193,6 +195,7 @@ const ViewAllRaisedTickets: React.FC = () => {
   useEffect(() => {
     getAssigns();
     filterTickets(allRaisedTickets, statusFilter, assignedToFilter, userRole);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter, assignedToFilter, allRaisedTickets, userRole]);
 
   const getFilteredAssign = (
@@ -206,10 +209,11 @@ const ViewAllRaisedTickets: React.FC = () => {
   };
 
   const handleSearchSubmit = () => {
-    if (searchTicketId.trim()) {
-      // Find the ticket with the matching ID
+    if (searchTicketNumber.trim()) {
+      // Find the ticket with the matching ticket number (case insensitive)
       const foundTicket = allRaisedTickets.find(
-        (ticket) => ticket._id.toLowerCase() === searchTicketId.toLowerCase()
+        (ticket) =>
+          ticket.ticketNumber.toLowerCase() === searchTicketNumber.toLowerCase()
       );
 
       if (foundTicket) {
@@ -217,7 +221,9 @@ const ViewAllRaisedTickets: React.FC = () => {
         navigate(`/ticket/${foundTicket._id}`);
       } else {
         // Show an error message
-        alert("Ticket not found");
+        alert(
+          "Ticket not found. Please check the ticket number and try again."
+        );
       }
     }
   };
@@ -254,7 +260,7 @@ const ViewAllRaisedTickets: React.FC = () => {
         <div className="absolute left-0 top-3 text-xs">
           <BackButton />
         </div>
-        <h1 className="text-4xl font-bold text-center pt-7 pb-2">
+        <h1 className="text-4xl font-bold text-center pt-7 pb-4">
           All Tickets
         </h1>
       </div>
@@ -303,18 +309,18 @@ const ViewAllRaisedTickets: React.FC = () => {
           </div>
           <div className="flex items-center">
             <label htmlFor="searchTicket" className="mr-2">
-              Search by ID:
+              Search by Ticket #:
             </label>
             <div className="flex items-center gap-2">
               <div className="relative">
                 <Input
                   id="searchTicket"
                   type="text"
-                  value={searchTicketId}
-                  onChange={(e) => setSearchTicketId(e.target.value)}
+                  value={searchTicketNumber}
+                  onChange={(e) => setSearchTicketNumber(e.target.value)}
                   onKeyPress={handleSearchKeyPress}
-                  placeholder="Enter ticket ID..."
-                  className="pl-8 w-48"
+                  placeholder="Enter ticket number (e.g. INC-0001)..."
+                  className="pl-8 w-64"
                 />
                 <SearchIcon className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               </div>
@@ -334,6 +340,9 @@ const ViewAllRaisedTickets: React.FC = () => {
       <Table>
         <TableHeader className="bg-slate-200">
           <TableRow>
+            <TableHead className="text-center font-bold text-black w-24">
+              Ticket #
+            </TableHead>
             <TableHead className="text-center font-bold text-black w-48">
               Date
             </TableHead>
@@ -368,6 +377,9 @@ const ViewAllRaisedTickets: React.FC = () => {
                 index % 2 === 0 ? "bg-gray-100" : "bg-white"
               } text-sm`}
             >
+              <TableCell className="font-medium text-center font-mono">
+                {ticket.ticketNumber}
+              </TableCell>
               <TableCell className="font-medium text-center">
                 {formattedDate(ticket.createdAt)}
               </TableCell>

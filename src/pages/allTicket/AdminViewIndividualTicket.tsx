@@ -304,22 +304,26 @@ const AdminViewIndovidualTicket: React.FC = () => {
 
         <div className="flex justify-between px-10 items-center mt-5 ">
           <div>
-            <h1 className="font-bold text-base">Ticket ID: {details?._id}</h1>
+            <h1 className="font-bold text-base">
+              Ticket ID: {details?.ticketNumber}
+            </h1>
             <p className="text-sm">
               Date Submitted: {formattedDate(details?.createdAt || "")}
             </p>
             <p className="text-sm">Category: {details?.category}</p>
-            <p className="text-sm">Created By: {details?.name}</p>
             <p className="text-sm">Assigned To: {details?.assignedTo}</p>
-            <p className="text-sm">
-              File Attachment:{" "}
-              <span
-                className="text-blue-700 cursor-pointer hover:underline hover:decoration-solid"
-                onClick={() => handleFileDownload(details?.file as string)}
-              >
-                {details?.file}
-              </span>{" "}
-            </p>
+
+            {details?.file && details.file.trim() !== "" && (
+              <p className="text-sm">
+                File Attachment:{" "}
+                <span
+                  className="text-blue-700 cursor-pointer hover:underline hover:decoration-solid"
+                  onClick={() => handleFileDownload(details.file as string)}
+                >
+                  {details.file}
+                </span>
+              </p>
+            )}
           </div>
           <div>
             <p className="text-sm mb-2">Priority: {details?.priority}</p>

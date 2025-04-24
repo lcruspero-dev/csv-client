@@ -113,15 +113,15 @@ const Request = () => {
         description = form.description;
       }
 
-      await TicketAPi.createTicket({
+      const response = await TicketAPi.createTicket({
         ...form,
         description,
         // department: "HR" is automatically included from form state
       });
 
       toast({
-        title: "Success",
-        description: "Ticket created successfully",
+        title: "Ticket created successfully",
+        description: `Ticket #${response.data.ticketNumber} has been created`,
         variant: "default",
       });
       navigate("/view-ticket");
