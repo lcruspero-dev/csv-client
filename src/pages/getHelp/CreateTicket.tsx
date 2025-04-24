@@ -218,7 +218,7 @@ const CreateTicket = () => {
 
         {/* Description */}
         <div className="mb-6">
-          <Label htmlFor="description" className="text-sm font-bold">
+          <Label htmlFor="description" className="text-sm font-bold mt-2">
             Description of the issue/request *
           </Label>
           <Textarea
