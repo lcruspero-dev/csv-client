@@ -16,12 +16,67 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../ui/button";
 
+const Snowflakes = () => {
+  return (
+    <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+      {[...Array(60)].map((_, i) => {
+        const size = Math.random() * 15 + 10;
+        const animationDuration = Math.random() * 15 + 15;
+        const delay = Math.random() * 5;
+        const left = Math.random() * 100;
+        const opacity = Math.random() * 0.8 + 0.5;
+        const topOffset = Math.random() * 100 - 100; // from -100vh to 0vh
+
+        return (
+          <div
+            key={i}
+            className="absolute snowflake"
+            style={{
+              top: `${topOffset}vh`,
+              left: `${left}vw`,
+              width: `${size}px`,
+              height: `${size}px`,
+              animation: `fall ${animationDuration}s linear ${delay}s infinite`,
+              opacity: opacity,
+              filter: "brightness(1.5)",
+            }}
+          >
+            <svg viewBox="0 0 64 64" className="w-full h-full">
+              <path
+                d="M32 2 L32 62 M2 32 L62 32 M11 11 L53 53 M11 53 L53 11"
+                stroke="white"
+                strokeWidth="3"
+                strokeLinecap="round"
+              />
+              <circle cx="32" cy="32" r="4" fill="white" />
+            </svg>
+          </div>
+        );
+      })}
+      <style>{`
+        @keyframes fall {
+          0% {
+            transform: translateY(0) rotate(0deg);
+          }
+          100% {
+            transform: translateY(50vh) rotate(360deg);
+            opacity: 0;
+          }
+        }
+        .snowflake {
+          will-change: transform;
+        }
+      `}</style>
+    </div>
+  );
+};
+
 const Header: React.FC = () => {
   const navigate = useNavigate();
   const { logout, isAuthenticated, isLoading, user } = useAuth();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const { setAdminView } = useViewMode();
-  // Fetch user profile when authenticated or user changes
+
   useEffect(() => {
     const fetchProfile = async () => {
       if (!isAuthenticated || !user) return;
@@ -45,7 +100,7 @@ const Header: React.FC = () => {
 
   const handleLogout = () => {
     setAvatarUrl(null);
-    logout(); // This already handles localStorage clearing
+    logout();
   };
 
   const handleEditProfile = () => navigate("/profile/edit");
@@ -63,8 +118,9 @@ const Header: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="bg-gradient-to-b from-[#5a95ff] to-[#bdd5ff]">
-        <div className="container p-5">
+      <div className="bg-gradient-to-b from-[#5a95ff] to-[#bdd5ff] relative z-10">
+        <Snowflakes />
+        <div className="container p-5 relative z-10">
           <div className="flex flex-row justify-between">
             <img src={logo} alt="Logo" width={75} height={50} />
             <div className="flex items-center gap-4">
@@ -78,8 +134,9 @@ const Header: React.FC = () => {
   }
 
   return (
-    <div className="bg-gradient-to-b from-[#5a95ff] to-[#bdd5ff]">
-      <div className="container p-5">
+    <div className="bg-gradient-to-b from-[#5a95ff] to-[#bdd5ff] relative z-10">
+      <Snowflakes />
+      <div className="container p-4 relative z-10">
         <div className="flex flex-row justify-between">
           <div>
             <img
@@ -161,7 +218,7 @@ const Header: React.FC = () => {
                     {user.isAdmin && (
                       <DropdownMenuItem
                         onClick={() => {
-                          setAdminView(true); // This will set viewAsUser to false
+                          setAdminView(true);
                           navigate("/");
                         }}
                         className="cursor-pointer"
@@ -185,12 +242,12 @@ const Header: React.FC = () => {
               <>
                 <div>
                   <Link to="/sign-in">
-                    <Button>Login</Button>
+                    <Button className="text-sm">Login</Button>
                   </Link>
                 </div>
                 <div>
                   <Link to="/sign-up">
-                    <Button>Register</Button>
+                    <Button className="text-sm">Register</Button>
                   </Link>
                 </div>
               </>

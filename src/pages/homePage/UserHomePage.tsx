@@ -14,8 +14,34 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
+// Animation variants
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const item = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0 },
+};
+
+const notificationBadge = {
+  initial: { scale: 0 },
+  animate: { scale: 1, transition: { type: "spring", stiffness: 500 } },
+  pulse: {
+    scale: [1, 1.1, 1],
+    transition: { repeat: Infinity, duration: 1.5 },
+  },
+};
 
 const UserHome = () => {
   const navigate = useNavigate();
@@ -87,104 +113,180 @@ const UserHome = () => {
   return (
     <>
       <SurveyModal />
-      <section className="heading container text-center pt-4">
+      <motion.section
+        className="heading container text-center pt-3"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
         <h1 className="italic text-3xl p-1 drop-shadow-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#1638df] to-[#192fb4]">
           Everything you need is just a click away!
         </h1>
         <p className="text-2xl font-bold italic">Select an option to proceed</p>
-      </section>
-      <div className="container grid grid-cols-3 gap-5 mt-5 text-center p-5 drop-shadow-lg w-6/12">
-        <Card
-          className="hover:scale-105 ease-in-out duration-200 cursor-pointer hover:border-1 hover:border-[#5a95ff]"
-          onClick={() => navigate("/timetracker")}
-        >
-          <img src={timetracker} alt="Time tracker" />
-          <h3 className="text-lg font-semibold text-gray-800 ">Time Tracker</h3>
+      </motion.section>
 
-          <p className="text-sm text-gray-500 mb-3">Track your work hours</p>
-        </Card>
-        <Card
-          className="relative hover:scale-105 ease-in-out duration-200 cursor-pointer hover:border-1 hover:border-[#5a95ff]"
-          onClick={() => navigate("/all-memo")}
+      <motion.div
+        className="container grid grid-cols-3 gap-5 mt-3 text-center p-3 drop-shadow-lg w-6/12"
+        variants={container}
+        initial="hidden"
+        animate="show"
+      >
+        <motion.div
+          variants={item}
+          whileHover={{ scale: 1.0 }}
+          whileTap={{ scale: 0.98 }}
         >
-          {unacknowledgedCount > 0 && (
-            <div className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-5 mt-5">
-              {unacknowledgedCount}
-            </div>
-          )}
-          <img src={memo} alt="memo" />
-          <h3 className="text-lg font-semibold text-gray-800">Memo</h3>
-          <p className="text-sm text-gray-500 mb-3">
-            View company announcements
-          </p>
-        </Card>
-        <Card
-          className="hover:scale-105 ease-in-out duration-200 cursor-pointer hover:border-1 hover:border-[#5a95ff]"
-          onClick={() => navigate("/request-something")}
+          <Card
+            className="hover:scale-105 ease-in-out duration-200 cursor-pointer hover:border-1 hover:border-[#5a95ff]"
+            onClick={() => navigate("/timetracker")}
+          >
+            <img src={timetracker} alt="Time tracker" />
+            <h3 className="text-base font-semibold text-gray-800 ">
+              Time Tracker
+            </h3>
+            <p className="text-sm text-gray-500 mb-3">Track your work hours</p>
+          </Card>
+        </motion.div>
+
+        <motion.div
+          variants={item}
+          whileHover={{ scale: 1.0 }}
+          whileTap={{ scale: 0.98 }}
         >
-          <img src={request} alt="test" />
-          <h3 className="text-lg font-semibold text-gray-800">HR Support</h3>
-          <p className="text-sm text-gray-500 mb-3">Request HR assistance</p>
-        </Card>
-        <Card
-          className="hover:scale-105 ease-in-out duration-200 cursor-pointer hover:border-1 hover:border-[#5a95ff]"
-          onClick={() => navigate("/create-ticket")}
+          <Card
+            className="relative hover:scale-105 ease-in-out duration-200 cursor-pointer hover:border-1 hover:border-[#5a95ff]"
+            onClick={() => navigate("/all-memo")}
+          >
+            {unacknowledgedCount > 0 && (
+              <motion.div
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-5 mt-5"
+                variants={notificationBadge}
+                initial="initial"
+                animate={["animate", "pulse"]}
+              >
+                {unacknowledgedCount}
+              </motion.div>
+            )}
+            <img src={memo} alt="memo" />
+            <h3 className="text-base font-semibold text-gray-800">Memo</h3>
+            <p className="text-sm text-gray-500 mb-3">
+              View company announcements
+            </p>
+          </Card>
+        </motion.div>
+
+        <motion.div
+          variants={item}
+          whileHover={{ scale: 1.0 }}
+          whileTap={{ scale: 0.98 }}
         >
-          <img src={gethelp} alt="test" />
-          <h3 className="text-lg font-semibold text-gray-800">IT Support</h3>
-          <p className="text-sm text-gray-500 mb-3">Get technical help</p>
-        </Card>
-        <Card
-          className="hover:scale-105 ease-in-out duration-200 cursor-pointer hover:border-1 hover:border-[#5a95ff]"
-          onClick={() => navigate("/view-ticket")}
+          <Card
+            className="hover:scale-105 ease-in-out duration-200 cursor-pointer hover:border-1 hover:border-[#5a95ff]"
+            onClick={() => navigate("/request-something")}
+          >
+            <img src={request} alt="test" />
+            <h3 className="text-base font-semibold text-gray-800">
+              HR Support
+            </h3>
+            <p className="text-sm text-gray-500 mb-3">Request HR assistance</p>
+          </Card>
+        </motion.div>
+
+        <motion.div
+          variants={item}
+          whileHover={{ scale: 1.0 }}
+          whileTap={{ scale: 0.98 }}
         >
-          <img src={ticket} alt="tickets" />
-          <h3 className="text-lg font-semibold text-gray-800">My Tickets</h3>
-          <p className="text-sm text-gray-500 mb-3">
-            View your support tickets
-          </p>
-        </Card>
-        <TooltipProvider>
-          {nteTooltip ? (
-            <Tooltip delayDuration={200}>
-              <TooltipTrigger asChild>
+          <Card
+            className="hover:scale-105 ease-in-out duration-200 cursor-pointer hover:border-1 hover:border-[#5a95ff]"
+            onClick={() => navigate("/create-ticket")}
+          >
+            <img src={gethelp} alt="test" />
+            <h3 className="text-base font-semibold text-gray-800">
+              IT Support
+            </h3>
+            <p className="text-sm text-gray-500 mb-3">Get technical help</p>
+          </Card>
+        </motion.div>
+
+        <motion.div
+          variants={item}
+          whileHover={{ scale: 1.0 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <Card
+            className="hover:scale-105 ease-in-out duration-200 cursor-pointer hover:border-1 hover:border-[#5a95ff]"
+            onClick={() => navigate("/view-ticket")}
+          >
+            <img src={ticket} alt="tickets" />
+            <h3 className="text-base font-semibold text-gray-800">
+              My Tickets
+            </h3>
+            <p className="text-sm text-gray-500 mb-3">
+              View your support tickets
+            </p>
+          </Card>
+        </motion.div>
+
+        <motion.div
+          variants={item}
+          whileHover={{ scale: 1.0 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <TooltipProvider>
+            {nteTooltip ? (
+              <Tooltip delayDuration={200}>
+                <TooltipTrigger asChild>
+                  <Card
+                    className="relative hover:scale-105 ease-in-out duration-200 cursor-pointer hover:border-1 hover:border-[#5a95ff]"
+                    onClick={() => navigate("/nte")}
+                  >
+                    <div className="relative">
+                      {nteNotificationCount > 0 && (
+                        <motion.div
+                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold"
+                          variants={notificationBadge}
+                          initial="initial"
+                          animate={["animate", "pulse"]}
+                        >
+                          {nteNotificationCount}
+                        </motion.div>
+                      )}
+                      <img src={test} alt="NTE" />
+                    </div>
+                    <p className="py-3 font-bold text-center">
+                      Employee Notice
+                    </p>
+                  </Card>
+                </TooltipTrigger>
+                <TooltipContent className="p-2 max-w-xs text-gray-600">
+                  <p className="text-xs">{nteTooltip}</p>
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <motion.div
+                whileHover={{ scale: 1.0 }}
+                whileTap={{ scale: 0.98 }}
+              >
                 <Card
-                  className="relative hover:scale-105 ease-in-out duration-200 cursor-pointer hover:border hover:border-[#5a95ff]"
+                  className="relative hover:scale-105 ease-in-out duration-200 cursor-pointer hover:border-1 hover:border-[#5a95ff]"
                   onClick={() => navigate("/nte")}
                 >
                   <div className="relative">
-                    {nteNotificationCount > 0 && (
-                      <div className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
-                        {nteNotificationCount}
-                      </div>
-                    )}
-                    <img src={test} alt="NTE" className="w-full" />
+                    <img src={test} alt="NTE" />
                   </div>
-                  <p className="py-3 font-bold text-center">Employee Notice</p>
+                  <h3 className="text-base font-semibold text-gray-800">
+                    Employee Notice
+                  </h3>
+                  <p className="text-sm text-gray-500 mb-3">
+                    View disciplinary notice
+                  </p>
                 </Card>
-              </TooltipTrigger>
-              <TooltipContent className="p-2 max-w-xs text-gray-600">
-                <p className="text-xs">{nteTooltip}</p>
-              </TooltipContent>
-            </Tooltip>
-          ) : (
-            <Card
-              className="relative hover:scale-105 ease-in-out duration-200 cursor-pointer hover:border hover:border-[#5a95ff]"
-              onClick={() => navigate("/nte")}
-            >
-              <div className="relative">
-                <img src={test} alt="NTE" className="w-full" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-800">
-                Employee Notice
-              </h3>
-              <p className="text-sm text-gray-500 mb-3">
-                View disciplinary notice
-              </p>
-            </Card>
-          )}
-        </TooltipProvider>
-      </div>
+              </motion.div>
+            )}
+          </TooltipProvider>
+        </motion.div>
+      </motion.div>
     </>
   );
 };
