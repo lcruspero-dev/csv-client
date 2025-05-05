@@ -1066,8 +1066,12 @@ const ScheduleAndAttendance: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {filteredEmployees.map((employee) => (
-                    <tr key={employee.id}>
-                      <td className="p-2 border sticky left-0 bg-white z-10">
+                    <tr key={employee.id} className="group hover:bg-blue-50">
+                      {" "}
+                      {/* Added group class */}
+                      <td className="p-2 border sticky left-0 z-10 group-hover:bg-blue-50 bg-white">
+                        {" "}
+                        {/* Added group-hover:bg-blue-50 */}
                         <div className="flex items-center">
                           <Avatar className="h-8 w-8 mr-2 rounded-full overflow-hidden border-2 border-blue-200">
                             <AvatarImage
@@ -1097,9 +1101,11 @@ const ScheduleAndAttendance: React.FC = () => {
                         return (
                           <td
                             key={day.toString()}
-                            className={`p-2 border text-center cursor-pointer hover:bg-blue-100 ${
-                              isToday(day) ? "bg-blue-50" : ""
-                            }`}
+                            className={`p-2 border text-center cursor-pointer ${
+                              isToday(day)
+                                ? "bg-blue-50 hover:!bg-blue-100"
+                                : ""
+                            } hover:bg-blue-100`}
                             onClick={() =>
                               handleScheduleCellClick(employee, day)
                             }

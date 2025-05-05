@@ -4,6 +4,7 @@ import {
   endOfMonth,
   endOfWeek,
   format,
+  isBefore,
   isSameDay,
   isToday,
   startOfMonth,
@@ -14,6 +15,7 @@ import {
   Ban,
   Calendar,
   CheckCircle,
+  CircleSlash2,
   ClipboardList,
   Clock,
   Clock4,
@@ -24,7 +26,7 @@ import {
   TreePalm,
   UserX,
   XCircle,
-} from "lucide-react";
+} from "lucide-react"; // Added CircleSlash2
 import React from "react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -72,6 +74,8 @@ const getAttendanceStatusColor = (status: AttendanceStatus): string => {
       return "bg-lime-100 text-lime-800";
     case "TB":
       return "bg-cyan-100 text-cyan-800";
+    case "Pending":
+      return "bg-white text-gray-500";
     default:
       return "bg-gray-100 text-gray-500";
   }
@@ -108,6 +112,8 @@ const AttendanceStatusIcon = ({ status }: { status: AttendanceStatus }) => {
       return <HandHeart className="h-4 w-4 text-lime-600" />;
     case "TB":
       return <AlertTriangle className="h-4 w-4 text-cyan-600" />;
+    case "Pending":
+      return <CircleSlash2 className="h-4 w-4 text-gray-400" />; // Added for Pending
     default:
       return null;
   }
@@ -151,6 +157,7 @@ export const Attendance: React.FC<AttendanceProps> = ({
   };
 
   const days = getDaysInView();
+  const today = new Date();
 
   const findAttendanceEntry = (
     employeeId: string,
@@ -203,8 +210,8 @@ export const Attendance: React.FC<AttendanceProps> = ({
         </thead>
         <tbody className="divide-y divide-gray-200">
           {filteredEmployees.map((employee) => (
-            <tr key={employee.id}>
-              <td className="p-2 border sticky left-0 bg-white z-10">
+            <tr key={employee.id} className="group hover:bg-blue-50">
+              <td className="p-2 border sticky left-0 bg-white z-10 group-hover:bg-blue-50">
                 <div className="flex items-center">
                   <Avatar className="h-8 w-8 mr-2 rounded-full overflow-hidden border-2 border-blue-200">
                     <AvatarImage src={employee.avatarUrl} alt={employee.name} />
@@ -222,15 +229,20 @@ export const Attendance: React.FC<AttendanceProps> = ({
               </td>
               {days.map((day) => {
                 const attendanceEntry = findAttendanceEntry(employee.id, day);
+                const isPastOrCurrentDay =
+                  isBefore(day, today) || isSameDay(day, today);
+
                 return (
                   <td
                     key={day.toString()}
-                    className={`p-2 border text-center cursor-pointer hover:bg-blue-100 ${
-                      isToday(day) ? "bg-blue-50" : ""
+                    className={`p-2 border text-center cursor-pointer ${
+                      isToday(day)
+                        ? "bg-blue-50 hover:!bg-blue-100"
+                        : "hover:bg-blue-100"
                     }`}
                     onClick={() => handleAttendanceCellClick(employee, day)}
                   >
-                    {attendanceEntry && (
+                    {attendanceEntry ? (
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -300,7 +312,28 @@ export const Attendance: React.FC<AttendanceProps> = ({
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
-                    )}
+                    ) : isPastOrCurrentDay ? (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex flex-col items-center">
+                              <Badge
+                                variant="outline"
+                                className={getAttendanceStatusColor("Pending")}
+                              >
+                                <span className="flex items-center">
+                                  <AttendanceStatusIcon status="Pending" />
+                                  <span className="ml-1">Pending</span>
+                                </span>
+                              </Badge>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>No attendance record submitted yet</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ) : null}
                   </td>
                 );
               })}
