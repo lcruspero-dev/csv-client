@@ -217,7 +217,7 @@ const CreateTicket = () => {
         </Select>
 
         {/* Description */}
-        <div className="mb-6">
+        <div className="mb-2">
           <Label htmlFor="description" className="text-sm font-bold mt-2">
             Description of the issue/request *
           </Label>
@@ -232,7 +232,7 @@ const CreateTicket = () => {
         </div>
 
         {/* Submit Button */}
-        <Button className="w-full py-6" type="submit" disabled={isSubmitting}>
+        <Button className="w-full py-2" type="submit" disabled={isSubmitting}>
           {isSubmitting ? (
             <span className="flex items-center justify-center">
               <svg
