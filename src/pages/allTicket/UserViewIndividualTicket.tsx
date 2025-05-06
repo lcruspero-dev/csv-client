@@ -2,14 +2,32 @@
 import { TicketAPi } from "@/API/endpoint";
 import { formattedDate } from "@/API/helper";
 import BackButton from "@/components/kit/BackButton";
+import { Avatar } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
 import Loading from "@/components/ui/loading";
+import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  AlertCircle,
+  Calendar,
+  Download,
+  FileText,
+  Send,
+  Tag,
+  User,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Ticket } from "./ViewAllTicket";
 
-const UserViewIndovidualTicket: React.FC = () => {
+const UserViewIndividualTicket: React.FC = () => {
   const [details, setDetails] = useState<Ticket>();
   const { id } = useParams<{ id: string }>();
   const [message, setMessage] = useState("");
@@ -20,15 +38,16 @@ const UserViewIndovidualTicket: React.FC = () => {
   const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(event.target.value);
   };
+
   const getTicket = async (ticketId: string) => {
     try {
       const response = await TicketAPi.getIndividualTicket(ticketId);
-      console.log(response.data);
       setDetails(response.data);
     } catch (error) {
       console.error(error);
     }
   };
+
   const getAllNotes = async (ticketId: string) => {
     try {
       const response = await TicketAPi.getNotes(ticketId);
@@ -37,21 +56,22 @@ const UserViewIndovidualTicket: React.FC = () => {
       console.error(error);
     }
   };
+
   useEffect(() => {
     if (id) {
-      setIsLoading(true); // Set loading to true before fetching data
+      setIsLoading(true);
       Promise.all([getTicket(id), getAllNotes(id)])
-        .then(() => setIsLoading(false)) // Set loading to false after both promises resolve
+        .then(() => setIsLoading(false))
         .catch((error) => {
           console.error(error);
-          setIsLoading(false); // Ensure loading is set to false even if there's an error
+          setIsLoading(false);
         });
     }
   }, [id]);
 
-  const SubmitNote = async (e: React.FormEvent) => {
+  const submitNote = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return; // Prevent multiple submissions
+    if (isSubmitting) return;
     if (!id || !details?._id) {
       console.error("Ticket ID or User ID is missing");
       return;
@@ -65,7 +85,7 @@ const UserViewIndovidualTicket: React.FC = () => {
     };
     try {
       const response = await TicketAPi.createNote(id, body);
-      console.log(response.data);
+      console.log(response);
       setMessage("");
       getAllNotes(id);
     } catch (error) {
@@ -74,9 +94,11 @@ const UserViewIndovidualTicket: React.FC = () => {
       setIsSubmitting(false);
     }
   };
+
   if (isLoading) {
-    return <Loading />; // Show loading component while data is being fetched
+    return <Loading />;
   }
+
   const handleFileDownload = (file: string) => {
     window.open(
       `${import.meta.env.VITE_UPLOADFILES_URL}/files/${file}`,
@@ -84,107 +106,201 @@ const UserViewIndovidualTicket: React.FC = () => {
     );
   };
 
-  return (
-    <div className="container text-sm">
-      <div className="px-36 pt-1">
-        <div className="text-xs">
-          <BackButton />
-        </div>
-        <div className="flex justify-between px-10 items-center mt-5 ">
-          <div>
-            <h1 className="font-bold text-base">
-              Ticket ID: {details?.ticketNumber}
-            </h1>
-            <p className="text-sm">
-              Date Submitted: {formattedDate(details?.createdAt || "")}
-            </p>
-            <p className="text-sm">Category: {details?.category}</p>
-            <p className="text-sm">Assigned To: {details?.assignedTo}</p>
+  // Helper function to get status badge color
+  const getStatusBadgeClass = (status: string | undefined) => {
+    if (!status) return "bg-gray-500";
+    switch (status.toLowerCase()) {
+      case "new":
+      case "open":
+        return "bg-green-500";
+      case "closed":
+        return "bg-red-500";
+      case "pending":
+        return "bg-yellow-500";
+      default:
+        return "bg-blue-500";
+    }
+  };
 
-            {details?.file && details.file.trim() !== "" && (
-              <p className="text-sm">
-                File Attachment:{" "}
-                <span
-                  className="text-blue-700 cursor-pointer hover:underline hover:decoration-solid"
-                  onClick={() => handleFileDownload(details.file as string)}
-                >
-                  {details.file}
-                </span>
-              </p>
-            )}
-          </div>
-          <div>
-            <p className="text-sm mb-2">Priority: {details?.priority}</p>
-            <p className="text-sm">
-              Status:
-              <span
-                className={`py-1 px-2 ml-2 rounded-md text-center text-primary-foreground font-semibold text-xs ${
-                  details?.status === "new" || details?.status === "open"
-                    ? "bg-green-600"
-                    : details?.status === "closed"
-                    ? "bg-red-600"
-                    : "bg-[#FF8C00]"
-                }`}
+  // Helper function to get priority badge color
+  const getPriorityBadgeClass = (priority: string | undefined) => {
+    if (!priority) return "bg-gray-500";
+    switch (priority.toLowerCase()) {
+      case "high":
+        return "bg-red-500";
+      case "medium":
+        return "bg-yellow-500";
+      case "low":
+        return "bg-green-500";
+      default:
+        return "bg-blue-500";
+    }
+  };
+
+  return (
+    <div className="container py-6 mx-auto max-w-4xl">
+      <div className="text-sm scale-90 origin-top-left">
+        <BackButton />
+      </div>
+
+      <Card className="mb-6 shadow-md">
+        <CardHeader className="pb-2">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-blue-600" />
+              <h1 className="text-xl font-bold">
+                Ticket #{details?.ticketNumber}
+              </h1>
+              <Badge className={getStatusBadgeClass(details?.status)}>
+                {details?.status || "Unknown"}
+              </Badge>
+            </div>
+            <div className="mt-2 md:mt-0">
+              <Badge
+                variant="outline"
+                className={`${getPriorityBadgeClass(
+                  details?.priority
+                )} text-white`}
               >
-                {details?.status}
-              </span>
-            </p>
+                Priority: {details?.priority || "Unset"}
+              </Badge>
+            </div>
           </div>
-        </div>
-        <hr className="w-full border-t border-gray-300 my-4" />
-        <div className="bg-slate-200 p-4 rounded-sm border-2 border-gray-300">
-          <p className="font-semibold mb-2 text-sm">Description</p>
-          <pre className="whitespace-pre-wrap font-sans p-3 rounded-sm overflow-x-auto text-sm">
-            {details?.description}
-          </pre>
-        </div>
-        <div className="mt-4">
-          <p className="font-semibold">Notes</p>
-        </div>
+        </CardHeader>
+
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-gray-900" />
+                <span className="text-sm text-gray-900">
+                  Created: {formattedDate(details?.createdAt || "")}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <User className="h-4 w-4 text-gray-900" />
+                <span className="text-sm text-gray-900">
+                  Submitted by: {details?.name || "Unknown"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Tag className="h-4 w-4 text-gray-900" />
+                <span className="text-sm text-gray-900">
+                  Category: {details?.category || "Uncategorized"}
+                </span>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <User className="h-4 w-4 text-gray-900" />
+                <span className="text-sm text-gray-900">
+                  Assigned to: {details?.assignedTo || "Unassigned"}
+                </span>
+              </div>
+              {details?.file && details.file.trim() !== "" && (
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-gray-900" />
+                  <button
+                    onClick={() => handleFileDownload(details.file as string)}
+                    className="text-sm text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1"
+                  >
+                    <span>Attachment</span>
+                    <Download className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <Separator className="my-4" />
+
+          <div>
+            <h2 className="font-medium mb-3">Description</h2>
+            <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
+              <pre className="whitespace-pre-wrap font-sans text-sm text-gray-900">
+                {details?.description || "No description provided."}
+              </pre>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Notes Section */}
+      <div className="mb-6">
+        <h2 className="text-lg font-semibold mb-4">Notes & Responses</h2>
 
         {details?.status !== "closed" && (
-          <form className="mt-2" onSubmit={SubmitNote}>
-            <Textarea
-              placeholder="Enter your response here"
-              value={message}
-              onChange={handleChange}
-              disabled={isSubmitting}
-            />
-            <div className="flex justify-end my-2 text-xs">
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Submitting..." : "Submit"}
-              </Button>
-            </div>
-          </form>
-        )}
-        <div>
-          {notes
-            ?.slice()
-            .reverse()
-            .map((note: any) => (
-              <div
-                className="p-4 rounded-sm border-2 border-gray-300 my-2"
-                key={note._id}
+          <Card className="mb-6 shadow-sm">
+            <CardContent className="pt-6">
+              <form onSubmit={submitNote}>
+                <Textarea
+                  placeholder="Add your response here..."
+                  value={message}
+                  onChange={handleChange}
+                  disabled={isSubmitting}
+                  className="min-h-24 resize-none"
+                />
+              </form>
+            </CardContent>
+            <CardFooter className="flex justify-end pt-0">
+              <Button
+                type="submit"
+                disabled={isSubmitting || !message.trim()}
+                onClick={submitNote}
+                className="flex items-center gap-2 text-sm"
               >
-                <div className="flex flex-col sm:flex-row justify-between">
-                  <div className="flex-1 min-w-0 mr-4">
-                    <p className="font-semibold break-words text-sm">
-                      From {note.name}
-                    </p>
-                    <p className="break-words text-sm">{note.text}</p>
-                  </div>
-                  <div className="flex-shrink-0 mt-2 sm:mt-0">
-                    <p className="text-xs whitespace-nowrap">
-                      {formattedDate(note.createdAt)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
+                <Send className="h-4 w-4" />
+                {isSubmitting ? "Sending..." : "Send Response"}
+              </Button>
+            </CardFooter>
+          </Card>
+        )}
+
+        <div className="space-y-4">
+          {notes?.length === 0 ? (
+            <p className="text-center text-gray-900 py-8">
+              No notes or responses yet.
+            </p>
+          ) : (
+            notes
+              ?.slice()
+              .reverse()
+              .map((note: any) => (
+                <Card
+                  key={note._id}
+                  className={`shadow-sm ${
+                    note.isStaff ? "border-l-4 border-l-blue-500" : ""
+                  }`}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <Avatar className="h-8 w-8 bg-gray-200">
+                        <div className="text-xs font-medium">
+                          {note.name?.charAt(0) || "?"}
+                        </div>
+                      </Avatar>
+                      <div className="flex-1">
+                        <div className="flex justify-between items-center mb-2">
+                          <p className="font-medium text-sm">
+                            {note.name || "Unknown User"}
+                          </p>
+                          <p className="text-xs text-gray-900">
+                            {formattedDate(note.createdAt)}
+                          </p>
+                        </div>
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                          {note.text}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+          )}
         </div>
       </div>
     </div>
   );
 };
 
-export default UserViewIndovidualTicket;
+export default UserViewIndividualTicket;
