@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { TicketAPi } from "@/API/endpoint";
+import { TicketAPi, UserProfileAPI } from "@/API/endpoint"; // Add UserProfileAPI import
 import { formattedDate } from "@/API/helper";
 import BackButton from "@/components/kit/BackButton";
-import { Avatar } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,6 +34,31 @@ const UserViewIndividualTicket: React.FC = () => {
   const [notes, setNotes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [avatarMap, setAvatarMap] = useState<Record<string, string>>({}); // Add avatarMap state
+
+  // Fetch all avatars when component mounts
+  useEffect(() => {
+    const fetchAvatars = async () => {
+      try {
+        const response = await UserProfileAPI.getAllUserAvatar();
+        const map = response.data.reduce(
+          (
+            acc: Record<string, string>,
+            curr: { userId: string; avatar: string }
+          ) => {
+            acc[curr.userId] = curr.avatar;
+            return acc;
+          },
+          {}
+        );
+        setAvatarMap(map);
+      } catch (error) {
+        console.error("Error fetching avatars:", error);
+      }
+    };
+
+    fetchAvatars();
+  }, []);
 
   const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(event.target.value);
@@ -105,17 +130,16 @@ const UserViewIndividualTicket: React.FC = () => {
       "_blank"
     );
   };
-
   // Helper function to get status badge color
   const getStatusBadgeClass = (status: string | undefined) => {
     if (!status) return "bg-gray-500";
-    switch (status.toLowerCase()) {
+    switch (status) {
       case "new":
       case "open":
         return "bg-green-500";
       case "closed":
         return "bg-red-500";
-      case "pending":
+      case "In Progress":
         return "bg-yellow-500";
       default:
         return "bg-blue-500";
@@ -125,12 +149,12 @@ const UserViewIndividualTicket: React.FC = () => {
   // Helper function to get priority badge color
   const getPriorityBadgeClass = (priority: string | undefined) => {
     if (!priority) return "bg-gray-500";
-    switch (priority.toLowerCase()) {
-      case "high":
+    switch (priority) {
+      case "1-Critical":
         return "bg-red-500";
-      case "medium":
+      case "2-High":
         return "bg-yellow-500";
-      case "low":
+      case "3-Moderate":
         return "bg-green-500";
       default:
         return "bg-blue-500";
@@ -203,6 +227,7 @@ const UserViewIndividualTicket: React.FC = () => {
                   <button
                     onClick={() => handleFileDownload(details.file as string)}
                     className="text-sm text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1"
+                    title={details.file}
                   >
                     <span>Attachment</span>
                     <Download className="h-3 w-3" />
@@ -265,37 +290,54 @@ const UserViewIndividualTicket: React.FC = () => {
             notes
               ?.slice()
               .reverse()
-              .map((note: any) => (
-                <Card
-                  key={note._id}
-                  className={`shadow-sm ${
-                    note.isStaff ? "border-l-4 border-l-blue-500" : ""
-                  }`}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <Avatar className="h-8 w-8 bg-gray-200">
-                        <div className="text-xs font-medium">
-                          {note.name?.charAt(0) || "?"}
-                        </div>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="flex justify-between items-center mb-2">
-                          <p className="font-medium text-sm">
-                            {note.name || "Unknown User"}
+              .map((note: any) => {
+                // Get avatar URL from avatarMap or use default
+                const avatarFilename = avatarMap[note.user];
+                const avatarUrl = avatarFilename
+                  ? `${
+                      import.meta.env.VITE_UPLOADFILES_URL
+                    }/avatars/${avatarFilename}`
+                  : `https://ui-avatars.com/api/?background=2563EB&color=fff&name=${
+                      note.name || "?"
+                    }`;
+
+                return (
+                  <Card
+                    key={note._id}
+                    className={`shadow-sm ${
+                      note.isStaff ? "border-l-4 border-l-blue-500" : ""
+                    }`}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <Avatar className="h-8 w-8 rounded-full overflow-hidden border-2 border-blue-200">
+                          <AvatarImage
+                            src={avatarUrl}
+                            alt={note.name}
+                            className="object-cover"
+                          />
+                          <AvatarFallback>
+                            {note.name?.substring(0, 2).toUpperCase() || "?"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex justify-between items-center mb-2">
+                            <p className="font-medium text-sm">
+                              {note.name || "Unknown User"}
+                            </p>
+                            <p className="text-xs text-gray-900">
+                              {formattedDate(note.createdAt)}
+                            </p>
+                          </div>
+                          <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                            {note.text}
                           </p>
-                          <p className="text-xs text-gray-900">
-                            {formattedDate(note.createdAt)}
-                          </p>
                         </div>
-                        <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                          {note.text}
-                        </p>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
+                    </CardContent>
+                  </Card>
+                );
+              })
           )}
         </div>
       </div>

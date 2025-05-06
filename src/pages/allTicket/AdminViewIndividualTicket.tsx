@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Assigns, TicketAPi } from "@/API/endpoint";
+import { Assigns, TicketAPi, UserProfileAPI } from "@/API/endpoint"; // Add UserProfileAPI import
 import { formattedDate } from "@/API/helper";
 import BackButton from "@/components/kit/BackButton";
-import { Avatar } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"; // Add these imports
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -66,6 +66,31 @@ const AdminViewIndividualTicket: React.FC = () => {
   const [listAssigns, setListAssigns] = useState<any[]>([]);
   const [closeMessage, setCloseMessage] = useState("");
   const [showTextArea, setShowTextArea] = useState(false);
+  const [avatarMap, setAvatarMap] = useState<Record<string, string>>({}); // Add avatarMap state
+
+  // Fetch all avatars when component mounts
+  useEffect(() => {
+    const fetchAvatars = async () => {
+      try {
+        const response = await UserProfileAPI.getAllUserAvatar();
+        const map = response.data.reduce(
+          (
+            acc: Record<string, string>,
+            curr: { userId: string; avatar: string }
+          ) => {
+            acc[curr.userId] = curr.avatar;
+            return acc;
+          },
+          {}
+        );
+        setAvatarMap(map);
+      } catch (error) {
+        console.error("Error fetching avatars:", error);
+      }
+    };
+
+    fetchAvatars();
+  }, []);
 
   const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(event.target.value);
@@ -215,7 +240,7 @@ const AdminViewIndividualTicket: React.FC = () => {
   const getStatusInfo = (status: string | undefined) => {
     if (!status)
       return { color: "bg-gray-500", icon: <Clock className="h-4 w-4" /> };
-    switch (status.toLowerCase()) {
+    switch (status) {
       case "new":
       case "open":
         return {
@@ -227,7 +252,7 @@ const AdminViewIndividualTicket: React.FC = () => {
           color: "bg-red-500",
           icon: <AlertCircle className="h-4 w-4" />,
         };
-      case "in progress":
+      case "In Progress":
         return {
           color: "bg-yellow-500",
           icon: <Clock className="h-4 w-4" />,
@@ -450,6 +475,7 @@ const AdminViewIndividualTicket: React.FC = () => {
                   <button
                     onClick={() => handleFileDownload(details.file as string)}
                     className="text-sm text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1"
+                    title={details.file}
                   >
                     <span>Attachment</span>
                     <Download className="h-3 w-3" />
@@ -494,7 +520,7 @@ const AdminViewIndividualTicket: React.FC = () => {
                 type="submit"
                 disabled={isSubmitting || !message.trim()}
                 onClick={submitNote}
-                className=" text-base font-medium flex items-center gap-2 scale-90"
+                className="text-base font-medium flex items-center gap-2 scale-90"
               >
                 <Send className="h-4 w-4" />
                 {isSubmitting ? "Sending..." : "Send Response"}
@@ -512,53 +538,65 @@ const AdminViewIndividualTicket: React.FC = () => {
             notes
               ?.slice()
               .reverse()
-              .map((note: any) => (
-                <Card
-                  key={note._id}
-                  className={`shadow-sm ${
-                    note.isStaff ? "border-l-4 border-l-blue-500" : ""
-                  }`}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <Avatar
-                        className={`h-8 w-8 ${
-                          note.isStaff
-                            ? "bg-blue-100 text-blue-600"
-                            : "bg-gray-200"
-                        }`}
-                      >
-                        <div className="text-xs font-medium">
-                          {note.name?.charAt(0) || "?"}
-                        </div>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="flex justify-between items-center mb-2">
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium text-sm">
-                              {note.name || "Unknown User"}
+              .map((note: any) => {
+                // Get avatar URL from avatarMap or use default
+                const avatarFilename = avatarMap[note.user];
+                const avatarUrl = avatarFilename
+                  ? `${
+                      import.meta.env.VITE_UPLOADFILES_URL
+                    }/avatars/${avatarFilename}`
+                  : `https://ui-avatars.com/api/?background=2563EB&color=fff&name=${
+                      note.name || "?"
+                    }`;
+
+                return (
+                  <Card
+                    key={note._id}
+                    className={`shadow-sm ${
+                      note.isStaff ? "border-l-4 border-l-blue-500" : ""
+                    }`}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        {/* Updated Avatar with the same styling as ScheduleAndAttendance */}
+                        <Avatar className="h-8 w-8 rounded-full overflow-hidden border-2 border-blue-200">
+                          <AvatarImage
+                            src={avatarUrl}
+                            alt={note.name}
+                            className="object-cover"
+                          />
+                          <AvatarFallback>
+                            {note.name?.substring(0, 2).toUpperCase() || "?"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex justify-between items-center mb-2">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium text-sm">
+                                {note.name || "Unknown User"}
+                              </p>
+                              {note.isStaff && (
+                                <Badge
+                                  variant="outline"
+                                  className="bg-blue-50 text-blue-600 text-xs"
+                                >
+                                  Staff
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-900">
+                              {formattedDate(note.createdAt)}
                             </p>
-                            {note.isStaff && (
-                              <Badge
-                                variant="outline"
-                                className="bg-blue-50 text-blue-600 text-xs"
-                              >
-                                Staff
-                              </Badge>
-                            )}
                           </div>
-                          <p className="text-xs text-gray-900">
-                            {formattedDate(note.createdAt)}
+                          <p className="text-sm text-gray-900 whitespace-pre-wrap">
+                            {note.text}
                           </p>
                         </div>
-                        <p className="text-sm text-gray-900 whitespace-pre-wrap">
-                          {note.text}
-                        </p>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
+                    </CardContent>
+                  </Card>
+                );
+              })
           )}
         </div>
       </div>
