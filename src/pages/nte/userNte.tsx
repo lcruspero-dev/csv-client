@@ -270,21 +270,6 @@ const NteSummaryTable: React.FC = () => {
     tap: { scale: 0.98 },
   };
 
-  const arrowVariants = {
-    animate: {
-      x: [0, 8, 0],
-      transition: {
-        repeat: Infinity,
-        duration: 1.5,
-        ease: "easeInOut",
-      },
-    },
-    hover: {
-      x: 0,
-      transition: { duration: 0.3 },
-    },
-  };
-
   return (
     <div className="container mx-auto px-4 py-6 max-w-7xl">
       <div className="flex items-center mb-4">
