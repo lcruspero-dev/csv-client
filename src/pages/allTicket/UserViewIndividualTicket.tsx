@@ -241,7 +241,7 @@ const UserViewIndividualTicket: React.FC = () => {
 
           <div>
             <h2 className="font-medium mb-3">Description</h2>
-            <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
+            <div className="bg-slate-200 p-4 rounded-sm border-2 border-gray-300">
               <pre className="whitespace-pre-wrap font-sans text-sm text-gray-900">
                 {details?.description || "No description provided."}
               </pre>
