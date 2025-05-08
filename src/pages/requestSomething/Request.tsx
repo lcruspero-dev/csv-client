@@ -305,7 +305,7 @@ const Request = () => {
           name="attachment"
           type="file"
           onChange={handleFileUpload}
-          className="mt-1"
+          className="mt-1 cursor-pointer"
         />
         <Label htmlFor="name" className="text-sm font-bold">
           <p>Name</p>

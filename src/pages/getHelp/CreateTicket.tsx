@@ -160,7 +160,7 @@ const CreateTicket = () => {
           name="attachment"
           type="file"
           onChange={handleFileUpload}
-          className="mt-1"
+          className="mt-1 cursor-pointer"
           disabled={isSubmitting}
         />
 
