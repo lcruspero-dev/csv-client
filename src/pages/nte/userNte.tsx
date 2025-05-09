@@ -424,7 +424,7 @@ const NteSummaryTable: React.FC = () => {
                                 <p className="text-gray-600 mt-1">
                                   {offenseDesc.text}
                                 </p>
-                                {offenseDesc.isTruncated && (
+                                {offenseDesc.text !== "-" && (
                                   <motion.button
                                     onClick={() => handleView(item, 1)}
                                     className="text-blue-600 hover:text-blue-800 mt-1 text-xs font-medium"
@@ -457,7 +457,8 @@ const NteSummaryTable: React.FC = () => {
                                     <p className="text-gray-600 mt-1">
                                       {feedbackDetail.text}
                                     </p>
-                                    {feedbackDetail.isTruncated && (
+                                    {feedbackDetail.text !==
+                                      "No feedback submitted yet" && (
                                       <motion.button
                                         onClick={() => handleView(item, 2)}
                                         className="text-blue-600 hover:text-blue-800 mt-1 text-xs font-medium"
@@ -496,7 +497,8 @@ const NteSummaryTable: React.FC = () => {
                                     <p className="text-gray-600 mt-1">
                                       {decisionText.text}
                                     </p>
-                                    {decisionText.isTruncated && (
+                                    {decisionText.text !==
+                                      "No decision yet" && (
                                       <motion.button
                                         onClick={() => handleView(item, 3)}
                                         className="text-blue-600 hover:text-blue-800 mt-1 text-xs font-medium"
