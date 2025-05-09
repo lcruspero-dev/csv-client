@@ -231,7 +231,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         </div>
 
         <TooltipProvider>
-          <nav className="flex flex-col px-2 flex-1 overflow-y-auto pb-24">
+          <nav className="flex flex-col px-2 flex-1 overflow-y-auto">
             {navGroups.map((group, groupIndex) => (
               <div key={groupIndex} className="mb-2">
                 {isOpen && (

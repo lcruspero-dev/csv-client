@@ -5,10 +5,27 @@ import Chart from "@/components/ui/charts";
 import { useEffect, useState } from "react";
 
 const AdminHome = () => {
-  //   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [tickets, setTickets] = useState([]);
+  const [isMobile, setIsMobile] = useState(false);
+
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile) {
+        setSidebarOpen(false);
+      } else {
+        setSidebarOpen(true);
+      }
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     const fetchTickets = async () => {
@@ -25,25 +42,39 @@ const AdminHome = () => {
 
   return (
     <>
-      <SurveyModal /> {/* Add the SurveyModal component here */}
+      <SurveyModal />
       <div className="flex min-h-screen bg-gradient-to-b from-[#eef4ff] to-white">
-        <Sidebar isOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
+        {/* Sidebar - now properly handling mobile visibility */}
+        <div className={`${isMobile ? "fixed" : "relative"} z-20`}>
+          <Sidebar isOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
+        </div>
+
+        {/* Overlay for mobile */}
+        {isMobile && sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/50 z-10"
+            onClick={toggleSidebar}
+          />
+        )}
 
         {/* Main content */}
-        <div className="flex-1 transition-all duration-300 ease-in-out">
-          <header className="bg-white shadow-sm"></header>
-
-          <main className="container mx-auto px-4 py-8">
-            <section className="text-center mb-8">
-              <h2 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#1638df] to-[#192fb4]">
+        <div
+          className={`flex-1 transition-all duration-300 ease-in-out min-h-screen ${
+            sidebarOpen && !isMobile ? "md:ml-[10px]" : "md:ml-[72px]"
+          }`}
+        >
+          {/* Main content area */}
+          <main className="mx-auto px-4 py-6 w-full">
+            <section className="text-center mb-6">
+              <h2 className="text-2xl sm:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#1638df] to-[#192fb4]">
                 Welcome to Admin Dashboard
               </h2>
-              <p className="text-2xl font-bold mt-2 text-gray-700">
+              <p className="text-xl font-bold mt-2 text-gray-700">
                 Please select an option
               </p>
             </section>
 
-            <div className="">
+            <div className="bg-white rounded-lg shadow p-4 w-full">
               <Chart tickets={tickets} />
             </div>
           </main>
