@@ -18,6 +18,7 @@ import ExportMemoData from "./pages/exportData/ExportMemoData";
 import ExportSurveyData from "./pages/exportData/ExportSurveyData";
 import CreateTicket from "./pages/getHelp/CreateTicket";
 import Homepage from "./pages/homePage/Homepage";
+import LeaveCredit from "./pages/LeaveCredit/LeaveCredit";
 import ViewIndividualMemo from "./pages/memo/ViewIndividualMemo";
 import ViewMemo from "./pages/memo/ViewMemo";
 import UserNte from "./pages/nte/userNte";
@@ -63,6 +64,7 @@ function App() {
                 path="/resetuserpassword"
                 element={<AdminResetPassword />}
               />
+              <Route path="/leavecredits" element={<LeaveCredit />} />
               <Route path="/timerecord" element={<AdminTimeRecordEdit />} />
               <Route path="/exportsurveydata" element={<ExportSurveyData />} />
               <Route path="/createsurvey" element={<CreateSurvey />} />

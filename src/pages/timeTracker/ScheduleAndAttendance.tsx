@@ -1389,6 +1389,8 @@ const ScheduleAndAttendance: React.FC = () => {
                       <SelectItem value="5">5 days</SelectItem>
                       <SelectItem value="6">6 days</SelectItem>
                       <SelectItem value="7">7 days</SelectItem>
+                      <SelectItem value="15">15 days</SelectItem>
+                      <SelectItem value="30">30 days</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

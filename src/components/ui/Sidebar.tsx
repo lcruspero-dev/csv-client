@@ -122,14 +122,19 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       name: "Administration",
       items: [
         {
-          title: "Manage Survey",
-          path: "/createsurvey",
+          title: "Manage Leave Credits",
+          path: "/leavecredits",
           icon: <FileText className="h-5 w-5" />,
         },
         {
           title: "Manage Users",
           path: "/resetuserpassword",
           icon: <Users className="h-5 w-5" />,
+        },
+        {
+          title: "Manage Survey",
+          path: "/createsurvey",
+          icon: <FileText className="h-5 w-5" />,
         },
       ],
     },

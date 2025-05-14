@@ -135,6 +135,8 @@ export const UserAPI = {
   setUserToInactive: (id: string) =>
     apiHelper(`/api/users/inactive/${id}`, "PUT"),
   setUserToActive: (id: string) => apiHelper(`/api/users/active/${id}`, "PUT"),
+  updateLeaveCredit: (body: object) =>
+    apiHelper(`/update/leave-credits`, "PUT", body),
 };
 
 export const NteAPI = {
