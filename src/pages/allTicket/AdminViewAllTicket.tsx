@@ -145,6 +145,13 @@ const ViewAllRaisedTickets: React.FC = () => {
           (ticket) =>
             ticket.status === "open" || ticket.status === "In Progress"
         );
+      } else if (status === "closed") {
+        filtered = filtered.filter(
+          (ticket) =>
+            ticket.status === "closed" ||
+            ticket.status === "Approved" ||
+            ticket.status === "Rejected"
+        );
       } else {
         filtered = filtered.filter((ticket) => ticket.status === status);
       }

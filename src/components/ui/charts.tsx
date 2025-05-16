@@ -68,9 +68,14 @@ const Chart: React.FC<ChartProps> = ({ tickets }) => {
 
     tickets.forEach((ticket) => {
       if (data[ticket.department]) {
-        data[ticket.department][
-          ticket.status as keyof (typeof data)[string]
-        ] += 1;
+        const statusKey =
+          ticket.status === "open"
+            ? "open"
+            : ticket.status === "In Progress"
+            ? "In Progress"
+            : "closed"; // includes closed, Approved, Rejected
+
+        data[ticket.department][statusKey] += 1;
       }
     });
 

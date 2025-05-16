@@ -135,8 +135,6 @@ export const UserAPI = {
   setUserToInactive: (id: string) =>
     apiHelper(`/api/users/inactive/${id}`, "PUT"),
   setUserToActive: (id: string) => apiHelper(`/api/users/active/${id}`, "PUT"),
-  updateLeaveCredit: (body: object) =>
-    apiHelper(`/update/leave-credits`, "PUT", body),
 };
 
 export const NteAPI = {
@@ -211,4 +209,9 @@ export const ScheduleAndAttendanceAPI = {
       `/api/ScheduleAndAttendanceRoutes/schedule/employee?employeeId=${employeeId}`,
       "GET"
     ),
+};
+
+export const LeaveCredit = {
+  getLeaveCredit: () => apiHelper("api/leave", "GET"),
+  createLeaveCredit: (body: object) => apiHelper("api/leave", "POST", body),
 };

@@ -142,7 +142,7 @@ const AdminViewIndividualTicket: React.FC = () => {
 
   const handleStatusChange = (value: string) => {
     setStatus({ ...status, status: value });
-    setShowTextArea(value === "closed");
+    setShowTextArea(value === "closed" || value === "Rejected");
   };
 
   const handlePriorityChange = (value: string) => {
@@ -192,7 +192,10 @@ const AdminViewIndividualTicket: React.FC = () => {
       console.log(response);
 
       // If status is closed and there's a close message, submit the note
-      if (status?.status === "closed" && closeMessage.trim()) {
+      if (
+        status?.status === "closed" ||
+        (status?.status === "Rejected" && closeMessage.trim())
+      ) {
         const noteBody = {
           ticket: id,
           text: closeMessage,
@@ -221,7 +224,7 @@ const AdminViewIndividualTicket: React.FC = () => {
     } finally {
       setIsUpdating(false);
       // Refresh the page
-      window.location.reload();
+      // window.location.reload();
     }
   };
 
@@ -240,6 +243,7 @@ const AdminViewIndividualTicket: React.FC = () => {
   const getStatusInfo = (status: string | undefined) => {
     if (!status)
       return { color: "bg-gray-500", icon: <Clock className="h-4 w-4" /> };
+
     switch (status) {
       case "new":
       case "open":
@@ -257,6 +261,16 @@ const AdminViewIndividualTicket: React.FC = () => {
           color: "bg-yellow-500",
           icon: <Clock className="h-4 w-4" />,
         };
+      case "Approved":
+        return {
+          color: "bg-green-500",
+          icon: <CheckCircle className="h-4 w-4" />,
+        };
+      case "Rejected":
+        return {
+          color: "bg-red-500",
+          icon: <AlertCircle className="h-4 w-4" />,
+        };
       default:
         return {
           color: "bg-blue-500",
@@ -264,7 +278,6 @@ const AdminViewIndividualTicket: React.FC = () => {
         };
     }
   };
-
   // Helper function to get priority badge color and icon
   const getPriorityInfo = (priority: string | undefined) => {
     if (!priority)
@@ -354,48 +367,69 @@ const AdminViewIndividualTicket: React.FC = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      <SelectItem value="open">Open</SelectItem>
-                      <SelectItem value="In Progress">In Progress</SelectItem>
-                      <SelectItem value="closed">Closed</SelectItem>
+                      {details?.category === "Leave Request" ? (
+                        <>
+                          <SelectItem value="Approved">Approved</SelectItem>
+                          <SelectItem value="Rejected">Rejected</SelectItem>
+                        </>
+                      ) : (
+                        <>
+                          <SelectItem value="open">Open</SelectItem>
+                          <SelectItem value="In Progress">
+                            In Progress
+                          </SelectItem>
+                          <SelectItem value="closed">Closed</SelectItem>
+                        </>
+                      )}
                     </SelectGroup>
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label htmlFor="priority" className="text-sm font-medium">
-                  Priority
-                </Label>
-                <Select onValueChange={handlePriorityChange} required>
-                  <SelectTrigger className="mt-2">
-                    <SelectValue
-                      placeholder={details?.priority || "Select priority"}
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectItem value="1-Critical">1-Critical</SelectItem>
-                      <SelectItem value="2-High">2-High</SelectItem>
-                      <SelectItem value="3-Moderate">3-Moderate</SelectItem>
-                      <SelectItem value="4-Low">4-Low</SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {showTextArea && (
+              {details?.category !== "Leave Request" && (
                 <div>
-                  <Label htmlFor="closeNote" className="text-sm font-medium">
-                    Closing Note
+                  <Label htmlFor="priority" className="text-sm font-medium">
+                    Priority
                   </Label>
-                  <Textarea
-                    id="closeNote"
-                    placeholder="Enter a closing note"
-                    value={closeMessage}
-                    onChange={(e) => setCloseMessage(e.target.value)}
-                    className="mt-2"
-                  />
+                  <Select onValueChange={handlePriorityChange} required>
+                    <SelectTrigger className="mt-2">
+                      <SelectValue
+                        placeholder={details?.priority || "Select priority"}
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectItem value="1-Critical">1-Critical</SelectItem>
+                        <SelectItem value="2-High">2-High</SelectItem>
+                        <SelectItem value="3-Moderate">3-Moderate</SelectItem>
+                        <SelectItem value="4-Low">4-Low</SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
+
+              {showTextArea &&
+                (status?.status === "closed" ||
+                  status?.status === "Rejected") && (
+                  <div>
+                    <Label htmlFor="closeNote" className="text-sm font-medium">
+                      {status?.status === "Rejected"
+                        ? "Rejection Note"
+                        : "Closing Note"}
+                    </Label>
+                    <Textarea
+                      id="closeNote"
+                      placeholder={
+                        status?.status === "Rejected"
+                          ? "Enter a rejection note"
+                          : "Enter a closing note"
+                      }
+                      value={closeMessage}
+                      onChange={(e) => setCloseMessage(e.target.value)}
+                      className="mt-2"
+                    />
+                  </div>
+                )}
             </div>
             <SheetFooter>
               <SheetClose asChild>
@@ -404,7 +438,10 @@ const AdminViewIndividualTicket: React.FC = () => {
                   type="submit"
                   onClick={handleEditButton}
                   disabled={
-                    isUpdating || (showTextArea && !closeMessage.trim())
+                    isUpdating ||
+                    ((status?.status === "closed" ||
+                      status?.status === "Rejected") &&
+                      !closeMessage.trim())
                   }
                 >
                   {isUpdating ? "Saving..." : "Save changes"}
@@ -502,32 +539,34 @@ const AdminViewIndividualTicket: React.FC = () => {
       <div className="mb-6">
         <h2 className="text-lg font-semibold mb-4">Notes & Responses</h2>
 
-        {details?.status !== "closed" && (
-          <Card className="mb-6 shadow-sm">
-            <CardContent className="pt-6">
-              <form onSubmit={submitNote}>
-                <Textarea
-                  placeholder="Add your response here..."
-                  value={message}
-                  onChange={handleChange}
-                  disabled={isSubmitting}
-                  className="min-h-24 resize-none"
-                />
-              </form>
-            </CardContent>
-            <CardFooter className="flex justify-end pt-0">
-              <Button
-                type="submit"
-                disabled={isSubmitting || !message.trim()}
-                onClick={submitNote}
-                className="text-base font-medium flex items-center gap-2 scale-90"
-              >
-                <Send className="h-4 w-4" />
-                {isSubmitting ? "Sending..." : "Send Response"}
-              </Button>
-            </CardFooter>
-          </Card>
-        )}
+        {details?.status !== "closed" &&
+          details?.status !== "Rejected" &&
+          details?.status !== "Approved" && (
+            <Card className="mb-6 shadow-sm">
+              <CardContent className="pt-6">
+                <form onSubmit={submitNote}>
+                  <Textarea
+                    placeholder="Add your response here..."
+                    value={message}
+                    onChange={handleChange}
+                    disabled={isSubmitting}
+                    className="min-h-24 resize-none"
+                  />
+                </form>
+              </CardContent>
+              <CardFooter className="flex justify-end pt-0">
+                <Button
+                  type="submit"
+                  disabled={isSubmitting || !message.trim()}
+                  onClick={submitNote}
+                  className="text-base font-medium flex items-center gap-2 scale-90"
+                >
+                  <Send className="h-4 w-4" />
+                  {isSubmitting ? "Sending..." : "Send Response"}
+                </Button>
+              </CardFooter>
+            </Card>
+          )}
 
         <div className="space-y-4">
           {notes?.length === 0 ? (

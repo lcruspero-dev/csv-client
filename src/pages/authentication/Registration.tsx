@@ -1,4 +1,5 @@
 import { AuthAPI } from "@/API/authEndPoint";
+import { LeaveCredit } from "@/API/endpoint"; // Import the LeaveCredit API
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
@@ -100,6 +101,24 @@ const Registration = () => {
 
       // Update the authentication context with the proper User object
       login(userData);
+
+      // Create leave credit for the new employee
+      try {
+        const leaveCreditPayload = {
+          employeeId: response.data._id, // Use the newly created user ID
+          employeeName: fullName,
+        };
+
+        await LeaveCredit.createLeaveCredit(leaveCreditPayload);
+        console.log("Leave credit created successfully");
+      } catch (leaveError) {
+        console.error("Error creating leave credit:", leaveError);
+        toast({
+          title: "Account created but leave credit setup failed",
+          description: "Please contact HR to set up your leave credits",
+          variant: "destructive",
+        });
+      }
 
       navigate("/");
     } catch (error) {

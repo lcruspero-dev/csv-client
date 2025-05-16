@@ -131,15 +131,18 @@ const UserViewIndividualTicket: React.FC = () => {
     );
   };
   // Helper function to get status badge color
-  const getStatusBadgeClass = (status: string | undefined) => {
+  const getStatusBadgeClass = (status: string | undefined): string => {
     if (!status) return "bg-gray-500";
+
     switch (status) {
       case "new":
       case "open":
+      case "Approved":
         return "bg-green-500";
       case "closed":
+      case "Rejected":
         return "bg-red-500";
-      case "In Progress":
+      case "In progress":
         return "bg-yellow-500";
       default:
         return "bg-blue-500";

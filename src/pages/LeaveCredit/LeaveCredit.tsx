@@ -22,6 +22,7 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import {
   ArrowLeft,
+  Calendar,
   ChevronLeft,
   ChevronRight,
   Pencil,
@@ -33,32 +34,24 @@ import { useNavigate } from "react-router-dom";
 interface EmployeeLeaveCredit {
   id: string;
   employeeName: string;
-  leaveCredit: number;
+  leaveCredit: number; // Original allocation
+  currentBalance: number; // Remaining balance
+  startDate: string;
+  months: number;
 }
 
 const LeaveCredit = () => {
   const { toast } = useToast();
   const [allEmployees, setAllEmployees] = useState<EmployeeLeaveCredit[]>([
-    { id: "1", employeeName: "John Doe", leaveCredit: 15 },
-    { id: "2", employeeName: "Jane Smith", leaveCredit: 12 },
-    { id: "3", employeeName: "Robert Johnson", leaveCredit: 18 },
-    { id: "4", employeeName: "Emily Davis", leaveCredit: 10 },
-    { id: "5", employeeName: "Michael Brown", leaveCredit: 14 },
-    { id: "6", employeeName: "Sarah Wilson", leaveCredit: 16 },
-    { id: "7", employeeName: "David Taylor", leaveCredit: 8 },
-    { id: "8", employeeName: "Jessica Anderson", leaveCredit: 20 },
-    { id: "9", employeeName: "Thomas Martinez", leaveCredit: 11 },
-    { id: "10", employeeName: "Lisa Robinson", leaveCredit: 13 },
-    { id: "11", employeeName: "Christopher Clark", leaveCredit: 17 },
-    { id: "12", employeeName: "Amanda Rodriguez", leaveCredit: 9 },
-    { id: "13", employeeName: "Matthew Lewis", leaveCredit: 15 },
-    { id: "14", employeeName: "Jennifer Lee", leaveCredit: 12 },
-    { id: "15", employeeName: "Daniel Walker", leaveCredit: 18 },
-    { id: "16", employeeName: "Michelle Hall", leaveCredit: 14 },
-    { id: "17", employeeName: "Kevin Allen", leaveCredit: 10 },
-    { id: "18", employeeName: "Stephanie Young", leaveCredit: 16 },
-    { id: "19", employeeName: "Ryan Hernandez", leaveCredit: 8 },
-    { id: "20", employeeName: "Nicole King", leaveCredit: 20 },
+    {
+      id: "1",
+      employeeName: "John Doe",
+      leaveCredit: 15,
+      currentBalance: 10,
+      startDate: "2023-01-15",
+      months: 12,
+    },
+    // ... (rest of your employee data remains the same)
   ]);
 
   const [filteredEmployees, setFilteredEmployees] = useState<
@@ -66,7 +59,8 @@ const LeaveCredit = () => {
   >([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
   const [currentEmployee, setCurrentEmployee] =
     useState<EmployeeLeaveCredit | null>(null);
   const [editedCredit, setEditedCredit] = useState(0);
@@ -94,7 +88,12 @@ const LeaveCredit = () => {
   const handleEditClick = (employee: EmployeeLeaveCredit) => {
     setCurrentEmployee(employee);
     setEditedCredit(employee.leaveCredit);
-    setIsDialogOpen(true);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleViewHistory = (employee: EmployeeLeaveCredit) => {
+    setCurrentEmployee(employee);
+    setIsHistoryDialogOpen(true);
   };
 
   const handleSave = () => {
@@ -114,7 +113,7 @@ const LeaveCredit = () => {
           description: "Leave credit updated successfully",
           variant: "default",
         });
-        setIsDialogOpen(false);
+        setIsEditDialogOpen(false);
       }, 500);
     } catch (error) {
       toast({
@@ -136,12 +135,28 @@ const LeaveCredit = () => {
   const goToPrevPage = () => currentPage > 1 && setCurrentPage(currentPage - 1);
   const handleBack = () => navigate(-1);
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  // Mock leave history data
+  const mockLeaveHistory = [
+    { date: "2023-06-15", type: "Annual Leave", days: 2, status: "Approved" },
+    { date: "2023-05-20", type: "Sick Leave", days: 1, status: "Approved" },
+    { date: "2023-04-10", type: "Annual Leave", days: 3, status: "Approved" },
+    { date: "2023-03-05", type: "Unpaid Leave", days: 1, status: "Rejected" },
+  ];
+
   return (
     <div className="flex flex-col items-center min-h-screen bg-gray-50">
-      <Card className="w-full max-w-4xl shadow-lg">
+      <Card className="w-full max-w-6xl shadow-lg">
         <CardHeader className="space-y-4">
           <div className="relative flex items-center justify-center">
-            {/* Back Button - Aligned to Start (Left) */}
             <Button
               variant="ghost"
               onClick={handleBack}
@@ -151,7 +166,6 @@ const LeaveCredit = () => {
               Back
             </Button>
 
-            {/* Title Section - Centered */}
             <div className="text-center">
               <CardTitle className="text-3xl font-bold text-gray-800">
                 Employee Leave Credits
@@ -180,11 +194,20 @@ const LeaveCredit = () => {
           <Table className="rounded-lg">
             <TableHeader className="bg-gray-100">
               <TableRow>
-                <TableHead className="text-center font-bold text-gray-700 w-1/2">
+                <TableHead className="text-center font-bold text-gray-700">
                   Employee
                 </TableHead>
                 <TableHead className="text-center font-bold text-gray-700">
+                  Start Date
+                </TableHead>
+                <TableHead className="text-center font-bold text-gray-700">
+                  Months
+                </TableHead>
+                <TableHead className="text-center font-bold text-gray-700">
                   Leave Credit
+                </TableHead>
+                <TableHead className="text-center font-bold text-gray-700">
+                  Current Balance
                 </TableHead>
                 <TableHead className="text-center font-bold text-gray-700">
                   Actions
@@ -198,12 +221,23 @@ const LeaveCredit = () => {
                     <TableCell className="text-center font-medium">
                       {employee.employeeName}
                     </TableCell>
+                    <TableCell className="text-center">
+                      {formatDate(employee.startDate)}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {employee.months}
+                    </TableCell>
                     <TableCell className="text-center font-semibold">
                       <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full">
                         {employee.leaveCredit} days
                       </span>
                     </TableCell>
-                    <TableCell className="flex justify-center">
+                    <TableCell className="text-center font-semibold">
+                      <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full">
+                        {employee.currentBalance} days
+                      </span>
+                    </TableCell>
+                    <TableCell className="flex justify-center space-x-2">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -213,13 +247,22 @@ const LeaveCredit = () => {
                         <Pencil className="h-4 w-4 mr-2" />
                         Edit
                       </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleViewHistory(employee)}
+                        className="text-green-600 hover:text-green-800"
+                      >
+                        <Calendar className="h-4 w-4 mr-2" />
+                        History
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
                   <TableCell
-                    colSpan={3}
+                    colSpan={6}
                     className="text-center py-8 text-gray-500"
                   >
                     No employees found
@@ -264,7 +307,8 @@ const LeaveCredit = () => {
         </CardContent>
       </Card>
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[425px] rounded-lg">
           <DialogHeader>
             <DialogTitle className="text-center text-2xl font-bold text-gray-800">
@@ -302,7 +346,7 @@ const LeaveCredit = () => {
           <DialogFooter className="flex justify-center">
             <Button
               variant="outline"
-              onClick={() => setIsDialogOpen(false)}
+              onClick={() => setIsEditDialogOpen(false)}
               className="scale-95"
             >
               Cancel
@@ -340,6 +384,64 @@ const LeaveCredit = () => {
               ) : (
                 "Save Changes"
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* History Dialog */}
+      <Dialog open={isHistoryDialogOpen} onOpenChange={setIsHistoryDialogOpen}>
+        <DialogContent className="sm:max-w-[600px] rounded-lg">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-gray-800">
+              Leave History for {currentEmployee?.employeeName}
+            </DialogTitle>
+            <DialogDescription>
+              View all leave requests and usage
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Days</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {mockLeaveHistory.map((history, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{formatDate(history.date)}</TableCell>
+                    <TableCell>{history.type}</TableCell>
+                    <TableCell>{history.days}</TableCell>
+                    <TableCell>
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs ${
+                          history.status === "Approved"
+                            ? "bg-green-100 text-green-800"
+                            : history.status === "Rejected"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-yellow-100 text-yellow-800"
+                        }`}
+                      >
+                        {history.status}
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsHistoryDialogOpen(false)}
+            >
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>

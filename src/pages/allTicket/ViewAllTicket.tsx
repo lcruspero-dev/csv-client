@@ -118,11 +118,16 @@ const ViewAllTicket: React.FC = () => {
               <TableCell>
                 <p
                   className={`p-1 rounded-md text-center text-primary-foreground font-semibold text-xs ${
-                    ticket.status === "new" || ticket.status === "open"
+                    ticket.status === "new" ||
+                    ticket.status === "open" ||
+                    ticket.status === "Approved"
                       ? "bg-green-600"
-                      : ticket.status === "closed"
+                      : ticket.status === "closed" ||
+                        ticket.status === "Rejected"
                       ? "bg-red-600"
-                      : "bg-[#FF8C00]"
+                      : ticket.status === "In progress"
+                      ? "bg-yellow-500"
+                      : "bg-gray-500"
                   }`}
                 >
                   {ticket.status}
