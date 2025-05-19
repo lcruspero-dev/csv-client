@@ -1,4 +1,5 @@
 import { ScheduleAndAttendanceAPI, timer } from "@/API/endpoint";
+import LeaveBalanceDisplay from "@/components/kit/LeaveBalance";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -185,6 +186,7 @@ export const ViewScheduleButton: React.FC = () => {
                   Position: {scheduleData?.position} | Group:{" "}
                   {scheduleData?.teamLeader}
                 </div>
+                <LeaveBalanceDisplay />
               </div>
               <div className="flex space-x-2 text-sm mr-5">
                 <Button

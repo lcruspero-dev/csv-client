@@ -1,8 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Category, TicketAPi } from "@/API/endpoint";
+import { Category, LeaveCreditAPI, TicketAPi } from "@/API/endpoint";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -14,10 +20,16 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import axios from "axios";
+import { format } from "date-fns";
 import { Paperclip } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BackButton from "../../components/kit/BackButton";
+
+interface LeaveBalance {
+  currentBalance: number;
+  nextAccrualDate: string;
+}
 
 const Request = () => {
   const userLogin = JSON.parse(localStorage.getItem("user")!);
@@ -36,11 +48,59 @@ const Request = () => {
     endDate: "",
     delegatedTasks: "",
     formDepartment: "Marketing", // Department selected in form
+    leaveDays: 0, // Added leaveDays field
+    selectedDates: [] as Date[], // For Full-Day Leave date selection
   });
   const [categories, setCategories] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [leaveBalance, setLeaveBalance] = useState<LeaveBalance | null>(null);
+  const [updatedBalance, setUpdatedBalance] = useState<number | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Fetch leave balance on component mount
+  useEffect(() => {
+    const fetchLeaveBalance = async () => {
+      try {
+        const response = await LeaveCreditAPI.getLeaveCreditById();
+        const data = await response.data;
+        setLeaveBalance(data);
+      } catch (error) {
+        console.error("Error fetching leave balance:", error);
+      }
+    };
+
+    fetchLeaveBalance();
+  }, []);
+
+  // Calculate leave days when leave category or dates change
+  useEffect(() => {
+    if (form.category === "Leave Request") {
+      let days = 0;
+
+      if (form.leaveCategory === "Full-Day Leave") {
+        // For Full-Day Leave, count the number of selected dates
+        days = form.selectedDates.length;
+      } else if (form.leaveCategory && form.startDate) {
+        // For AM/PM Leave, it's always 0.5 days
+        days = 0.5;
+      }
+
+      setForm((prev) => ({ ...prev, leaveDays: days }));
+
+      // Calculate updated balance if we have current balance
+      if (leaveBalance) {
+        setUpdatedBalance(leaveBalance.currentBalance - days);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.startDate, form.leaveCategory, form.selectedDates, leaveBalance]);
+
+  const handleDateSelect = (dates: Date[] | undefined) => {
+    if (dates) {
+      setForm((prev) => ({ ...prev, selectedDates: dates }));
+    }
+  };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -82,11 +142,16 @@ const Request = () => {
 
   const formatDateToMMDDYYYY = (dateString: string) => {
     if (!dateString) return "";
-    const date = new Date(dateString);
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const year = date.getFullYear();
+
+    const [year, month, day] = dateString.split("-");
     return `${month}/${day}/${year}`;
+  };
+
+  const formatSelectedDates = () => {
+    if (form.selectedDates.length === 0) return "No dates selected";
+    return form.selectedDates
+      .map((date) => format(date, "MM/dd/yyyy"))
+      .join(", ");
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -98,13 +163,19 @@ const Request = () => {
       let description = "";
 
       if (form.category === "Leave Request") {
+        let dateRange = "";
+        if (form.leaveCategory === "Full-Day Leave") {
+          dateRange = `Selected Dates: ${formatSelectedDates()}`;
+        } else {
+          dateRange = `Date: ${formatDateToMMDDYYYY(form.startDate)}`;
+        }
+
         description = `Leave Request Details:
 • Leave Type: ${form.leaveType}
 • Leave Category: ${form.leaveCategory}
 • Department: ${form.formDepartment}
-• Dates: ${formatDateToMMDDYYYY(form.startDate)} to ${formatDateToMMDDYYYY(
-          form.endDate
-        )}
+• ${dateRange}
+• Days Requested: ${form.leaveDays} ${form.leaveDays <= 1 ? "day" : "days"}
 • Reason: ${form.leaveReason}
 • Tasks to be Delegated: ${form.delegatedTasks}`;
       } else if (form.category === "Certificate of Employment") {
@@ -116,7 +187,20 @@ const Request = () => {
       const response = await TicketAPi.createTicket({
         ...form,
         description,
-        // department: "HR" is automatically included from form state
+        // For Full-Day Leave, set startDate and endDate based on selected dates
+        startDate:
+          form.leaveCategory === "Full-Day Leave" &&
+          form.selectedDates.length > 0
+            ? format(form.selectedDates[0], "yyyy-MM-dd")
+            : form.startDate,
+        endDate:
+          form.leaveCategory === "Full-Day Leave" &&
+          form.selectedDates.length > 0
+            ? format(
+                form.selectedDates[form.selectedDates.length - 1],
+                "yyyy-MM-dd"
+              )
+            : form.startDate,
       });
 
       toast({
@@ -153,6 +237,37 @@ const Request = () => {
   const renderLeaveRequestContent = () => {
     return (
       <div className="mt-4">
+        {/* Leave Balance Display */}
+        {leaveBalance && (
+          <div className="mb-4 p-3 border rounded-lg bg-gray-50">
+            <div className="flex justify-between items-center">
+              <div>
+                <span className="text-sm font-medium">
+                  Current Leave Balance:
+                </span>
+                <span className="ml-2 font-bold">
+                  {leaveBalance.currentBalance}{" "}
+                  {leaveBalance.currentBalance <= 1 ? "day" : "days"}
+                </span>
+              </div>
+              {updatedBalance !== null && (
+                <div>
+                  <span className="text-sm font-medium">
+                    Balance After Leave:
+                  </span>
+                  <span className="ml-2 font-bold text-red-500">
+                    {updatedBalance} {updatedBalance <= 1 ? "day" : "days"}
+                  </span>
+                </div>
+              )}
+            </div>
+            <div className="mt-1 text-xs text-gray-500">
+              Next accrual:{" "}
+              {new Date(leaveBalance.nextAccrualDate).toLocaleDateString()}
+            </div>
+          </div>
+        )}
+
         <Label htmlFor="leaveType" className="text-sm font-bold">
           Leave Type <span className="text-red-500">*</span>
         </Label>
@@ -181,7 +296,15 @@ const Request = () => {
           Leave Category <span className="text-red-500">*</span>
         </Label>
         <Select
-          onValueChange={(value) => setForm({ ...form, leaveCategory: value })}
+          onValueChange={(value) => {
+            setForm({
+              ...form,
+              leaveCategory: value,
+              startDate: "",
+              endDate: "",
+              selectedDates: [],
+            });
+          }}
           required
         >
           <SelectTrigger className="mb-2">
@@ -217,34 +340,66 @@ const Request = () => {
           </SelectContent>
         </Select>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="startDate" className="text-sm font-bold">
-              Start Date <span className="text-red-500">*</span>
+        {/* Date Selection based on Leave Category */}
+        {form.leaveCategory === "Full-Day Leave" ? (
+          <div className="mb-2 text-sm">
+            <Label className="text-sm font-bold">
+              Select Leave Dates <span className="text-red-500">*</span>
             </Label>
-            <Input
-              name="startDate"
-              type="date"
-              required
-              className="!mb-2"
-              onChange={handleChange}
-              disabled={isSubmitting}
-            />
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className="w-full justify-start text-left font-normal mb-2"
+                >
+                  {form.selectedDates.length > 0
+                    ? `${form.selectedDates.length} date(s) selected`
+                    : "Pick dates"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="multiple"
+                  selected={form.selectedDates}
+                  onSelect={handleDateSelect}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+            {form.selectedDates.length > 0 && (
+              <div className="text-sm text-gray-600 mb-2">
+                Selected: {formatSelectedDates()}
+              </div>
+            )}
           </div>
-          <div>
-            <Label htmlFor="endDate" className="text-sm font-bold">
-              End Date <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              name="endDate"
-              type="date"
-              required
-              className="!mb-2"
-              onChange={handleChange}
-              disabled={isSubmitting}
-            />
+        ) : (
+          (form.leaveCategory === "AM Leave" ||
+            form.leaveCategory === "PM Leave") && (
+            <div>
+              <Label htmlFor="startDate" className="text-sm font-bold">
+                Leave Date <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                name="startDate"
+                type="date"
+                required
+                className="!mb-2"
+                onChange={handleChange}
+                disabled={isSubmitting}
+              />
+            </div>
+          )
+        )}
+
+        {/* Display calculated leave days */}
+        {form.leaveDays > 0 && (
+          <div className="mb-2 p-2 bg-blue-50 rounded-md">
+            <span className="text-sm font-medium">Leave Days Requested:</span>
+            <span className="ml-2 font-bold">
+              {form.leaveDays} {form.leaveDays <= 1 ? "day" : "days"}
+            </span>
           </div>
-        </div>
+        )}
 
         <Label htmlFor="leaveReason" className="text-sm font-bold">
           Why are you requesting for a leave?{" "}
@@ -271,7 +426,23 @@ const Request = () => {
           disabled={isSubmitting}
         />
 
-        <Button className="w-full mt-4" type="submit" disabled={isSubmitting}>
+        {/* Moved file attachment to bottom for leave requests */}
+        <Label
+          htmlFor="attachment"
+          className="text-sm font-bold flex items-center mt-4"
+        >
+          <Paperclip className="mr-2" size={20} />
+          Attach File (Optional)
+        </Label>
+        <Input
+          id="attachment"
+          name="attachment"
+          type="file"
+          onChange={handleFileUpload}
+          className="mt-1 cursor-pointer mb-4"
+        />
+
+        <Button className="w-full mt-2" type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Submitting..." : "Submit Leave Request"}
         </Button>
       </div>
@@ -293,20 +464,27 @@ const Request = () => {
             Please fill out the form below
           </p>
         </div>
-        <Label
-          htmlFor="attachment"
-          className="text-sm font-bold flex items-center mt-2"
-        >
-          <Paperclip className="mr-2" size={20} />
-          Attach File (Optional)
-        </Label>
-        <Input
-          id="attachment"
-          name="attachment"
-          type="file"
-          onChange={handleFileUpload}
-          className="mt-1 cursor-pointer"
-        />
+
+        {/* File attachment moved to leave request section */}
+        {form.category !== "Leave Request" && (
+          <>
+            <Label
+              htmlFor="attachment"
+              className="text-sm font-bold flex items-center mt-2"
+            >
+              <Paperclip className="mr-2" size={20} />
+              Attach File (Optional)
+            </Label>
+            <Input
+              id="attachment"
+              name="attachment"
+              type="file"
+              onChange={handleFileUpload}
+              className="mt-1 cursor-pointer"
+            />
+          </>
+        )}
+
         <Label htmlFor="name" className="text-sm font-bold">
           <p>Name</p>
         </Label>

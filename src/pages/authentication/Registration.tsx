@@ -1,5 +1,5 @@
 import { AuthAPI } from "@/API/authEndPoint";
-import { LeaveCredit } from "@/API/endpoint"; // Import the LeaveCredit API
+import { LeaveCreditAPI } from "@/API/endpoint";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
@@ -109,7 +109,7 @@ const Registration = () => {
           employeeName: fullName,
         };
 
-        await LeaveCredit.createLeaveCredit(leaveCreditPayload);
+        await LeaveCreditAPI.createLeaveCredit(leaveCreditPayload);
         console.log("Leave credit created successfully");
       } catch (leaveError) {
         console.error("Error creating leave credit:", leaveError);

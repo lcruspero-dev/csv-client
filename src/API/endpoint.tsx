@@ -211,7 +211,8 @@ export const ScheduleAndAttendanceAPI = {
     ),
 };
 
-export const LeaveCredit = {
+export const LeaveCreditAPI = {
   getLeaveCredit: () => apiHelper("api/leave", "GET"),
-  createLeaveCredit: (body: object) => apiHelper("api/leave", "POST", body),
+  createLeaveCredit: (body: object) => apiHelper("/api/leave", "POST", body),
+  getLeaveCreditById: () => apiHelper(`/api/leave/my/leave-credits`, "GET"),
 };
