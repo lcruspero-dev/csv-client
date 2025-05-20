@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import axios from "axios";
 
 import { TicketAPi } from "@/API/endpoint";
+import { Checkbox } from "@/components/ui/checkbox"; // Import the checkbox component
 import {
   Dialog,
   DialogContent,
@@ -18,6 +19,7 @@ import "quill/dist/quill.core.css";
 import { useState } from "react";
 import { Textarea } from "../../components/ui/textarea";
 import { Memo } from "./ViewMemo";
+
 interface CreateMemoProps {
   setMemos: React.Dispatch<React.SetStateAction<Memo[]>>;
   setLoading: React.Dispatch<React.SetStateAction<boolean>>;
@@ -27,9 +29,11 @@ const CreateMemo: React.FC<CreateMemoProps> = ({ setMemos, setLoading }) => {
   const [subject, setSubject] = useState("");
   const [description, setDescription] = useState("");
   const [filename, setFilename] = useState("");
+  const [isPinned, setIsPinned] = useState(false); // New state for pinned status
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
+
   const getMemos = async () => {
     try {
       const response = await TicketAPi.getAllMemo();
@@ -38,19 +42,22 @@ const CreateMemo: React.FC<CreateMemoProps> = ({ setMemos, setLoading }) => {
     } catch (error) {
       console.error(error);
     } finally {
-      setLoading(false); // Stop loading after the request is done
+      setLoading(false);
     }
   };
+
   const handleDescriptionChange = (
     e: React.ChangeEvent<HTMLTextAreaElement>
   ) => {
     setDescription(e.target.value);
   };
+
   const handleSubjectChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSubject(e.target.value);
   };
+
   const handleSave = async () => {
-    if (isSaving) return; // Prevent multiple submissions
+    if (isSaving) return;
 
     setIsSaving(true);
     try {
@@ -58,6 +65,7 @@ const CreateMemo: React.FC<CreateMemoProps> = ({ setMemos, setLoading }) => {
         subject: subject,
         description: description,
         file: filename,
+        isPinned: isPinned, // Include pinned status in the request
       };
       console.log(body);
       const response = await TicketAPi.createMemo(body);
@@ -71,6 +79,7 @@ const CreateMemo: React.FC<CreateMemoProps> = ({ setMemos, setLoading }) => {
       setSubject("");
       setDescription("");
       setFilename("");
+      setIsPinned(false); // Reset pinned status
       setIsDialogOpen(false);
     } catch (error) {
       toast({
@@ -80,10 +89,10 @@ const CreateMemo: React.FC<CreateMemoProps> = ({ setMemos, setLoading }) => {
       });
       console.error(error);
     } finally {
-      setIsSaving(false); // Set loading to false regardless of success or failure
+      setIsSaving(false);
     }
   };
-  console.log(filename);
+
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -126,7 +135,7 @@ const CreateMemo: React.FC<CreateMemoProps> = ({ setMemos, setLoading }) => {
             Input details here. Click save when you're done.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 h-full   pl-4">
+        <div className="grid gap-4 h-full pl-4">
           <Label htmlFor="subject" className="text-base font-bold">
             <p>Subject</p>
           </Label>
@@ -163,14 +172,32 @@ const CreateMemo: React.FC<CreateMemoProps> = ({ setMemos, setLoading }) => {
           </div>
         </div>
         <DialogFooter>
-          <Button
-            type="submit"
-            className="mr-10 px-8 text-xs"
-            onClick={handleSave}
-            disabled={isSaving}
-          >
-            {isSaving ? "Saving..." : "Save"}
-          </Button>
+          <div className="flex justify-between items-center w-full mb-4">
+            {/* Pin This Memo checkbox on the left */}
+            <div className="flex items-center space-x-2 pl-4">
+              <Checkbox
+                id="pin-memo"
+                checked={isPinned}
+                onCheckedChange={(checked) => setIsPinned(checked as boolean)}
+              />
+              <Label
+                htmlFor="pin-memo"
+                className="text-sm font-medium leading-none"
+              >
+                Pin This Memo
+              </Label>
+            </div>
+
+            {/* Save button on the right */}
+            <Button
+              type="submit"
+              className="px-8 text-xs"
+              onClick={handleSave}
+              disabled={isSaving}
+            >
+              {isSaving ? "Saving..." : "Save"}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
