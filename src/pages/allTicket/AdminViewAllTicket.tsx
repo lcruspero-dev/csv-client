@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { toast } from "@/components/ui/use-toast";
 import { ChevronsLeftIcon, ChevronsRightIcon, SearchIcon } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -228,9 +229,12 @@ const ViewAllRaisedTickets: React.FC = () => {
         navigate(`/ticket/${foundTicket._id}`);
       } else {
         // Show an error message
-        alert(
-          "Ticket not found. Please check the ticket number and try again."
-        );
+        toast({
+          title: "Error",
+          description:
+            "Ticket not found. Please check the ticket number and try again.",
+          variant: "destructive",
+        });
       }
     }
   };

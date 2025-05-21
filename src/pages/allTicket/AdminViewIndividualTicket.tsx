@@ -255,13 +255,39 @@ const AdminViewIndividualTicket: React.FC = () => {
       const response = await TicketAPi.updateTicket(id, body);
       console.log(response);
 
+      // Update leave credit history for both approved and rejected leave requests
+      if (
+        (status?.status === "Approved" || status?.status === "Rejected") &&
+        details?.category === "Leave Request" &&
+        leaveCredit
+      ) {
+        const historyEntry = {
+          date: details?.createdAt,
+          description: details?.description,
+          days: parseFloat(details.leaveDays.toString()),
+          ticket: details?.ticketNumber,
+          status: status?.status,
+        };
+
+        // For approved requests, also update the balance
+        const updateData =
+          status?.status === "Approved"
+            ? {
+                currentBalance: calculateBalanceAfterApproval(),
+                $push: { history: historyEntry },
+              }
+            : {
+                $push: { history: historyEntry },
+              };
+
+        await LeaveCreditAPI.updateLeaveCredit(leaveCredit._id, updateData);
+      }
+
       if (
         status?.status === "closed" ||
         (status?.status === "Rejected" && closeMessage.trim())
       ) {
-        // Get the user ID correctly based on the structure
         const userId = details?.user?._id || details?.user;
-
         if (!userId) {
           console.error("User ID is missing");
           return;
@@ -618,26 +644,27 @@ const AdminViewIndividualTicket: React.FC = () => {
                     )}
                   </p>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-700">
-                    <span className="font-medium">After Approval:</span>{" "}
-                    {balanceAfterApproval !== null ? (
-                      <span
-                        className={`font-bold ${
-                          balanceAfterApproval < 5 ? "text-orange-600" : ""
-                        }`}
-                      >
-                        {balanceAfterApproval} days
-                      </span>
-                    ) : (
-                      "Calculating..."
-                    )}
-                  </p>
-                </div>
+                {details?.status === "open" && (
+                  <div>
+                    <p className="text-sm text-gray-700">
+                      <span className="font-medium">After Approval:</span>{" "}
+                      {balanceAfterApproval !== null ? (
+                        <span
+                          className={`font-bold ${
+                            balanceAfterApproval < 5 ? "text-orange-600" : ""
+                          }`}
+                        >
+                          {balanceAfterApproval} days
+                        </span>
+                      ) : (
+                        "Calculating..."
+                      )}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}
-
           <Separator className="my-4" />
 
           <div>
