@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import { LeaveCreditAPI } from "@/API/endpoint";
+// import { formattedDate } from "@/API/helper";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -11,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import Loading from "@/components/ui/loading";
 import {
   Table,
   TableBody,
@@ -31,29 +34,35 @@ import {
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+interface LeaveHistoryItem {
+  date: string;
+  description: string;
+  days: number;
+  ticket: string;
+  status: string;
+  _id: string;
+}
+
 interface EmployeeLeaveCredit {
-  id: string;
+  _id: string;
+  employeeId: string;
   employeeName: string;
-  leaveCredit: number; // Original allocation
-  currentBalance: number; // Remaining balance
+  annualLeaveCredit: number;
+  currentBalance: number;
   startDate: string;
-  months: number;
+  accrualRate: number;
+  lastAccrualDate: string;
+  nextAccrualDate: string;
+  timezone: string;
+  history: LeaveHistoryItem[];
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
 }
 
 const LeaveCredit = () => {
   const { toast } = useToast();
-  const [allEmployees, setAllEmployees] = useState<EmployeeLeaveCredit[]>([
-    {
-      id: "1",
-      employeeName: "John Doe",
-      leaveCredit: 15,
-      currentBalance: 10,
-      startDate: "2023-01-15",
-      months: 12,
-    },
-    // ... (rest of your employee data remains the same)
-  ]);
-
+  const [allEmployees, setAllEmployees] = useState<EmployeeLeaveCredit[]>([]);
   const [filteredEmployees, setFilteredEmployees] = useState<
     EmployeeLeaveCredit[]
   >([]);
@@ -65,13 +74,36 @@ const LeaveCredit = () => {
     useState<EmployeeLeaveCredit | null>(null);
   const [editedCredit, setEditedCredit] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
   const employeesPerPage = 15;
 
   useEffect(() => {
+    const fetchLeaveCredits = async () => {
+      try {
+        const response = await LeaveCreditAPI.getLeaveCredit();
+        if (response.data) {
+          setAllEmployees(response.data);
+          setFilteredEmployees(response.data);
+        }
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to load leave credits",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchLeaveCredits();
+  }, [toast]);
+
+  useEffect(() => {
     const filtered = allEmployees.filter((employee) =>
-      employee.employeeName.toLowerCase().includes(searchTerm.toLowerCase())
+      employee?.employeeName?.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredEmployees(filtered);
     setCurrentPage(1);
@@ -87,7 +119,7 @@ const LeaveCredit = () => {
 
   const handleEditClick = (employee: EmployeeLeaveCredit) => {
     setCurrentEmployee(employee);
-    setEditedCredit(employee.leaveCredit);
+    setEditedCredit(employee.currentBalance);
     setIsEditDialogOpen(true);
   };
 
@@ -96,25 +128,39 @@ const LeaveCredit = () => {
     setIsHistoryDialogOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!currentEmployee) return;
 
     setIsSaving(true);
     try {
-      setTimeout(() => {
-        const updatedEmployees = allEmployees.map((emp) =>
-          emp.id === currentEmployee.id
-            ? { ...emp, leaveCredit: editedCredit }
-            : emp
+      const response = await LeaveCreditAPI.updateLeaveCredit(
+        currentEmployee._id,
+        {
+          currentBalance: editedCredit,
+        }
+      );
+
+      if (response.data) {
+        setAllEmployees((prevEmployees) =>
+          prevEmployees.map((emp) =>
+            emp._id === currentEmployee._id
+              ? {
+                  ...emp, // Keep all existing properties
+                  currentBalance: editedCredit, // Use the edited value directly
+                  annualLeaveCredit:
+                    response.data.annualLeaveCredit || emp.annualLeaveCredit, // Fallback to existing if not in response
+                  updatedAt: response.data.updatedAt || emp.updatedAt,
+                }
+              : emp
+          )
         );
-        setAllEmployees(updatedEmployees);
         toast({
           title: "Success",
           description: "Leave credit updated successfully",
           variant: "default",
         });
         setIsEditDialogOpen(false);
-      }, 500);
+      }
     } catch (error) {
       toast({
         title: "Error",
@@ -126,6 +172,14 @@ const LeaveCredit = () => {
     }
   };
 
+  const formattedDate = (dateString: string | number | Date) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
@@ -135,22 +189,9 @@ const LeaveCredit = () => {
   const goToPrevPage = () => currentPage > 1 && setCurrentPage(currentPage - 1);
   const handleBack = () => navigate(-1);
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
-
-  // Mock leave history data
-  const mockLeaveHistory = [
-    { date: "2023-06-15", type: "Annual Leave", days: 2, status: "Approved" },
-    { date: "2023-05-20", type: "Sick Leave", days: 1, status: "Approved" },
-    { date: "2023-04-10", type: "Annual Leave", days: 3, status: "Approved" },
-    { date: "2023-03-05", type: "Unpaid Leave", days: 1, status: "Rejected" },
-  ];
+  if (isLoading) {
+    return <Loading />;
+  }
 
   return (
     <div className="flex flex-col items-center min-h-screen bg-gray-50">
@@ -201,10 +242,7 @@ const LeaveCredit = () => {
                   Start Date
                 </TableHead>
                 <TableHead className="text-center font-bold text-gray-700">
-                  Months
-                </TableHead>
-                <TableHead className="text-center font-bold text-gray-700">
-                  Leave Credit
+                  Next Accrual Date
                 </TableHead>
                 <TableHead className="text-center font-bold text-gray-700">
                   Current Balance
@@ -217,23 +255,18 @@ const LeaveCredit = () => {
             <TableBody>
               {currentEmployees.length > 0 ? (
                 currentEmployees.map((employee) => (
-                  <TableRow key={employee.id} className="hover:bg-gray-50">
+                  <TableRow key={employee._id} className="hover:bg-gray-50">
                     <TableCell className="text-center font-medium">
                       {employee.employeeName}
                     </TableCell>
                     <TableCell className="text-center">
-                      {formatDate(employee.startDate)}
+                      {employee.startDate}
                     </TableCell>
                     <TableCell className="text-center">
-                      {employee.months}
+                      {formattedDate(employee.nextAccrualDate)}
                     </TableCell>
                     <TableCell className="text-center font-semibold">
-                      <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full">
-                        {employee.leaveCredit} days
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-center font-semibold">
-                      <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full">
+                      <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full">
                         {employee.currentBalance} days
                       </span>
                     </TableCell>
@@ -262,7 +295,7 @@ const LeaveCredit = () => {
               ) : (
                 <TableRow>
                   <TableCell
-                    colSpan={6}
+                    colSpan={5}
                     className="text-center py-8 text-gray-500"
                   >
                     No employees found
@@ -391,7 +424,7 @@ const LeaveCredit = () => {
 
       {/* History Dialog */}
       <Dialog open={isHistoryDialogOpen} onOpenChange={setIsHistoryDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] rounded-lg">
+        <DialogContent className="sm:max-w-[700px] rounded-lg">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold text-gray-800">
               Leave History for {currentEmployee?.employeeName}
@@ -405,33 +438,54 @@ const LeaveCredit = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Days</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead className="text-center">Date</TableHead>
+                  <TableHead className="text-center">Type</TableHead>
+                  <TableHead className="text-center">Days</TableHead>
+                  <TableHead className="text-center">Status</TableHead>
+                  <TableHead className="text-center">Ticket</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
-                {mockLeaveHistory.map((history, index) => (
-                  <TableRow key={index}>
-                    <TableCell>{formatDate(history.date)}</TableCell>
-                    <TableCell>{history.type}</TableCell>
-                    <TableCell>{history.days}</TableCell>
-                    <TableCell>
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs ${
-                          history.status === "Approved"
-                            ? "bg-green-100 text-green-800"
-                            : history.status === "Rejected"
-                            ? "bg-red-100 text-red-800"
-                            : "bg-yellow-100 text-yellow-800"
-                        }`}
-                      >
-                        {history.status}
-                      </span>
+              <TableBody className="text-center">
+                {currentEmployee?.history &&
+                currentEmployee.history.length > 0 ? (
+                  currentEmployee.history.map((history) => (
+                    <TableRow key={history._id}>
+                      <TableCell>{formattedDate(history.date)}</TableCell>
+                      <TableCell className="max-w-xs truncate">
+                        {history.description
+                          .split("\n")
+                          .find((line) => line.includes("Leave Type:"))
+                          ?.split("Leave Type:")[1]
+                          ?.trim()}
+                      </TableCell>
+
+                      <TableCell>{history.days}</TableCell>
+                      <TableCell>
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs ${
+                            history.status === "Approved"
+                              ? "bg-green-100 text-green-800"
+                              : history.status === "Rejected"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-yellow-100 text-yellow-800"
+                          }`}
+                        >
+                          {history.status}
+                        </span>
+                      </TableCell>
+                      <TableCell>{history.ticket}</TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={5}
+                      className="text-center py-8 text-gray-500"
+                    >
+                      No leave history found
                     </TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           </div>
