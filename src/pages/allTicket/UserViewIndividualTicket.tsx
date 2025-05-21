@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { TicketAPi, UserProfileAPI } from "@/API/endpoint"; // Add UserProfileAPI import
+import { LeaveCreditAPI, TicketAPi, UserProfileAPI } from "@/API/endpoint"; // Added LeaveCreditAPI import
 import { formattedDate } from "@/API/helper";
 import BackButton from "@/components/kit/BackButton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -22,10 +22,19 @@ import {
   Send,
   Tag,
   User,
-} from "lucide-react";
+  Wallet,
+} from "lucide-react"; // Added Wallet icon
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Ticket } from "./ViewAllTicket";
+
+// Added interface for leave credit
+interface LeaveCredit {
+  _id: string;
+  userId: string;
+  currentBalance: number;
+  updatedAt: string;
+}
 
 const UserViewIndividualTicket: React.FC = () => {
   const [details, setDetails] = useState<Ticket>();
@@ -34,7 +43,9 @@ const UserViewIndividualTicket: React.FC = () => {
   const [notes, setNotes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [avatarMap, setAvatarMap] = useState<Record<string, string>>({}); // Add avatarMap state
+  const [avatarMap, setAvatarMap] = useState<Record<string, string>>({});
+  // Added state for leave credit
+  const [leaveCredit, setLeaveCredit] = useState<LeaveCredit | null>(null);
 
   // Fetch all avatars when component mounts
   useEffect(() => {
@@ -68,8 +79,21 @@ const UserViewIndividualTicket: React.FC = () => {
     try {
       const response = await TicketAPi.getIndividualTicket(ticketId);
       setDetails(response.data);
+
+      // Once we have the ticket details, get the leave credit
+      getLeaveCreditForUser();
     } catch (error) {
       console.error(error);
+    }
+  };
+
+  // Added function to get leave credit
+  const getLeaveCreditForUser = async () => {
+    try {
+      const response = await LeaveCreditAPI.getLeaveCreditById();
+      setLeaveCredit(response.data);
+    } catch (error) {
+      console.error("Error fetching leave credit:", error);
     }
   };
 
@@ -92,6 +116,7 @@ const UserViewIndividualTicket: React.FC = () => {
           setIsLoading(false);
         });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const submitNote = async (e: React.FormEvent) => {
@@ -164,6 +189,21 @@ const UserViewIndividualTicket: React.FC = () => {
     }
   };
 
+  // Calculate balance after leave approval
+  const calculateBalanceAfterApproval = () => {
+    if (!leaveCredit || !details?.leaveDays) return null;
+
+    const currentBalance = leaveCredit.currentBalance;
+    const requestedDays = parseFloat(details.leaveDays.toString());
+    const balanceAfterApproval = currentBalance - requestedDays;
+
+    return balanceAfterApproval < 0 ? 0 : balanceAfterApproval;
+  };
+
+  // Only show leave balance for leave request tickets
+  const showLeaveBalance = details?.category === "Leave Request";
+  const balanceAfterApproval = calculateBalanceAfterApproval();
+
   return (
     <div className="container py-6 mx-auto max-w-4xl">
       <div className="text-sm scale-90 origin-top-left">
@@ -216,6 +256,15 @@ const UserViewIndividualTicket: React.FC = () => {
                   Category: {details?.category || "Uncategorized"}
                 </span>
               </div>
+              {/* Added leave days if available */}
+              {details?.leaveDays && (
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-gray-900" />
+                  <span className="text-sm text-gray-900">
+                    Leave Days: {details?.leaveDays}
+                  </span>
+                </div>
+              )}
             </div>
             <div className="space-y-2">
               <div className="flex items-center gap-2">
@@ -240,11 +289,53 @@ const UserViewIndividualTicket: React.FC = () => {
             </div>
           </div>
 
+          {/* Added Leave Balance Section */}
+          {showLeaveBalance && (
+            <>
+              <div className="bg-blue-50 p-4 rounded-md border border-blue-200 my-4">
+                <h3 className="text-sm  font-medium text-blue-800 mb-2 flex items-center">
+                  <Wallet className="h-4 w-4 mr-2" />
+                  Leave Balance Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-700">
+                      <span className="text-sm ">Current Balance:</span>{" "}
+                      {leaveCredit ? (
+                        <span className="font-bold">
+                          {leaveCredit.currentBalance} days
+                        </span>
+                      ) : (
+                        "Loading..."
+                      )}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-700">
+                      <span className="text-sm ">Balance After Approval:</span>{" "}
+                      {balanceAfterApproval !== null ? (
+                        <span
+                          className={`font-bold ${
+                            balanceAfterApproval < 5 ? "text-orange-600" : ""
+                          }`}
+                        >
+                          {balanceAfterApproval} days
+                        </span>
+                      ) : (
+                        "Calculating..."
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
           <Separator className="my-4" />
 
           <div>
-            <h2 className="font-medium mb-3">Description</h2>
-            <div className="bg-slate-200 p-4 rounded-sm border-2 border-gray-300">
+            <h2 className="font-medium text-sm">Description</h2>
+            <div className="bg-blue-50 p-4 rounded-md border border-blue-200 my-4">
               <pre className="whitespace-pre-wrap font-sans text-sm text-gray-900">
                 {details?.description || "No description provided."}
               </pre>
@@ -255,7 +346,7 @@ const UserViewIndividualTicket: React.FC = () => {
 
       {/* Notes Section */}
       <div className="mb-6">
-        <h2 className="text-lg font-semibold mb-4">Notes & Responses</h2>
+        <h2 className="text-sm font-semibold mb-4">Notes & Responses</h2>
 
         {details?.status !== "closed" && (
           <Card className="mb-6 shadow-sm">
@@ -286,7 +377,7 @@ const UserViewIndividualTicket: React.FC = () => {
 
         <div className="space-y-4">
           {notes?.length === 0 ? (
-            <p className="text-center text-gray-900 py-8">
+            <p className="text-center text-gray-900 py-8 text-sm">
               No notes or responses yet.
             </p>
           ) : (

@@ -1,8 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Assigns, TicketAPi, UserProfileAPI } from "@/API/endpoint"; // Add UserProfileAPI import
+import {
+  Assigns,
+  LeaveCreditAPI,
+  TicketAPi,
+  UserProfileAPI,
+} from "@/API/endpoint";
 import { formattedDate } from "@/API/helper";
 import BackButton from "@/components/kit/BackButton";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"; // Add these imports
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -46,10 +51,20 @@ import {
   Send,
   Tag,
   User,
+  Wallet,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Ticket } from "./ViewAllTicket";
+
+interface LeaveCredit {
+  _id: string;
+  userId: string;
+  currentBalance: number;
+  updatedAt: string;
+  employeeName: string;
+  employeeId: string;
+}
 
 const AdminViewIndividualTicket: React.FC = () => {
   const [details, setDetails] = useState<Ticket>();
@@ -66,9 +81,9 @@ const AdminViewIndividualTicket: React.FC = () => {
   const [listAssigns, setListAssigns] = useState<any[]>([]);
   const [closeMessage, setCloseMessage] = useState("");
   const [showTextArea, setShowTextArea] = useState(false);
-  const [avatarMap, setAvatarMap] = useState<Record<string, string>>({}); // Add avatarMap state
+  const [avatarMap, setAvatarMap] = useState<Record<string, string>>({});
+  const [leaveCredit, setLeaveCredit] = useState<LeaveCredit | null>(null);
 
-  // Fetch all avatars when component mounts
   useEffect(() => {
     const fetchAvatars = async () => {
       try {
@@ -96,10 +111,37 @@ const AdminViewIndividualTicket: React.FC = () => {
     setMessage(event.target.value);
   };
 
+  const getLeaveCreditForUser = async (userId: string) => {
+    try {
+      const response = await LeaveCreditAPI.getLeaveCredit();
+      console.log("Leave credit data:", response.data);
+
+      if (response.data) {
+        // Find the leave credit for the employee who created the ticket
+        const employeeLeaveCredit = response.data.find(
+          (credit: LeaveCredit) =>
+            credit.userId === userId || credit.employeeId === userId
+        );
+        console.log("Ticket user ID:", userId);
+        console.log("Matching leave credit:", employeeLeaveCredit);
+        setLeaveCredit(employeeLeaveCredit || null);
+      }
+    } catch (error) {
+      console.error("Error fetching leave credit:", error);
+      setLeaveCredit(null);
+    }
+  };
   const getTicket = async (ticketId: string) => {
     try {
       const response = await TicketAPi.getIndividualTicket(ticketId);
       setDetails(response.data);
+
+      // Get the user ID correctly
+      const userId = response.data.user?._id || response.data.user;
+
+      if (response.data.category === "Leave Request" && userId) {
+        await getLeaveCreditForUser(userId);
+      }
     } catch (error) {
       console.error(error);
     }
@@ -134,6 +176,7 @@ const AdminViewIndividualTicket: React.FC = () => {
           setIsLoading(false);
         });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const handleAssignChange = (value: string) => {
@@ -152,16 +195,25 @@ const AdminViewIndividualTicket: React.FC = () => {
   const submitNote = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting || !message.trim()) return;
-    if (!id || !details?._id) {
-      console.error("Ticket ID or User ID is missing");
+    if (!id || !details) {
+      console.error("Ticket ID or details are missing");
       return;
     }
+
+    // Get the user ID correctly based on the structure
+    const userId = details.user?._id || details.user;
+
+    if (!userId) {
+      console.error("User ID is missing");
+      return;
+    }
+
     setIsSubmitting(true);
     const body = {
       ticket: id,
       text: message,
-      isStaff: true, // Mark as staff note for admin
-      user: details?._id,
+      isStaff: true,
+      user: userId,
     };
     try {
       const response = await TicketAPi.createNote(id, body);
@@ -174,6 +226,18 @@ const AdminViewIndividualTicket: React.FC = () => {
       setIsSubmitting(false);
     }
   };
+
+  const calculateBalanceAfterApproval = () => {
+    if (!leaveCredit || !details?.leaveDays) return null;
+
+    const currentBalance = leaveCredit.currentBalance;
+    const requestedDays = parseFloat(details.leaveDays.toString());
+    const balanceAfterApproval = currentBalance - requestedDays;
+
+    return balanceAfterApproval < 0 ? 0 : balanceAfterApproval;
+  };
+
+  const balanceAfterApproval = calculateBalanceAfterApproval();
 
   const handleEditButton = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -191,16 +255,23 @@ const AdminViewIndividualTicket: React.FC = () => {
       const response = await TicketAPi.updateTicket(id, body);
       console.log(response);
 
-      // If status is closed and there's a close message, submit the note
       if (
         status?.status === "closed" ||
         (status?.status === "Rejected" && closeMessage.trim())
       ) {
+        // Get the user ID correctly based on the structure
+        const userId = details?.user?._id || details?.user;
+
+        if (!userId) {
+          console.error("User ID is missing");
+          return;
+        }
+
         const noteBody = {
           ticket: id,
           text: closeMessage,
-          isStaff: true, // Mark as staff note
-          user: details?._id,
+          isStaff: true,
+          user: userId,
         };
         await TicketAPi.createNote(id, noteBody);
         setCloseMessage("");
@@ -223,8 +294,6 @@ const AdminViewIndividualTicket: React.FC = () => {
       });
     } finally {
       setIsUpdating(false);
-      // Refresh the page
-      // window.location.reload();
     }
   };
 
@@ -239,7 +308,6 @@ const AdminViewIndividualTicket: React.FC = () => {
     return <Loading />;
   }
 
-  // Helper function to get status badge color and icon
   const getStatusInfo = (status: string | undefined) => {
     if (!status)
       return { color: "bg-gray-500", icon: <Clock className="h-4 w-4" /> };
@@ -278,7 +346,7 @@ const AdminViewIndividualTicket: React.FC = () => {
         };
     }
   };
-  // Helper function to get priority badge color and icon
+
   const getPriorityInfo = (priority: string | undefined) => {
     if (!priority)
       return { color: "bg-gray-500", icon: <Clock className="h-4 w-4" /> };
@@ -498,6 +566,14 @@ const AdminViewIndividualTicket: React.FC = () => {
                   Category: {details?.category || "Uncategorized"}
                 </span>
               </div>
+              {details?.leaveDays && (
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-gray-900" />
+                  <span className="text-sm text-gray-900">
+                    Leave Days: {details?.leaveDays}
+                  </span>
+                </div>
+              )}
             </div>
             <div className="space-y-2">
               <div className="flex items-center gap-2">
@@ -522,11 +598,51 @@ const AdminViewIndividualTicket: React.FC = () => {
             </div>
           </div>
 
+          {/* Leave Balance Information Section */}
+          {details?.category === "Leave Request" && (
+            <div className="bg-blue-50 p-4 rounded-md border border-blue-200 my-4">
+              <h3 className="text-sm font-medium text-blue-800 mb-2 flex items-center">
+                <Wallet className="h-4 w-4 mr-2" />
+                Leave Balance Information
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-700">
+                    <span className="font-medium">Current Balance:</span>{" "}
+                    {leaveCredit ? (
+                      <span className="font-bold">
+                        {leaveCredit.currentBalance} days
+                      </span>
+                    ) : (
+                      "Loading..."
+                    )}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-700">
+                    <span className="font-medium">After Approval:</span>{" "}
+                    {balanceAfterApproval !== null ? (
+                      <span
+                        className={`font-bold ${
+                          balanceAfterApproval < 5 ? "text-orange-600" : ""
+                        }`}
+                      >
+                        {balanceAfterApproval} days
+                      </span>
+                    ) : (
+                      "Calculating..."
+                    )}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <Separator className="my-4" />
 
           <div>
-            <h2 className="font-medium mb-3">Description</h2>
-            <div className="bg-slate-200 p-4 rounded-sm border-2 border-gray-300">
+            <h2 className="text-sm font-medium mb-3">Description</h2>
+            <div className="bg-blue-50 p-4 rounded-md border border-blue-200 my-4">
               <pre className="whitespace-pre-wrap font-sans text-sm text-gray-900">
                 {details?.description || "No description provided."}
               </pre>
@@ -537,7 +653,7 @@ const AdminViewIndividualTicket: React.FC = () => {
 
       {/* Notes Section */}
       <div className="mb-6">
-        <h2 className="text-lg font-semibold mb-4">Notes & Responses</h2>
+        <h2 className="text-sm font-semibold mb-4">Notes & Responses</h2>
 
         {details?.status !== "closed" &&
           details?.status !== "Rejected" &&
@@ -570,7 +686,7 @@ const AdminViewIndividualTicket: React.FC = () => {
 
         <div className="space-y-4">
           {notes?.length === 0 ? (
-            <p className="text-center text-gray-900 py-8">
+            <p className="text-center text-gray-900 py-8 text-sm">
               No notes or responses yet.
             </p>
           ) : (
@@ -578,7 +694,6 @@ const AdminViewIndividualTicket: React.FC = () => {
               ?.slice()
               .reverse()
               .map((note: any) => {
-                // Get avatar URL from avatarMap or use default
                 const avatarFilename = avatarMap[note.user];
                 const avatarUrl = avatarFilename
                   ? `${
@@ -597,7 +712,6 @@ const AdminViewIndividualTicket: React.FC = () => {
                   >
                     <CardContent className="p-4">
                       <div className="flex items-start gap-3">
-                        {/* Updated Avatar with the same styling as ScheduleAndAttendance */}
                         <Avatar className="h-8 w-8 rounded-full overflow-hidden border-2 border-blue-200">
                           <AvatarImage
                             src={avatarUrl}

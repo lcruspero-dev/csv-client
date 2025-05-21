@@ -400,10 +400,11 @@ const ViewAllRaisedTickets: React.FC = () => {
               <TableCell className="text-center">{ticket.priority}</TableCell>
               <TableCell>
                 <p
-                  className={`py-1 mx-4 rounded-sm text-center text-primary-foreground font-semibold text-xs ${
+                  className={`p-1 mx-4 rounded-sm text-center text-primary-foreground font-semibold text-xs ${
                     ticket.status === "new" || ticket.status === "open"
                       ? "bg-green-600"
-                      : ticket.status === "closed"
+                      : ticket.status === "closed" ||
+                        ticket.status === "Rejected"
                       ? "bg-red-600"
                       : "bg-[#FF8C00]"
                   }`}

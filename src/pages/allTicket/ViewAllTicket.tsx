@@ -21,13 +21,20 @@ export interface Ticket {
   assignedTo: string;
   category: string;
   createdAt: string;
+  updatedAt: string;
   description: string;
   status: string;
-  user: string;
+  user: {
+    _id: string;
+  };
   name: string;
   priority: string;
-  file: string;
+  file: string | null;
   ticketNumber: string;
+  leaveDays: number;
+  closingNote: string | null;
+  department: string;
+  __v: number;
 }
 
 const ViewAllTicket: React.FC = () => {

@@ -414,7 +414,7 @@ const ViewIndividualMemo = () => {
 
           <div className=" pt-1 border-t border-gray-100">
             <hr className="w-full border-t border-gray-300 my-4"></hr>
-            <div className="bg-slate-200 p-4 rounded-sm border-2 border-gray-300">
+            <div className="bg-blue-50 p-4 rounded-md border border-blue-200">
               <pre className="whitespace-pre-wrap font-sans p-3 rounded-sm overflow-x-auto text-sm">
                 {memos?.description}
               </pre>
