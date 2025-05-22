@@ -121,7 +121,9 @@ const calculateTotalHours = (
       if (breakEndSeconds < breakStartSeconds) {
         breakEndSeconds += 24 * 3600;
       }
-      breakTimeSeconds = breakEndSeconds - breakStartSeconds;
+      const totalBreakSeconds = breakEndSeconds - breakStartSeconds;
+      // Only deduct if break is more than 15 minutes (900 seconds)
+      breakTimeSeconds = totalBreakSeconds > 900 ? totalBreakSeconds - 900 : 0;
     }
   }
 
@@ -134,7 +136,9 @@ const calculateTotalHours = (
       if (lunchEndSeconds < lunchStartSeconds) {
         lunchEndSeconds += 24 * 3600;
       }
-      lunchTimeSeconds = lunchEndSeconds - lunchStartSeconds;
+      const totalLunchSeconds = lunchEndSeconds - lunchStartSeconds;
+      // Only deduct if lunch is more than 15 minutes (900 seconds)
+      lunchTimeSeconds = totalLunchSeconds > 900 ? totalLunchSeconds - 900 : 0;
     }
   }
 
@@ -147,7 +151,11 @@ const calculateTotalHours = (
       if (secondBreakEndSeconds < secondBreakStartSeconds) {
         secondBreakEndSeconds += 24 * 3600;
       }
-      secondBreakTimeSeconds = secondBreakEndSeconds - secondBreakStartSeconds;
+      const totalSecondBreakSeconds =
+        secondBreakEndSeconds - secondBreakStartSeconds;
+      // Only deduct if second break is more than 15 minutes (900 seconds)
+      secondBreakTimeSeconds =
+        totalSecondBreakSeconds > 900 ? totalSecondBreakSeconds - 900 : 0;
     }
   }
 

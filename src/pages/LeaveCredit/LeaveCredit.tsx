@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { LeaveCreditAPI } from "@/API/endpoint";
-// import { formattedDate } from "@/API/helper";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -30,6 +29,7 @@ import {
   ChevronRight,
   Pencil,
   Search,
+  Trash2,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -58,6 +58,7 @@ interface EmployeeLeaveCredit {
   createdAt: string;
   updatedAt: string;
   __v: number;
+  isActive?: boolean;
 }
 
 const LeaveCredit = () => {
@@ -70,10 +71,12 @@ const LeaveCredit = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [currentEmployee, setCurrentEmployee] =
     useState<EmployeeLeaveCredit | null>(null);
   const [editedCredit, setEditedCredit] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -84,8 +87,12 @@ const LeaveCredit = () => {
       try {
         const response = await LeaveCreditAPI.getLeaveCredit();
         if (response.data) {
-          setAllEmployees(response.data);
-          setFilteredEmployees(response.data);
+          // Filter out inactive records if needed
+          const activeEmployees = response.data.filter(
+            (emp: EmployeeLeaveCredit) => emp.isActive !== false
+          );
+          setAllEmployees(activeEmployees);
+          setFilteredEmployees(activeEmployees);
         }
       } catch (error) {
         toast({
@@ -128,6 +135,45 @@ const LeaveCredit = () => {
     setIsHistoryDialogOpen(true);
   };
 
+  const handleDeleteClick = (employee: EmployeeLeaveCredit) => {
+    setCurrentEmployee(employee);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!currentEmployee) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await LeaveCreditAPI.updateLeaveCredit(
+        currentEmployee._id,
+        {
+          isActive: false,
+        }
+      );
+
+      if (response.data) {
+        setAllEmployees((prevEmployees) =>
+          prevEmployees.filter((emp) => emp._id !== currentEmployee._id)
+        );
+        toast({
+          title: "Success",
+          description: "Leave record deleted successfully",
+          variant: "default",
+        });
+        setIsDeleteDialogOpen(false);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete leave record",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!currentEmployee) return;
 
@@ -145,10 +191,10 @@ const LeaveCredit = () => {
           prevEmployees.map((emp) =>
             emp._id === currentEmployee._id
               ? {
-                  ...emp, // Keep all existing properties
-                  currentBalance: editedCredit, // Use the edited value directly
+                  ...emp,
+                  currentBalance: editedCredit,
                   annualLeaveCredit:
-                    response.data.annualLeaveCredit || emp.annualLeaveCredit, // Fallback to existing if not in response
+                    response.data.annualLeaveCredit || emp.annualLeaveCredit,
                   updatedAt: response.data.updatedAt || emp.updatedAt,
                 }
               : emp
@@ -180,6 +226,7 @@ const LeaveCredit = () => {
       day: "numeric",
     });
   };
+
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
@@ -271,24 +318,41 @@ const LeaveCredit = () => {
                       </span>
                     </TableCell>
                     <TableCell className="flex justify-center space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditClick(employee)}
-                        className="text-blue-600 hover:text-blue-800"
-                      >
-                        <Pencil className="h-4 w-4 mr-2" />
-                        Edit
-                      </Button>
+                      {/* History Button (icon only) */}
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleViewHistory(employee)}
-                        className="text-green-600 hover:text-green-800"
+                        className="text-green-600 hover:text-green-800 p-2"
+                        title="View History"
                       >
-                        <Calendar className="h-4 w-4 mr-2" />
-                        History
+                        <Calendar className="h-5 w-5" />
                       </Button>
+
+                      {/* Edit/Delete Container */}
+                      <div className="flex items-center border-l border-gray-200 pl-2 ml-2">
+                        {/* Edit Button (icon only) */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditClick(employee)}
+                          className="text-blue-600 hover:text-blue-800 p-2"
+                          title="Edit"
+                        >
+                          <Pencil className="h-5 w-5" />
+                        </Button>
+
+                        {/* Delete Button (icon only) */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteClick(employee)}
+                          className="text-red-600 hover:text-red-800 p-2"
+                          title="Delete"
+                        >
+                          <Trash2 className="h-5 w-5" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -496,6 +560,70 @@ const LeaveCredit = () => {
               onClick={() => setIsHistoryDialogOpen(false)}
             >
               Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[425px] rounded-lg">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-gray-800">
+              Delete Leave Record
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              Are you sure you want to delete{" "}
+              <span className="font-semibold">
+                {currentEmployee?.employeeName}'s
+              </span>{" "}
+              leave data?
+              <br />
+              This action cannot be undone. This will permanently delete the
+              record.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="flex justify-center space-x-4 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Deleting...
+                </>
+              ) : (
+                "Delete Permanently"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
