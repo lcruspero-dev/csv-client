@@ -97,9 +97,29 @@ const Request = () => {
   }, [form.startDate, form.leaveCategory, form.selectedDates, leaveBalance]);
 
   const handleDateSelect = (dates: Date[] | undefined) => {
-    if (dates) {
-      setForm((prev) => ({ ...prev, selectedDates: dates }));
-    }
+    if (!dates || !leaveBalance) return;
+
+    // Cap the selected dates at the current leave balance
+    const maxSelectableDates = Math.min(
+      dates.length,
+      leaveBalance.currentBalance
+    );
+    const cappedDates = dates.slice(0, maxSelectableDates);
+
+    setForm((prev) => ({ ...prev, selectedDates: cappedDates }));
+  };
+
+  // Add this function to determine which dates should be disabled in the calendar
+  const isDateDisabled = (date: Date) => {
+    if (!leaveBalance) return false;
+
+    // If we've already selected the maximum allowed dates, disable all other dates
+    return (
+      form.selectedDates.length >= leaveBalance.currentBalance &&
+      !form.selectedDates.some(
+        (selectedDate) => selectedDate.getTime() === date.getTime()
+      )
+    );
   };
 
   const handleChange = (
@@ -363,12 +383,20 @@ const Request = () => {
                   selected={form.selectedDates}
                   onSelect={handleDateSelect}
                   initialFocus
+                  disabled={isDateDisabled}
                 />
               </PopoverContent>
             </Popover>
             {form.selectedDates.length > 0 && (
               <div className="text-sm text-gray-600 mb-2">
                 Selected: {formatSelectedDates()}
+                {leaveBalance &&
+                  form.selectedDates.length === leaveBalance.currentBalance && (
+                    <div className="text-red-600 mt-1">
+                      You've reached your maximum leave balance. Cannot select
+                      more dates.
+                    </div>
+                  )}
               </div>
             )}
           </div>
