@@ -845,7 +845,7 @@ const ScheduleAndAttendance: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto p-1">
+    <div className="container mx-auto">
       <Card className="w-full">
         <CardHeader>
           <div className="flex items-center justify-between">

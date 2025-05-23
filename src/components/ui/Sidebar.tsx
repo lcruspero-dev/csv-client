@@ -1,4 +1,12 @@
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
   Tooltip,
@@ -6,6 +14,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 import {
   CalendarCheck,
@@ -40,12 +49,17 @@ interface NavItem {
   title: string;
   path: string;
   icon: React.ReactNode;
+  protected?: boolean;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMounted, setIsMounted] = useState(false);
+  const [password, setPassword] = useState("");
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [protectedPath, setProtectedPath] = useState("");
+  const { toast } = useToast();
 
   const navGroups: NavGroup[] = [
     {
@@ -125,6 +139,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
           title: "Manage Leave Credits",
           path: "/leavecredits",
           icon: <FileText className="h-5 w-5" />,
+          protected: true,
         },
         {
           title: "Manage Users",
@@ -149,8 +164,66 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
     toggleSidebar();
   };
 
+  const verifyPassword = () => {
+    const correctPassword = import.meta.env.VITE_LEAVE_PASSWORD || "!CSV2024";
+    if (password === correctPassword) {
+      navigate(protectedPath);
+      setIsPasswordDialogOpen(false);
+      setPassword("");
+    } else {
+      toast({
+        title: "Incorrect Password",
+        description: "Please enter the correct password to proceed.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleProtectedNavigation = (path: string) => {
+    setProtectedPath(path);
+    setIsPasswordDialogOpen(true);
+  };
+
+  const handleNavigation = (item: NavItem) => {
+    if (item.protected) {
+      handleProtectedNavigation(item.path);
+    } else {
+      navigate(item.path);
+    }
+  };
+
   return (
     <>
+      {/* Password Dialog */}
+      <Dialog
+        open={isPasswordDialogOpen}
+        onOpenChange={setIsPasswordDialogOpen}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Enter Password</DialogTitle>
+            <DialogDescription>
+              Please enter the password to access this section.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Enter password"
+            className="mt-4"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                verifyPassword();
+              }
+            }}
+          />
+          <div className="flex justify-end mt-4">
+            <Button onClick={verifyPassword}>Submit</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Mobile Sidebar */}
       <Sheet>
         <SheetTrigger asChild>
@@ -184,7 +257,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
                         <Button
                           key={index}
                           variant="ghost"
-                          onClick={() => navigate(item.path)}
+                          onClick={() => handleNavigation(item)}
                           className={cn(
                             "w-full justify-start gap-3 px-4 py-1.5 rounded-lg mx-2",
                             isActive
@@ -253,7 +326,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
                       <Button
                         key={index}
                         variant="ghost"
-                        onClick={() => navigate(item.path)}
+                        onClick={() => handleNavigation(item)}
                         className={cn(
                           "w-full justify-start gap-3 px-3 py-1.5 rounded-lg",
                           isActive
@@ -276,7 +349,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
                         <TooltipTrigger asChild>
                           <Button
                             variant="ghost"
-                            onClick={() => navigate(item.path)}
+                            onClick={() => handleNavigation(item)}
                             className={cn(
                               "w-full p-2 justify-center rounded-lg",
                               isActive

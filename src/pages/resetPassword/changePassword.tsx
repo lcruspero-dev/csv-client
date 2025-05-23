@@ -1,12 +1,12 @@
 import { ChangePasswordAPI } from "@/API/endpoint";
-import BackButton from "@/components/kit/BackButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { EyeIcon, EyeOffIcon } from "lucide-react";
+import { ChevronLeft, EyeIcon, EyeOffIcon } from "lucide-react";
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const ChangePassword: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -21,6 +21,7 @@ const ChangePassword: React.FC = () => {
     confirmPassword: false,
   });
   const [errors, setErrors] = useState<Partial<typeof formData>>({});
+  const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -75,12 +76,22 @@ const ChangePassword: React.FC = () => {
     setShowPassword((prev) => ({ ...prev, [field]: !prev[field] }));
   };
 
+  const handleBack = () => {
+    navigate(-1); // Go back to previous page
+  };
+
   return (
-    <div className="flex items-center justify-center bg-gray-100 p-4 mt-16">
-      <div className="absolute top-32 left-[28rem]">
-        <BackButton />
-      </div>
-      <Card className="w-full max-w-md">
+    <div className="flex  justify-center  bg-gray-100 p-4 md:p-8">
+      <Card className="w-full max-w-md relative mb-52">
+        {/* Custom Back Button */}
+        <button
+          onClick={handleBack}
+          className="absolute top-4 left-4 flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors"
+        >
+          <ChevronLeft className="h-5 w-5" />
+          <span>Back</span>
+        </button>
+
         <CardHeader>
           <CardTitle className="text-center">Change Password</CardTitle>
         </CardHeader>
@@ -104,7 +115,9 @@ const ChangePassword: React.FC = () => {
                   value={value}
                   onChange={handleChange}
                   className={
-                    errors[key as keyof typeof formData] ? "border-red-500" : ""
+                    errors[key as keyof typeof formData]
+                      ? "border-red-500 pr-10"
+                      : "pr-10"
                   }
                 />
                 <button
@@ -112,7 +125,12 @@ const ChangePassword: React.FC = () => {
                   onClick={() =>
                     togglePasswordVisibility(key as keyof typeof formData)
                   }
-                  className="absolute right-3 top-8 text-gray-500"
+                  className="absolute right-3 top-8 text-gray-500 hover:text-gray-700"
+                  aria-label={
+                    showPassword[key as keyof typeof formData]
+                      ? "Hide password"
+                      : "Show password"
+                  }
                 >
                   {showPassword[key as keyof typeof formData] ? (
                     <EyeOffIcon size={20} />
@@ -127,7 +145,7 @@ const ChangePassword: React.FC = () => {
                 )}
               </div>
             ))}
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full mt-6">
               Change Password
             </Button>
           </form>
