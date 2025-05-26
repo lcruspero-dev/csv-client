@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import Loading from "@/components/ui/loading";
 import {
   Table,
   TableBody,
@@ -61,6 +60,30 @@ interface EmployeeLeaveCredit {
   isActive?: boolean;
 }
 
+const LoadingState = () => {
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-white bg-opacity-90 z-50">
+      <div className="text-center">
+        <div className="relative inline-block">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-8 h-8 bg-blue-500 rounded-full animate-pulse"></div>
+          </div>
+        </div>
+        <h2 className="mt-6 text-xl font-semibold text-gray-800">
+          Loading Leave Credits
+        </h2>
+        <p className="mt-2 text-gray-600">Preparing your employee data...</p>
+        <div className="mt-4 flex justify-center">
+          <div className="h-1 w-32 bg-gray-200 rounded-full overflow-hidden">
+            <div className="h-full bg-blue-500 rounded-full animate-progress"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const LeaveCredit = () => {
   const { toast } = useToast();
   const [allEmployees, setAllEmployees] = useState<EmployeeLeaveCredit[]>([]);
@@ -77,17 +100,22 @@ const LeaveCredit = () => {
   const [editedCredit, setEditedCredit] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [showLoading, setShowLoading] = useState(true);
   const navigate = useNavigate();
 
   const employeesPerPage = 15;
 
   useEffect(() => {
+    // Always show loading for 5 seconds, no matter what
+    const loadingTimer = setTimeout(() => {
+      setShowLoading(false);
+    }, 500);
+
+    // Fetch data in the background
     const fetchLeaveCredits = async () => {
       try {
         const response = await LeaveCreditAPI.getLeaveCredit();
         if (response.data) {
-          // Filter out inactive records if needed
           const activeEmployees = response.data.filter(
             (emp: EmployeeLeaveCredit) => emp.isActive !== false
           );
@@ -100,12 +128,14 @@ const LeaveCredit = () => {
           description: "Failed to load leave credits",
           variant: "destructive",
         });
-      } finally {
-        setIsLoading(false);
       }
     };
 
     fetchLeaveCredits();
+
+    return () => {
+      clearTimeout(loadingTimer); // Clean up timer on unmount
+    };
   }, [toast]);
 
   useEffect(() => {
@@ -236,8 +266,8 @@ const LeaveCredit = () => {
   const goToPrevPage = () => currentPage > 1 && setCurrentPage(currentPage - 1);
   const handleBack = () => navigate(-1);
 
-  if (isLoading) {
-    return <Loading />;
+  if (showLoading) {
+    return <LoadingState />; // Show loading for exactly 5 seconds
   }
 
   return (
