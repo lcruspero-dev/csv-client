@@ -58,6 +58,8 @@ interface EmployeeLeaveCredit {
   updatedAt: string;
   __v: number;
   isActive?: boolean;
+  startingLeaveCredit?: number;
+  employmentStatus?: "Probationary" | "Regular"; // Added employment status
 }
 
 const LoadingState = () => {
@@ -84,6 +86,30 @@ const LoadingState = () => {
   );
 };
 
+const calculateDaysTenure = (startDate: string): number => {
+  const start = new Date(startDate);
+  const today = new Date();
+
+  start.setHours(0, 0, 0, 0);
+  today.setHours(0, 0, 0, 0);
+
+  const diffTime = today.getTime() - start.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  return diffDays > 0 ? diffDays : 0;
+};
+
+const calculateUsedDays = (history: LeaveHistoryItem[]): number => {
+  if (!history || history.length === 0) return 0;
+
+  return history.reduce((total, item) => {
+    if (item.status === "Approved") {
+      return total + item.days;
+    }
+    return total;
+  }, 0);
+};
+
 const LeaveCredit = () => {
   const { toast } = useToast();
   const [allEmployees, setAllEmployees] = useState<EmployeeLeaveCredit[]>([]);
@@ -101,17 +127,20 @@ const LeaveCredit = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showLoading, setShowLoading] = useState(true);
+  const [editedStartDate, setEditedStartDate] = useState("");
+  const [editedEmploymentStatus, setEditedEmploymentStatus] = useState<
+    "Probationary" | "Regular"
+  >("Probationary");
+
   const navigate = useNavigate();
 
-  const employeesPerPage = 15;
+  const employeesPerPage = 10; // Reduced for better mobile display
 
   useEffect(() => {
-    // Always show loading for 5 seconds, no matter what
     const loadingTimer = setTimeout(() => {
       setShowLoading(false);
     }, 500);
 
-    // Fetch data in the background
     const fetchLeaveCredits = async () => {
       try {
         const response = await LeaveCreditAPI.getLeaveCredit();
@@ -134,7 +163,7 @@ const LeaveCredit = () => {
     fetchLeaveCredits();
 
     return () => {
-      clearTimeout(loadingTimer); // Clean up timer on unmount
+      clearTimeout(loadingTimer);
     };
   }, [toast]);
 
@@ -157,6 +186,8 @@ const LeaveCredit = () => {
   const handleEditClick = (employee: EmployeeLeaveCredit) => {
     setCurrentEmployee(employee);
     setEditedCredit(employee.currentBalance);
+    setEditedStartDate(employee.startDate);
+    setEditedEmploymentStatus(employee.employmentStatus || "Probationary");
     setIsEditDialogOpen(true);
   };
 
@@ -213,6 +244,7 @@ const LeaveCredit = () => {
         currentEmployee._id,
         {
           currentBalance: editedCredit,
+          employmentStatus: editedEmploymentStatus,
         }
       );
 
@@ -223,6 +255,7 @@ const LeaveCredit = () => {
               ? {
                   ...emp,
                   currentBalance: editedCredit,
+                  employmentStatus: editedEmploymentStatus,
                   annualLeaveCredit:
                     response.data.annualLeaveCredit || emp.annualLeaveCredit,
                   updatedAt: response.data.updatedAt || emp.updatedAt,
@@ -257,27 +290,18 @@ const LeaveCredit = () => {
     });
   };
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-  };
-
-  const goToNextPage = () =>
-    currentPage < totalPages && setCurrentPage(currentPage + 1);
-  const goToPrevPage = () => currentPage > 1 && setCurrentPage(currentPage - 1);
-  const handleBack = () => navigate(-1);
-
   if (showLoading) {
-    return <LoadingState />; // Show loading for exactly 5 seconds
+    return <LoadingState />;
   }
 
   return (
-    <div className="flex flex-col items-center min-h-screen bg-gray-50">
-      <Card className="w-full max-w-6xl shadow-lg">
+    <div className="flex flex-col items-center min-h-screen bg-gray-50 p-4 pt-0">
+      <Card className="w-full max-w-screen-2xl shadow-lg overflow-x-auto">
         <CardHeader className="space-y-4">
           <div className="relative flex items-center justify-center">
             <Button
               variant="ghost"
-              onClick={handleBack}
+              onClick={() => navigate(-1)}
               className="absolute left-0 text-blue-600 hover:text-blue-800 p-0 hover:bg-transparent"
             >
               <ArrowLeft className="h-5 w-5 mr-2" />
@@ -285,147 +309,185 @@ const LeaveCredit = () => {
             </Button>
 
             <div className="text-center">
-              <CardTitle className="text-3xl font-bold text-gray-800">
+              <CardTitle className="text-2xl md:text-3xl font-bold text-gray-800">
                 Employee Leave Credits
               </CardTitle>
-              <p className="text-gray-500 mt-2">
+              <p className="text-sm md:text-base text-gray-500 mt-2">
                 Manage and update employee leave balances
               </p>
             </div>
           </div>
 
-          <div className="flex items-center">
-            <div className="relative w-64 text-end ml-auto">
+          <div className="flex flex-col md:flex-row items-center gap-4">
+            <div className="relative w-full md:w-64">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 type="text"
                 placeholder="Search employees..."
-                className="pl-10"
+                className="pl-10 w-full"
                 value={searchTerm}
-                onChange={handleSearchChange}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
           </div>
         </CardHeader>
 
         <CardContent>
-          <Table className="rounded-lg">
-            <TableHeader className="bg-gray-100">
-              <TableRow>
-                <TableHead className="text-center font-bold text-gray-700">
-                  Employee
-                </TableHead>
-                <TableHead className="text-center font-bold text-gray-700">
-                  Start Date
-                </TableHead>
-                <TableHead className="text-center font-bold text-gray-700">
-                  Next Accrual Date
-                </TableHead>
-                <TableHead className="text-center font-bold text-gray-700">
-                  Current Balance
-                </TableHead>
-                <TableHead className="text-center font-bold text-gray-700">
-                  Actions
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {currentEmployees.length > 0 ? (
-                currentEmployees.map((employee) => (
-                  <TableRow key={employee._id} className="hover:bg-gray-50">
-                    <TableCell className="text-center font-medium">
-                      {employee.employeeName}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {employee.startDate}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {formattedDate(employee.nextAccrualDate)}
-                    </TableCell>
-                    <TableCell className="text-center font-semibold">
-                      <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full">
-                        {employee.currentBalance} days
-                      </span>
-                    </TableCell>
-                    <TableCell className="flex justify-center space-x-2">
-                      {/* History Button (icon only) */}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleViewHistory(employee)}
-                        className="text-green-600 hover:text-green-800 p-2"
-                        title="View History"
-                      >
-                        <Calendar className="h-5 w-5" />
-                      </Button>
+          <div className="overflow-x-auto">
+            <Table className="min-w-full">
+              <TableHeader className="bg-gray-100">
+                <TableRow>
+                  <TableHead className="min-w-[120px] text-center">
+                    Employee
+                  </TableHead>
+                  <TableHead className="min-w-[100px] text-center">
+                    Start Date
+                  </TableHead>
+                  <TableHead className="min-w-[120px] text-center">
+                    Status
+                  </TableHead>
+                  <TableHead className="min-w-[100px] text-center">
+                    Days Tenure
+                  </TableHead>
+                  <TableHead className="min-w-[80px] text-center">
+                    Starting
+                  </TableHead>
+                  <TableHead className="min-w-[80px] text-center">
+                    Used
+                  </TableHead>
+                  <TableHead className="min-w-[100px] text-center">
+                    Current
+                  </TableHead>
+                  <TableHead className="min-w-[120px] text-center">
+                    Next Accrual
+                  </TableHead>
+                  <TableHead className="min-w-[100px] text-center">
+                    Actions
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {currentEmployees.length > 0 ? (
+                  currentEmployees.map((employee) => {
+                    const usedDays = calculateUsedDays(employee.history);
+                    const daysTenure = calculateDaysTenure(employee.startDate);
 
-                      {/* Edit/Delete Container */}
-                      <div className="flex items-center border-l border-gray-200 pl-2 ml-2">
-                        {/* Edit Button (icon only) */}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditClick(employee)}
-                          className="text-blue-600 hover:text-blue-800 p-2"
-                          title="Edit"
-                        >
-                          <Pencil className="h-5 w-5" />
-                        </Button>
-
-                        {/* Delete Button (icon only) */}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteClick(employee)}
-                          className="text-red-600 hover:text-red-800 p-2"
-                          title="Delete"
-                        >
-                          <Trash2 className="h-5 w-5" />
-                        </Button>
-                      </div>
+                    return (
+                      <TableRow key={employee._id} className="hover:bg-gray-50">
+                        <TableCell className="font-medium text-center">
+                          <div className="line-clamp-1">
+                            {employee.employeeName}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {formattedDate(employee.startDate)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs ${
+                              employee.employmentStatus === "Regular"
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-purple-100 text-purple-800"
+                            }`}
+                          >
+                            {employee.employmentStatus || "Probationary"}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {daysTenure} days
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {employee.startingLeaveCredit} days
+                        </TableCell>
+                        <TableCell className="text-red-600 text-center">
+                          {usedDays} days
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                            {employee.currentBalance} days
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {formattedDate(employee.nextAccrualDate)}
+                        </TableCell>
+                        <TableCell className="flex justify-center space-x-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleViewHistory(employee)}
+                            className="text-green-600 hover:text-green-800 h-8 w-8"
+                            title="History"
+                          >
+                            <Calendar className="h-5 w-5" />
+                          </Button>
+                          <div className="flex items-center border-l border-gray-200 pl-2 ml-4">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEditClick(employee)}
+                              className="text-blue-600 hover:text-blue-800 h-8 w-8 mr-2"
+                              title="Edit"
+                            >
+                              <Pencil className="h-5 w-5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteClick(employee)}
+                              className="text-red-600 hover:text-red-800 h-8 w-8"
+                              title="Delete"
+                            >
+                              <Trash2 className="h-5 w-5" />{" "}
+                              {/* You'll need to import Trash2 from lucide-react */}
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={9}
+                      className="text-center py-8 text-gray-500"
+                    >
+                      No employees found
                     </TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="text-center py-8 text-gray-500"
-                  >
-                    No employees found
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                )}
+              </TableBody>
+            </Table>
+          </div>
 
           {filteredEmployees.length > employeesPerPage && (
-            <div className="flex items-center justify-between mt-6">
+            <div className="flex flex-col md:flex-row items-center justify-between mt-6 gap-4">
               <div className="text-sm text-gray-600">
                 Showing {indexOfFirstEmployee + 1} to{" "}
                 {Math.min(indexOfLastEmployee, filteredEmployees.length)} of{" "}
                 {filteredEmployees.length} employees
               </div>
-              <div className="flex space-x-2">
+              <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={goToPrevPage}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
                 >
                   <ChevronLeft className="h-4 w-4" />
-                  Previous
+                  <span className="sr-only md:not-sr-only">Previous</span>
                 </Button>
-                <div className="flex items-center px-4 text-sm font-medium">
+                <div className="text-sm font-medium">
                   Page {currentPage} of {totalPages}
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={goToNextPage}
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                  }
                   disabled={currentPage === totalPages}
                 >
-                  Next
+                  <span className="sr-only md:not-sr-only">Next</span>
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
@@ -436,41 +498,81 @@ const LeaveCredit = () => {
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] rounded-lg">
+        <DialogContent className="sm:max-w-[500px] rounded-lg">
           <DialogHeader>
-            <DialogTitle className="text-center text-2xl font-bold text-gray-800">
-              Edit Leave Credit
+            <DialogTitle className="text-2xl font-bold text-gray-800">
+              Edit Leave Credit Data
             </DialogTitle>
-            <DialogDescription className="text-center">
-              Update leave balance for{" "}
-              <span className="font-semibold">
-                {currentEmployee?.employeeName}
-              </span>
+            <DialogDescription>
+              Name: {currentEmployee?.employeeName}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-6 py-4">
-            <div className="flex flex-col items-center space-y-4">
-              <div className="w-full max-w-xs">
-                <Label
-                  htmlFor="leaveCredit"
-                  className="block text-center mb-2 text-gray-700"
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="startDate" className="text-right">
+                Start Date
+              </Label>
+              <Input
+                id="startDate"
+                value={editedStartDate ? formattedDate(editedStartDate) : ""}
+                className="col-span-3"
+                disabled
+              />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="employmentStatus" className="text-right">
+                Status
+              </Label>
+              <div className="col-span-3">
+                <select
+                  id="employmentStatus"
+                  value={editedEmploymentStatus}
+                  onChange={(e) =>
+                    setEditedEmploymentStatus(
+                      e.target.value as "Probationary" | "Regular"
+                    )
+                  }
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
-                  Available Leave Days
-                </Label>
-                <Input
-                  id="leaveCredit"
-                  type="number"
-                  className="text-center text-lg font-medium py-6"
-                  value={editedCredit}
-                  onChange={(e) => setEditedCredit(Number(e.target.value))}
-                  min={0}
-                />
+                  <option value="Probationary">Probationary</option>
+                  <option value="Regular">Regular</option>
+                </select>
               </div>
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="currentBalance" className="text-right">
+                Current Balance
+              </Label>
+              <Input
+                id="currentBalance"
+                type="number"
+                value={editedCredit}
+                onChange={(e) => setEditedCredit(Number(e.target.value))}
+                className="col-span-3"
+              />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="nextAccrual" className="text-right">
+                Next Accrual
+              </Label>
+              <Input
+                id="nextAccrual"
+                value={
+                  currentEmployee?.nextAccrualDate
+                    ? formattedDate(currentEmployee.nextAccrualDate)
+                    : ""
+                }
+                className="col-span-3"
+                disabled
+              />
             </div>
           </div>
 
-          <DialogFooter className="flex justify-center">
+          <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setIsEditDialogOpen(false)}
@@ -529,6 +631,31 @@ const LeaveCredit = () => {
           </DialogHeader>
 
           <div className="py-4">
+            <div className="mb-4 grid grid-cols-3 gap-4">
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h3 className="text-sm font-medium text-blue-800">
+                  Starting Balance
+                </h3>
+                <p className="text-2xl font-bold text-blue-600">
+                  {currentEmployee?.startingLeaveCredit} days
+                </p>
+              </div>
+              <div className="bg-red-50 p-4 rounded-lg">
+                <h3 className="text-sm font-medium text-red-800">Used Days</h3>
+                <p className="text-2xl font-bold text-red-600">
+                  {calculateUsedDays(currentEmployee?.history || [])} days
+                </p>
+              </div>
+              <div className="bg-green-50 p-4 rounded-lg">
+                <h3 className="text-sm font-medium text-green-800">
+                  Current Balance
+                </h3>
+                <p className="text-2xl font-bold text-green-600">
+                  {currentEmployee?.currentBalance} days
+                </p>
+              </div>
+            </div>
+
             <Table>
               <TableHeader>
                 <TableRow>
