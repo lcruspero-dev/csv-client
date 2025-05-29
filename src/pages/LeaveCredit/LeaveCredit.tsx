@@ -21,6 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
+import ExportLeaveCredits from "@/pages/exportData/ExportLeaveData";
 import {
   ArrowLeft,
   Calendar,
@@ -318,8 +319,8 @@ const LeaveCredit = () => {
             </div>
           </div>
 
-          <div className="flex flex-col md:flex-row items-center gap-4">
-            <div className="relative w-full md:w-64">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="relative w-full md:w-64 ">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 type="text"
@@ -329,6 +330,7 @@ const LeaveCredit = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
+            <ExportLeaveCredits employees={filteredEmployees} />
           </div>
         </CardHeader>
 
