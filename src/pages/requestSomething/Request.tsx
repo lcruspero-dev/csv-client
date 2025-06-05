@@ -2,6 +2,13 @@
 import { Category, LeaveCreditAPI, TicketAPi } from "@/API/endpoint";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -29,10 +36,12 @@ import BackButton from "../../components/kit/BackButton";
 interface LeaveBalance {
   currentBalance: number;
   nextAccrualDate: string;
+  employmentStatus: string;
 }
 
 const Request = () => {
   const userLogin = JSON.parse(localStorage.getItem("user")!);
+
   const [form, setForm] = useState({
     name: `${userLogin.name}`,
     email: `${userLogin.email}`,
@@ -40,16 +49,17 @@ const Request = () => {
     description: "",
     purpose: "",
     file: null,
-    department: "HR", // Static HR value for backend
+    department: "HR",
     leaveType: "",
     leaveCategory: "",
     leaveReason: "",
     startDate: "",
     endDate: "",
     delegatedTasks: "",
-    formDepartment: "Marketing", // Department selected in form
-    leaveDays: 0, // Added leaveDays field
-    selectedDates: [] as Date[], // For Full-Day Leave date selection
+    formDepartment: "Marketing",
+    leaveDays: 0,
+    selectedDates: [] as Date[],
+    isPaidLeave: true,
   });
   const [categories, setCategories] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -57,6 +67,7 @@ const Request = () => {
   const [updatedBalance, setUpdatedBalance] = useState<number | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [showLeaveTypeDialog, setShowLeaveTypeDialog] = useState(false);
 
   // Fetch leave balance on component mount
   useEffect(() => {
@@ -75,45 +86,61 @@ const Request = () => {
 
   // Calculate leave days when leave category or dates change
   useEffect(() => {
-    if (form.category === "Leave Request") {
+    if (form.category === "Leave Request" && form.isPaidLeave) {
       let days = 0;
 
       if (form.leaveCategory === "Full-Day Leave") {
-        // For Full-Day Leave, count the number of selected dates
         days = form.selectedDates.length;
       } else if (form.leaveCategory && form.startDate) {
-        // For AM/PM Leave, it's always 0.5 days
         days = 0.5;
       }
 
       setForm((prev) => ({ ...prev, leaveDays: days }));
 
-      // Calculate updated balance if we have current balance
       if (leaveBalance) {
         setUpdatedBalance(leaveBalance.currentBalance - days);
       }
+    } else if (form.category === "Leave Request" && !form.isPaidLeave) {
+      let days = 0;
+      if (form.leaveCategory === "Full-Day Leave") {
+        days = form.selectedDates.length;
+      } else if (form.leaveCategory && form.startDate) {
+        days = 0.5;
+      }
+      setForm((prev) => ({ ...prev, leaveDays: days }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.startDate, form.leaveCategory, form.selectedDates, leaveBalance]);
+  }, [
+    form.startDate,
+    form.leaveCategory,
+    form.selectedDates,
+    leaveBalance,
+    form.isPaidLeave,
+  ]);
 
   const handleDateSelect = (dates: Date[] | undefined) => {
-    if (!dates || !leaveBalance) return;
+    if (!dates) return;
 
-    // Cap the selected dates at the current leave balance
-    const maxSelectableDates = Math.min(
-      dates.length,
-      leaveBalance.currentBalance
-    );
-    const cappedDates = dates.slice(0, maxSelectableDates);
-
-    setForm((prev) => ({ ...prev, selectedDates: cappedDates }));
+    // Only cap dates if it's paid leave and we have a leave balance
+    if (form.isPaidLeave && leaveBalance) {
+      // Cap the selected dates at the current leave balance
+      const maxSelectableDates = Math.min(
+        dates.length,
+        leaveBalance.currentBalance
+      );
+      const cappedDates = dates.slice(0, maxSelectableDates);
+      setForm((prev) => ({ ...prev, selectedDates: cappedDates }));
+    } else {
+      // For unpaid leave or when no balance info, just set all selected dates
+      setForm((prev) => ({ ...prev, selectedDates: dates }));
+    }
   };
 
-  // Add this function to determine which dates should be disabled in the calendar
+  // Also update the isDateDisabled function to account for paid/unpaid leave
   const isDateDisabled = (date: Date) => {
-    if (!leaveBalance) return false;
+    if (!leaveBalance || !form.isPaidLeave) return false;
 
-    // If we've already selected the maximum allowed dates, disable all other dates
+    // If we've already selected the maximum allowed dates for paid leave, disable other dates
     return (
       form.selectedDates.length >= leaveBalance.currentBalance &&
       !form.selectedDates.some(
@@ -157,12 +184,38 @@ const Request = () => {
   };
 
   const handleCategoryChange = (value: string) => {
+    if (value === "Leave Request") {
+      setShowLeaveTypeDialog(true);
+    }
     setForm({ ...form, category: value });
+  };
+  const isRegularEmployee = leaveBalance?.employmentStatus === "Regular";
+  const handleLeaveTypeSelect = (type: "paid" | "unpaid") => {
+    // If trying to select paid but not regular employee, force unpaid
+    const actualType = type === "paid" && !isRegularEmployee ? "unpaid" : type;
+
+    setForm((prev) => ({
+      ...prev,
+      isPaidLeave: actualType === "paid",
+      selectedDates: [],
+      startDate: "",
+      endDate: "",
+      leaveDays: 0,
+    }));
+    setShowLeaveTypeDialog(false);
+
+    // Show toast if trying to select paid but not eligible
+    if (type === "paid" && !isRegularEmployee) {
+      toast({
+        title: "Paid Leave Not Available",
+        description: "Only regular employees can use paid leave.",
+        variant: "destructive",
+      });
+    }
   };
 
   const formatDateToMMDDYYYY = (dateString: string) => {
     if (!dateString) return "";
-
     const [year, month, day] = dateString.split("-");
     return `${month}/${day}/${year}`;
   };
@@ -193,6 +246,7 @@ const Request = () => {
         description = `Leave Request Details:
 • Leave Type: ${form.leaveType}
 • Leave Category: ${form.leaveCategory}
+• Leave Status: ${form.isPaidLeave ? "Paid" : "Unpaid"}
 • Department: ${form.formDepartment}
 • ${dateRange}
 • Days Requested: ${form.leaveDays} ${form.leaveDays <= 1 ? "day" : "days"}
@@ -207,7 +261,6 @@ const Request = () => {
       const response = await TicketAPi.createTicket({
         ...form,
         description,
-        // For Full-Day Leave, set startDate and endDate based on selected dates
         startDate:
           form.leaveCategory === "Full-Day Leave" &&
           form.selectedDates.length > 0
@@ -257,8 +310,8 @@ const Request = () => {
   const renderLeaveRequestContent = () => {
     return (
       <div className="mt-4">
-        {/* Leave Balance Display */}
-        {leaveBalance && (
+        {/* Leave Balance Display - Only show for paid leave */}
+        {form.isPaidLeave && leaveBalance && (
           <div className="mb-4 p-3 border rounded-lg bg-gray-50">
             <div className="flex justify-between items-center">
               <div>
@@ -287,6 +340,23 @@ const Request = () => {
             </div>
           </div>
         )}
+
+        {/* Leave Status Indicator */}
+        <div className="mb-4 p-2 rounded-md bg-blue-50 border border-blue-100">
+          <span className="font-medium">Leave Status: </span>
+          <span
+            className={`font-bold ${
+              form.isPaidLeave ? "text-blue-600" : "text-gray-600"
+            }`}
+          >
+            {form.isPaidLeave ? "Paid Leave" : "Unpaid Leave"}
+          </span>
+          {!form.isPaidLeave && (
+            <p className="text-sm text-gray-600 mt-1">
+              This leave will not deduct from your leave credits.
+            </p>
+          )}
+        </div>
 
         <Label htmlFor="leaveType" className="text-sm font-bold">
           Leave Type <span className="text-red-500">*</span>
@@ -391,7 +461,8 @@ const Request = () => {
               <div className="text-sm text-gray-600 mb-2">
                 Selected: {formatSelectedDates()}
                 {leaveBalance &&
-                  form.selectedDates.length === leaveBalance.currentBalance && (
+                  form.selectedDates.length === leaveBalance.currentBalance &&
+                  form.isPaidLeave === true && (
                     <div className="text-red-600 mt-1">
                       You've reached your maximum leave balance. Cannot select
                       more dates.
@@ -597,6 +668,37 @@ const Request = () => {
         {form.category === "Leave Request" && (
           <div>{renderLeaveRequestContent()}</div>
         )}
+
+        {/* Leave Type Selection Dialog */}
+        <Dialog
+          open={showLeaveTypeDialog}
+          onOpenChange={setShowLeaveTypeDialog}
+        >
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Select Leave Type</DialogTitle>
+              <DialogDescription>
+                Choose between paid or unpaid leave
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="flex flex-col gap-3">
+                <Button
+                  onClick={() => handleLeaveTypeSelect("paid")}
+                  className="py-6 text-lg bg-blue-600 hover:bg-blue-700"
+                >
+                  Paid Leave (Uses Leave Credits)
+                </Button>
+                <Button
+                  onClick={() => handleLeaveTypeSelect("unpaid")}
+                  className="py-6 text-lg bg-gray-600 hover:bg-gray-700"
+                >
+                  Unpaid Leave
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </form>
     </div>
   );
