@@ -84,6 +84,12 @@ const AdminViewIndividualTicket: React.FC = () => {
   const [avatarMap, setAvatarMap] = useState<Record<string, string>>({});
   const [leaveCredit, setLeaveCredit] = useState<LeaveCredit | null>(null);
 
+  // Helper function to check if leave is paid
+  const isPaidLeave = () => {
+    if (!details?.description) return false;
+    return details.description.includes("Leave Status: Paid");
+  };
+
   useEffect(() => {
     const fetchAvatars = async () => {
       try {
@@ -131,6 +137,7 @@ const AdminViewIndividualTicket: React.FC = () => {
       setLeaveCredit(null);
     }
   };
+
   const getTicket = async (ticketId: string) => {
     try {
       const response = await TicketAPi.getIndividualTicket(ticketId);
@@ -255,11 +262,12 @@ const AdminViewIndividualTicket: React.FC = () => {
       const response = await TicketAPi.updateTicket(id, body);
       console.log(response);
 
-      // Update leave credit history for both approved and rejected leave requests
+      // Update leave credit history only for paid leave requests
       if (
         (status?.status === "Approved" || status?.status === "Rejected") &&
         details?.category === "Leave Request" &&
-        leaveCredit
+        leaveCredit &&
+        isPaidLeave() // Only proceed if it's paid leave
       ) {
         const historyEntry = {
           date: details?.createdAt,
@@ -624,8 +632,8 @@ const AdminViewIndividualTicket: React.FC = () => {
             </div>
           </div>
 
-          {/* Leave Balance Information Section */}
-          {details?.category === "Leave Request" && (
+          {/* Updated Leave Balance Information Section - Only shown for paid leave */}
+          {details?.category === "Leave Request" && isPaidLeave() && (
             <div className="bg-blue-50 p-4 rounded-md border border-blue-200 my-4">
               <h3 className="text-sm font-medium text-blue-800 mb-2 flex items-center">
                 <Wallet className="h-4 w-4 mr-2" />

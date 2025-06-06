@@ -203,6 +203,10 @@ const UserViewIndividualTicket: React.FC = () => {
   // Only show leave balance for leave request tickets
   const showLeaveBalance = details?.category === "Leave Request";
   const balanceAfterApproval = calculateBalanceAfterApproval();
+  const isPaidLeave = () => {
+    if (!details?.description) return false;
+    return details.description.includes("Leave Status: Paid");
+  };
 
   return (
     <div className="container py-6 mx-auto max-w-4xl">
@@ -290,7 +294,7 @@ const UserViewIndividualTicket: React.FC = () => {
           </div>
 
           {/* Added Leave Balance Section */}
-          {showLeaveBalance && (
+          {showLeaveBalance && isPaidLeave() && (
             <>
               <div className="bg-blue-50 p-4 rounded-md border border-blue-200 my-4">
                 <h3 className="text-sm  font-medium text-blue-800 mb-2 flex items-center">

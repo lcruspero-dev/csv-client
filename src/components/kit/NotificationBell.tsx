@@ -31,6 +31,22 @@ const NotificationBell = () => {
   const cardRef = useRef<HTMLDivElement | null>(null);
   const bellRef = useRef<HTMLDivElement | null>(null);
 
+  const handleRefresh = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setLoading(true);
+    try {
+      const response = await TicketAPi.getAllOpenTickets();
+      setOpenTickets(response.data);
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to refresh tickets"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleTicketClick = (ticketId: string, event: React.MouseEvent) => {
     event.stopPropagation();
     navigate(`/ticket/${ticketId}`);
@@ -109,6 +125,7 @@ const NotificationBell = () => {
     } else {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -202,6 +219,40 @@ const NotificationBell = () => {
             <h3 className="font-semibold">
               Open Tickets ({filteredTickets.length})
             </h3>
+            <button
+              onClick={handleRefresh}
+              disabled={loading}
+              className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1 mt-2"
+            >
+              {loading ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    {/* Loading spinner SVG */}
+                  </svg>
+                  Refreshing...
+                </>
+              ) : (
+                <>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                    <path d="M3 3v5h5" />
+                    <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+                    <path d="M16 16h5v5" />
+                  </svg>
+                  Refresh
+                </>
+              )}
+            </button>
           </div>
           <ScrollArea className="h-96">
             <div className="p-4 space-y-4">

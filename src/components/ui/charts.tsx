@@ -115,7 +115,7 @@ const Chart: React.FC<ChartProps> = ({ tickets }) => {
             Showing total Tickets by department and status
           </CardDescription>
         </div>
-        <div className="flex">
+        <div className="flex relative z-0 ">
           {(Object.keys(chartConfig) as Array<DepartmentKey>)
             .filter((key) => key !== "views")
             .map((key) => (
