@@ -63,6 +63,7 @@ interface AttendanceEntry {
   totalLunchTime?: number;
   dateLunchStart?: string;
   dateLunchEnd?: string;
+  loginLimit?: number;
 }
 
 interface CurrentTimeResponse {
@@ -306,39 +307,64 @@ export const AttendanceTracker: React.FC = () => {
     }
   };
 
-  const handleTimeIn = async () => {
-    setIsLoadingTimeIn(true);
-    try {
-      const currentTimeData = await getCurrentTimeFromAPI();
-
-      const entry: AttendanceEntry = {
-        id: `entry-${new Date().getTime()}`,
-        date: currentTimeData.date,
-        timeIn: currentTimeData.time,
-        shift: currentEntry.shift || "", // Use the shift from currentEntry
-      };
-
-      const response = await timer.timeIn(entry);
-      setCurrentEntry(response.data);
-      getAttendance();
-      setIsTimeIn(true);
-      setElapsedTime(0);
-      toast({
-        title: "Success",
-        description: "Time-in logged successfully!",
-        variant: "default",
-      });
-    } catch (error) {
-      console.error("Error logging time:", error);
-      toast({
-        title: "Duplicate entry",
-        description: "Time-in already recorded for this date.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoadingTimeIn(false);
+const handleTimeIn = async () => {
+  setIsLoadingTimeIn(true);
+  try {
+    // Get user data from local storage
+    const userString = localStorage.getItem('user');
+    if (!userString) {
+      throw new Error('User data not found in local storage');
     }
-  };
+    
+    const user = JSON.parse(userString);
+    const loginLimit = user.loginLimit;
+
+    const currentTimeData = await getCurrentTimeFromAPI();
+
+    const entry: AttendanceEntry = {
+      id: `entry-${new Date().getTime()}`,
+      date: currentTimeData.date,
+      timeIn: currentTimeData.time,
+      shift: currentEntry.shift || "",
+      loginLimit: loginLimit
+    };
+
+    const response = await timer.timeIn(entry);
+    setCurrentEntry(response.data);
+    getAttendance();
+    setIsTimeIn(true);
+    setElapsedTime(0);
+    toast({
+      title: "Success",
+      description: "Time-in logged successfully!",
+      variant: "default",
+    });
+  } catch (error: any) {
+    console.error("Error logging time:", error);
+    let errorMessage = "An error occurred while logging time";
+    
+    // Handle API error responses (409 Conflict)
+    if (error.response?.status === 409 && error.response?.data?.message) {
+      errorMessage = error.response.data.message;
+    }
+    // Handle local storage error
+    else if (error.message === 'User data not found in local storage') {
+      errorMessage = "User data not found";
+    }
+    // Handle network errors or other API errors
+    else if (error.message) {
+      errorMessage = error.message;
+    }
+
+    toast({
+      title: "Error",
+      description: errorMessage,
+      variant: "destructive",
+    });
+  } finally {
+    setIsLoadingTimeIn(false);
+  }
+};
 
   const handleTimeOut = async ({ notes }: { notes?: string }) => {
     setIsLoadingTimeOut(true);

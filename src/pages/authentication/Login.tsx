@@ -57,6 +57,7 @@ const Login = () => {
         role: response.data.role,
         status: response.data.status,
         token: response.data.token,
+        loginLimit: response.data.loginLimit,
       };
 
       localStorage.setItem("user", JSON.stringify(userData));

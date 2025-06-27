@@ -26,7 +26,7 @@ interface User {
   status: string;
   isAdmin: boolean;
   role: string;
-  login_limit?: number;
+  loginLimit?: number;
 }
 
 interface UserProfile {
@@ -236,12 +236,12 @@ const UserManagement: React.FC = () => {
 
     try {
       await UserAPI.updateLoginLimit(editingLoginLimit.userId, {
-        login_limit: editingLoginLimit.value,
+        loginLimit: editingLoginLimit.value,
       });
       
       setUsers(users.map(user => 
         user._id === editingLoginLimit.userId 
-          ? { ...user, login_limit: editingLoginLimit.value } 
+          ? { ...user, loginLimit: editingLoginLimit.value } 
           : user
       ));
       
@@ -452,12 +452,12 @@ const UserManagement: React.FC = () => {
                           ) : (
                             <div className="flex items-center gap-2">
                               <span className="text-sm font-medium px-2 py-1 bg-gray-100 rounded">
-                                {user.login_limit || 1}
+                                {user.loginLimit || 1}
                               </span>
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => handleEditLoginLimit(user._id, user.login_limit)}
+                                onClick={() => handleEditLoginLimit(user._id, user.loginLimit)}
                                 className="h-8 px-2 text-gray-500 hover:text-gray-700"
                               >
                                 <Pencil className="h-3 w-3" />

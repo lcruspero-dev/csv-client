@@ -136,7 +136,7 @@ export const UserAPI = {
     apiHelper(`/api/users/inactive/${id}`, "PUT"),
   setUserToActive: (id: string) => apiHelper(`/api/users/active/${id}`, "PUT"),
   updateLoginLimit: (id: string, body: object) =>
-    apiHelper(`/api/users/${id}/login-limit`, "PUT", body),
+    apiHelper(`/api/users/update-login-limit/${id}`, "PUT", body),
 };
 
 
