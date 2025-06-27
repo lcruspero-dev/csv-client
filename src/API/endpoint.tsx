@@ -135,7 +135,10 @@ export const UserAPI = {
   setUserToInactive: (id: string) =>
     apiHelper(`/api/users/inactive/${id}`, "PUT"),
   setUserToActive: (id: string) => apiHelper(`/api/users/active/${id}`, "PUT"),
+  updateLoginLimit: (id: string, body: object) =>
+    apiHelper(`/api/users/${id}/login-limit`, "PUT", body),
 };
+
 
 export const NteAPI = {
   createNte: (body: object) => apiHelper("/api/ntes", "POST", body),

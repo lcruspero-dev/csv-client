@@ -1,5 +1,5 @@
 import { ResetPassword, UserAPI, UserProfileAPI } from "@/API/endpoint";
-import UserDetails from "@/components/kit/UserDetails"; // Import the UserDetails component
+import UserDetails from "@/components/kit/UserDetails";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
-import { EyeIcon, EyeOffIcon, Search } from "lucide-react";
+import { Check, EyeIcon, EyeOffIcon, Pencil, Search, X } from "lucide-react";
 import React, { useState } from "react";
 import BackButton from "../../components/kit/BackButton";
 
@@ -26,6 +26,7 @@ interface User {
   status: string;
   isAdmin: boolean;
   role: string;
+  login_limit?: number;
 }
 
 interface UserProfile {
@@ -67,8 +68,7 @@ const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedUserProfile, setSelectedUserProfile] =
-    useState<UserProfile | null>(null);
+  const [selectedUserProfile, setSelectedUserProfile] = useState<UserProfile | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState({
@@ -76,6 +76,10 @@ const UserManagement: React.FC = () => {
     confirmPassword: false,
   });
   const [errors, setErrors] = useState<Partial<ResetPasswordFormData>>({});
+  const [editingLoginLimit, setEditingLoginLimit] = useState<{
+    userId: string;
+    value: number;
+  } | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -120,7 +124,7 @@ const UserManagement: React.FC = () => {
           confirmPassword: "",
           secretKey: "",
         });
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
         toast({
           title: "Failed",
@@ -137,7 +141,14 @@ const UserManagement: React.FC = () => {
     try {
       const response = await UserAPI.searchUser(searchQuery);
       setUsers(response.data);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (response.data.length === 0) {
+        toast({
+          title: "No Users Found",
+          description: "No users match your search criteria",
+          variant: "destructive",
+        });
+      }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast({
         title: "Search Failed",
@@ -181,7 +192,7 @@ const UserManagement: React.FC = () => {
         } successfully`,
         variant: "default",
       });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast({
         title: "Failed",
@@ -204,7 +215,7 @@ const UserManagement: React.FC = () => {
       const response = await UserProfileAPI.getProfileById(userId);
       setSelectedUserProfile(response.data);
       setModalOpen(true);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast({
         title: "Failed to Load Profile",
@@ -214,6 +225,44 @@ const UserManagement: React.FC = () => {
     } finally {
       setLoadingProfile(false);
     }
+  };
+
+  const handleEditLoginLimit = (userId: string, currentLimit: number = 1) => {
+    setEditingLoginLimit({ userId, value: currentLimit });
+  };
+
+  const handleSaveLoginLimit = async () => {
+    if (!editingLoginLimit) return;
+
+    try {
+      await UserAPI.updateLoginLimit(editingLoginLimit.userId, {
+        login_limit: editingLoginLimit.value,
+      });
+      
+      setUsers(users.map(user => 
+        user._id === editingLoginLimit.userId 
+          ? { ...user, login_limit: editingLoginLimit.value } 
+          : user
+      ));
+      
+      setEditingLoginLimit(null);
+      toast({
+        title: "Success",
+        description: "Login limit updated successfully",
+        variant: "default",
+      });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      toast({
+        title: "Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingLoginLimit(null);
   };
 
   return (
@@ -364,7 +413,59 @@ const UserManagement: React.FC = () => {
                           View Details
                         </Button>
                       </div>
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-4">
+                        <div className="flex flex-col items-center space-y-1">
+                          <Label htmlFor={`login-limit-${user._id}`} className="text-xs text-gray-500">
+                            Daily Login Limit
+                          </Label>
+                          {editingLoginLimit?.userId === user._id ? (
+                            <div className="flex items-center gap-2">
+                              <select
+                                value={editingLoginLimit.value}
+                                onChange={(e) => 
+                                  setEditingLoginLimit({
+                                    ...editingLoginLimit,
+                                    value: parseInt(e.target.value)
+                                  })
+                                }
+                                className="h-8 rounded border border-gray-300 px-2 text-sm"
+                              >
+                                <option value={1}>1</option>
+                                <option value={2}>2</option>
+                              </select>
+                              <Button 
+                                size="sm" 
+                                onClick={handleSaveLoginLimit}
+                                className="h-8 px-2"
+                              >
+                                <Check className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={handleCancelEdit}
+                                className="h-8 px-2"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium px-2 py-1 bg-gray-100 rounded">
+                                {user.login_limit || 1}
+                              </span>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleEditLoginLimit(user._id, user.login_limit)}
+                                className="h-8 px-2 text-gray-500 hover:text-gray-700"
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+
                         <div className="flex items-center space-x-2">
                           <Label htmlFor={`user-status-${user._id}`}>
                             {user.status === "active" ? "Active" : "Inactive"}
@@ -391,13 +492,6 @@ const UserManagement: React.FC = () => {
       {/* User Profile Modal */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          {/* <DialogHeader>
-            <DialogTitle>User Profile Details</DialogTitle>
-            <DialogDescription>
-              Complete profile information for this user.
-            </DialogDescription>
-          </DialogHeader> */}
-
           {selectedUserProfile && (
             <UserDetails
               userData={selectedUserProfile}
