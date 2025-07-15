@@ -1029,7 +1029,7 @@ const ScheduleAndAttendance: React.FC = () => {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="schedule" onValueChange={setActiveTab}>
-            <TabsList className="mb-4">
+            <TabsList className="mb-0">
               <TabsTrigger value="schedule">Schedule</TabsTrigger>
               <TabsTrigger value="attendance">Attendance</TabsTrigger>
             </TabsList>
