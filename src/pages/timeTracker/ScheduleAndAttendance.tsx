@@ -71,10 +71,9 @@ export type Employee = {
 };
 
 type ShiftTypeValue =
-  | "shift1"
-  | "shift2"
-  | "shift3"
-  | "staff"
+  | "Morning"
+  | "Mid"
+  | "Night"
   | "restday"
   | "paidTimeOff"
   | "plannedLeave"
@@ -141,14 +140,14 @@ const getShiftColor = (shiftType: ShiftType): string => {
   if (!shiftType || !shiftType.type) return "bg-gray-100 text-gray-500";
 
   switch (shiftType.type) {
-    case "shift1":
+    case "Morning":
       return "bg-blue-100 text-blue-800";
-    case "shift2":
+    case "Mid":
       return "bg-yellow-100 text-yellow-800";
-    case "shift3":
+    case "Night":
       return "bg-purple-100 text-purple-800";
-    case "staff":
-      return "bg-green-100 text-green-800";
+    // case "staff":
+    //   return "bg-green-100 text-green-800";
     case "restday":
       return "bg-orange-100 text-orange-800";
     case "paidTimeOff":
@@ -166,7 +165,7 @@ const getShiftColor = (shiftType: ShiftType): string => {
 
 // Helper to check if a shift type has time
 const hasShiftTime = (shiftType: ShiftTypeValue): boolean => {
-  return ["shift1", "shift2", "shift3", "staff", "rdot"].includes(shiftType);
+  return ["Morning", "Mid", "Night", "rdot"].includes(shiftType);
 };
 
 const formatTimeToAMPM = (time: string): string => {
@@ -194,18 +193,18 @@ const displayShiftInfo = (
 
   // Format the shift type name
   switch (shiftType.type) {
-    case "shift1":
-      displayName = "Shift 1";
+    case "Morning":
+      displayName = "Morning";
       break;
-    case "shift2":
-      displayName = "Shift 2";
+    case "Mid":
+      displayName = "Mid";
       break;
-    case "shift3":
-      displayName = "Shift 3";
+    case "Night":
+      displayName = "Night";
       break;
-    case "staff":
-      displayName = "Staff";
-      break;
+    // case "staff":
+    //   displayName = "Staff";
+    //   break;
     case "restday":
       displayName = "Rest Day";
       break;
@@ -276,7 +275,7 @@ const ScheduleAndAttendance: React.FC = () => {
   );
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedShiftType, setSelectedShiftType] =
-    useState<ShiftTypeValue>("shift1");
+    useState<ShiftTypeValue>("Morning");
   const [selectedStartTime, setSelectedStartTime] = useState<string>("00:00");
   const [selectedEndTime, setSelectedEndTime] = useState<string>("00:00");
   const [selectedAttendanceStatus, setSelectedAttendanceStatus] =
@@ -296,7 +295,7 @@ const ScheduleAndAttendance: React.FC = () => {
   const resetDialogState = () => {
     setSelectedEmployee(null);
     setSelectedDate(null);
-    setSelectedShiftType("shift1");
+    setSelectedShiftType("Morning");
     setSelectedStartTime("00:00");
     setSelectedEndTime("00:00");
     setSelectedBreak1(undefined);
@@ -707,7 +706,7 @@ const ScheduleAndAttendance: React.FC = () => {
         setSelectedBreak2(entry.shiftType.break2 || undefined);
       }
     } else {
-      setSelectedShiftType("shift1");
+      setSelectedShiftType("Morning");
       setSelectedStartTime("00:00");
       setSelectedEndTime("00:00");
       setSelectedBreak1(undefined);
@@ -848,26 +847,25 @@ const ScheduleAndAttendance: React.FC = () => {
     <div className="container mx-auto">
       <Card className="w-full">
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Employee Schedule & Attendance</CardTitle>
-              <CardDescription>
-                Manage employee shifts and track attendance
-              </CardDescription>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Button variant="outline" size="sm" onClick={goToPreviousPeriod}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="sm" onClick={goToToday}>
-                Today
-              </Button>
-              <Button variant="outline" size="sm" onClick={goToNextPeriod}>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
+          {/* <div className="flex items-center justify-between"> */}
+          <div>
+            <CardTitle>Employee Schedule & Attendance</CardTitle>
+            <CardDescription>
+              Manage employee shifts and track attendance
+            </CardDescription>
+            <AbsenteeismAnalytics
+              employees={employees}
+              attendance={attendance}
+              schedule={schedule}
+              viewMode={viewMode}
+              currentDate={currentDate}
+              filteredEmployees={filteredEmployees.map((emp) => emp.id)}
+              fromDate={fromDate} // Pass fromDate
+              toDate={toDate} // Pass toDate
+            />
           </div>
-          <div className="flex items-center justify-between mt-4">
+          {/* </div> */}
+          <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Select
                 value={selectedDepartment}
@@ -1016,19 +1014,20 @@ const ScheduleAndAttendance: React.FC = () => {
             <div>
               <h2 className="text-xl font-bold">{getHeaderText()}</h2>
             </div>
+            <div className="flex items-center space-x-2">
+              <Button variant="outline" size="sm" onClick={goToPreviousPeriod}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="sm" onClick={goToToday}>
+                Today
+              </Button>
+              <Button variant="outline" size="sm" onClick={goToNextPeriod}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
-          <AbsenteeismAnalytics
-            employees={employees}
-            attendance={attendance}
-            schedule={schedule}
-            viewMode={viewMode}
-            currentDate={currentDate}
-            filteredEmployees={filteredEmployees.map((emp) => emp.id)}
-            fromDate={fromDate} // Pass fromDate
-            toDate={toDate} // Pass toDate
-          />
           <Tabs defaultValue="schedule" onValueChange={setActiveTab}>
             <TabsList className="mb-4">
               <TabsTrigger value="schedule">Schedule</TabsTrigger>
@@ -1269,21 +1268,21 @@ const ScheduleAndAttendance: React.FC = () => {
                   }}
                 >
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="shift1" id="shift1" />
-                    <Label htmlFor="shift1">Shift 1</Label>
+                    <RadioGroupItem value="Morning" id="Morning" />
+                    <Label htmlFor="Morning">Morning</Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="shift2" id="shift2" />
-                    <Label htmlFor="shift2">Shift 2</Label>
+                    <RadioGroupItem value="Mid" id="Mid" />
+                    <Label htmlFor="Mid">Mid</Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="shift3" id="shift3" />
-                    <Label htmlFor="shift3">Shift 3</Label>
+                    <RadioGroupItem value="Night" id="Night" />
+                    <Label htmlFor="Night">Night</Label>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  {/* <div className="flex items-center space-x-2">
                     <RadioGroupItem value="staff" id="staff" />
                     <Label htmlFor="staff">Staff</Label>
-                  </div>
+                  </div> */}
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="restday" id="restday" />
                     <Label htmlFor="restday">Rest Day</Label>

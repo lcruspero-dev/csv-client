@@ -151,11 +151,11 @@ export const AbsenteeismAnalytics: React.FC<AbsenteeismAnalyticsProps> = ({
     totalScheduledDays > 0 ? (totalAbsences / totalScheduledDays) * 100 : 0;
 
   return (
-    <Card className="w-full border-0 shadow-sm">
-      <CardHeader className="pb-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+    <Card className="w-full border-0 shadow-sm ">
+      <CardHeader className="p-0">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
           <div className="flex items-center gap-3">
-            <CardTitle className="text-lg font-semibold text-gray-800">
+            <CardTitle className="text-sm text-gray-600">
               Absenteeism Analytics
             </CardTitle>
             <Button
@@ -201,7 +201,7 @@ export const AbsenteeismAnalytics: React.FC<AbsenteeismAnalyticsProps> = ({
                   <Info className="h-4 w-4 text-gray-400" />
                 </TooltipTrigger>
                 <TooltipContent className="max-w-[300px]">
-                  <p className="text-sm">
+                  <p className="text-xs">
                     Absenteeism is calculated as (Number of Absences / Total
                     Programmed Days) × 100. Programmed days exclude rest days.
                   </p>
