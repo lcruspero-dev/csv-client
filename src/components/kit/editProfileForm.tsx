@@ -4,7 +4,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -33,26 +32,49 @@ import "react-datepicker/dist/react-datepicker.css";
 import { useForm } from "react-hook-form";
 
 interface ProfileFormData {
+  // Personal Data
   firstName: string;
   lastName: string;
   middleName: string;
-  streetAddress: string;
-  barangay: string;
-  cityMunicipality: string;
-  province: string;
-  zipCode: string;
-  personalEmail: string;
-  contactNumber: string;
   dateOfBirth: string;
-  emergencyContactPerson: string;
-  emergencyContactNumber: string;
-  relationship: string;
-  civilStatus: string;
   gender: string;
-  pagibigNo: string;
-  philhealthNo: string;
-  sssNo: string;
+  taxStatus: string;
+
+  // Employment Details
+  department: string;
+  jobPosition: string;
+  employmentStatus: string;
+  dateHired: string;
+  probationaryDate: string;
+  regularizationDate: string;
   tinNo: string;
+  sssNo: string;
+  philhealthNo: string;
+  pagibigNo: string;
+  hmoAccountNumber: number;
+  bankAccountNumber: number;
+
+  // Contact Details
+  mobileNumber: number;
+  emailAddress: string;
+  phoneAddress: string;
+
+  // Present Address
+  presentHouseNo: string;
+  presentStreet: string;
+  presentBarangay: string;
+  presentTown: string;
+  presentCity: string;
+  presentProvince: string;
+
+  // Home Address
+  homeHouseNo: string;
+  homeStreet: string;
+  homeBarangay: string;
+  homeTown: string;
+  homeCity: string;
+  homeProvince: string;
+
   avatar?: string;
 }
 
@@ -74,6 +96,7 @@ export default function EditProfileForm({
   const [birthdate, setBirthdate] = useState<Date | null>(
     userData?.dateOfBirth ? new Date(userData.dateOfBirth) : null
   );
+  const [age, setAge] = useState<string>("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -82,49 +105,89 @@ export default function EditProfileForm({
         `${import.meta.env.VITE_UPLOADFILES_URL}/avatars/${userData.avatar}`
       );
     }
+    if (userData?.dateOfBirth) {
+      calculateAge(new Date(userData.dateOfBirth));
+    }
   }, [userData]);
+
+  const calculateAge = (birthDate: Date) => {
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birthDate.getDate())
+    ) {
+      age--;
+    }
+    setAge(age.toString());
+  };
 
   const handleBirthdateChange = (date: Date | null) => {
     setBirthdate(date);
     if (date) {
       form.setValue("dateOfBirth", date.toISOString().split("T")[0]);
+      calculateAge(date);
     } else {
       form.setValue("dateOfBirth", "");
+      setAge("");
     }
   };
 
   const form = useForm<ProfileFormData>({
     defaultValues: {
+      // Personal Data
       firstName: userData?.firstName ?? "",
       lastName: userData?.lastName ?? "",
       middleName: userData?.middleName ?? "",
-      streetAddress: userData?.streetAddress ?? "",
-      barangay: userData?.barangay ?? "",
-      cityMunicipality: userData?.cityMunicipality ?? "",
-      province: userData?.province ?? "",
-      zipCode: userData?.zipCode ?? "",
-      personalEmail: userData?.personalEmail ?? "",
-      contactNumber: userData?.contactNumber ?? "",
       dateOfBirth: userData?.dateOfBirth ?? "",
-      emergencyContactPerson: userData?.emergencyContactPerson ?? "",
-      emergencyContactNumber: userData?.emergencyContactNumber ?? "",
-      relationship: userData?.relationship ?? "",
-      civilStatus: userData?.civilStatus?.toLowerCase() ?? "",
       gender: userData?.gender?.toLowerCase() ?? "",
-      pagibigNo: userData?.pagibigNo ?? "",
-      philhealthNo: userData?.philhealthNo ?? "",
-      sssNo: userData?.sssNo ?? "",
+      taxStatus: userData?.taxStatus ?? "",
+
+      // Employment Details
+      department: userData?.department ?? "",
+      jobPosition: userData?.jobPosition ?? "",
+      employmentStatus: userData?.employmentStatus ?? "",
+      dateHired: userData?.dateHired ?? "",
+      probationaryDate: userData?.probationaryDate ?? "",
+      regularizationDate: userData?.regularizationDate ?? "",
       tinNo: userData?.tinNo ?? "",
+      sssNo: userData?.sssNo ?? "",
+      philhealthNo: userData?.philhealthNo ?? "",
+      pagibigNo: userData?.pagibigNo ?? "",
+      hmoAccountNumber: userData?.hmoAccountNumber ?? 0,
+      bankAccountNumber: userData?.bankAccountNumber ?? 0,
+
+      // Contact Details
+      mobileNumber: userData?.mobileNumber ?? 0,
+      emailAddress: userData?.emailAddress ?? "",
+      phoneAddress: userData?.phoneAddress ?? "",
+
+      // Present Address
+      presentHouseNo: userData?.presentHouseNo ?? "",
+      presentStreet: userData?.presentStreet ?? "",
+      presentBarangay: userData?.presentBarangay ?? "",
+      presentTown: userData?.presentTown ?? "",
+      presentCity: userData?.presentCity ?? "",
+      presentProvince: userData?.presentProvince ?? "",
+
+      // Home Address
+      homeHouseNo: userData?.homeHouseNo ?? "",
+      homeStreet: userData?.homeStreet ?? "",
+      homeBarangay: userData?.homeBarangay ?? "",
+      homeTown: userData?.homeTown ?? "",
+      homeCity: userData?.homeCity ?? "",
+      homeProvince: userData?.homeProvince ?? "",
+
+      avatar: userData?.avatar ?? "",
     },
   });
 
   const onSubmit = async (data: ProfileFormData) => {
     try {
-      let avatarFilename = data.avatar; // Use existing avatar by default
+      let avatarFilename = data.avatar;
 
-      // Upload avatar if it exists
       if (avatar) {
-        // Validate file type
         const validImageTypes = [
           "image/jpeg",
           "image/png",
@@ -141,7 +204,6 @@ export default function EditProfileForm({
           return;
         }
 
-        // Validate file size (10MB = 10 * 1024 * 1024 bytes)
         const maxSize = 10 * 1024 * 1024;
         if (avatar.size > maxSize) {
           toast({
@@ -173,15 +235,12 @@ export default function EditProfileForm({
         }
 
         const uploadResult = await uploadResponse.json();
-        avatarFilename = uploadResult.filename; // Update with new avatar if uploaded
+        avatarFilename = uploadResult.filename;
       }
 
-      // Save profile data with avatar filename
       const profileData = { ...data, avatar: avatarFilename };
       const response = await UserProfileAPI.createProfile(profileData);
-      console.log("Profile created successfully:", response.data);
 
-      // Show success notification
       toast({
         title: "Success",
         description: "Profile updated successfully",
@@ -190,8 +249,6 @@ export default function EditProfileForm({
       if (onSave) onSave(response.data);
     } catch (error) {
       console.error("Error creating profile:", error);
-
-      // Show error notification with the specific error message
       toast({
         variant: "destructive",
         title: "Error",
@@ -241,7 +298,6 @@ export default function EditProfileForm({
                   <User className="h-16 w-16 text-gray-400" />
                 </div>
               )}
-              {/* Only show upload overlay if no avatar exists */}
               {!userData?.avatar && (
                 <label
                   htmlFor="avatar-upload"
@@ -258,7 +314,7 @@ export default function EditProfileForm({
               accept="image/*"
               className="hidden"
               onChange={handleAvatarChange}
-              disabled={!!userData?.avatar} // Disable if avatar exists
+              disabled={!!userData?.avatar}
             />
 
             <div className="text-center">
@@ -267,14 +323,13 @@ export default function EditProfileForm({
                 {form.watch("lastName") || "Profile"}
               </h3>
               <p className="text-gray-500 text-sm">
-                {form.watch("personalEmail") ||
+                {form.watch("emailAddress") ||
                   (userData?.avatar
                     ? "Profile photo uploaded"
                     : "Upload a professional photo")}
               </p>
             </div>
 
-            {/* Only show upload button if no avatar exists */}
             {!userData?.avatar && (
               <label
                 htmlFor="avatar-upload"
@@ -284,30 +339,6 @@ export default function EditProfileForm({
                 Upload New Photo
               </label>
             )}
-          </div>
-
-          <div className="w-full mt-2 space-y-1">
-            <h4 className="font-medium text-gray-700 text-sm">
-              Photo Guidelines:
-            </h4>
-            <ul className="text-sm text-gray-600 space-y-0">
-              <li className="flex items-start gap-1">
-                <span className="block w-1 h-1 mt-1 rounded-full bg-blue-600"></span>
-                Professional appearance
-              </li>
-              <li className="flex items-start gap-1">
-                <span className="block w-1 h-1 mt-1 rounded-full bg-blue-600"></span>
-                Clear face visibility
-              </li>
-              <li className="flex items-start gap-1">
-                <span className="block w-1 h-1 mt-1 rounded-full bg-blue-600"></span>
-                Neutral background
-              </li>
-              <li className="flex items-start gap-1">
-                <span className="block w-1 h-1 mt-1 rounded-full bg-blue-600"></span>
-                Square format recommended
-              </li>
-            </ul>
           </div>
         </CardContent>
       </Card>
@@ -324,308 +355,162 @@ export default function EditProfileForm({
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <CardContent className="p-3">
               <div className="space-y-4">
-                {/* Personal Information Section */}
+                {/* Personal Data Section */}
                 <div>
                   <h3 className="text-sm font-bold flex items-center mb-2">
                     <span className="bg-blue-100 text-blue-800 p-1 rounded-md mr-2 text-sm">
                       01
                     </span>
-                    Personal Information
+                    Personal Data
                   </h3>
                   <Separator className="mb-2" />
-                  <div className="space-y-2">
-                    {/* Basic Personal Info */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      <FormField
-                        control={form.control}
-                        name="firstName"
-                        render={({ field }) => (
-                          <FormItem className="space-y-1">
-                            <FormLabel className="text-sm">
-                              First Name<span className="text-red-500"> *</span>
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="First Name"
-                                {...field}
-                                className="rounded-md h-10 text-sm py-2"
-                              />
-                            </FormControl>
-                            <FormMessage className="text-sm" />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="lastName"
-                        render={({ field }) => (
-                          <FormItem className="space-y-1">
-                            <FormLabel className="text-sm">
-                              Last Name<span className="text-red-500"> *</span>
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Last Name"
-                                {...field}
-                                className="rounded-md h-10 text-sm py-2"
-                              />
-                            </FormControl>
-                            <FormMessage className="text-sm" />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    <FormField
+                      control={form.control}
+                      name="firstName"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1 pt-2">
+                          <FormLabel className="text-sm">
+                            First Name<span className="text-red-500"> *</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="First Name"
+                              {...field}
+                              className="rounded-md h-10 text-sm py-2"
+                            />
+                          </FormControl>
+                          <FormMessage className="text-sm" />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="middleName"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1 pt-2">
+                          <FormLabel className="text-sm">Middle Name</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Middle Name"
+                              {...field}
+                              className="rounded-md h-10 text-sm py-2"
+                            />
+                          </FormControl>
+                          <FormMessage className="text-sm" />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="lastName"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1 pt-2">
+                          <FormLabel className="text-sm">
+                            Last Name<span className="text-red-500"> *</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Last Name"
+                              {...field}
+                              className="rounded-md h-10 text-sm py-2"
+                            />
+                          </FormControl>
+                          <FormMessage className="text-sm" />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      <FormField
-                        control={form.control}
-                        name="middleName"
-                        render={({ field }) => (
-                          <FormItem className="space-y-1">
-                            <FormLabel className="text-sm">
-                              Middle Name
-                              <span className="text-red-500"> *</span>
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Middle Name"
-                                {...field}
-                                className="rounded-md h-10 text-sm py-2"
-                              />
-                            </FormControl>
-                            <FormMessage className="text-sm" />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="dateOfBirth"
-                        render={() => (
-                          <FormItem className="space-y-1 mt-6">
-                            <FormLabel className="text-sm ml-2 mr-4">
-                              Date of Birth
-                              <span className="text-red-500"> *</span>
-                            </FormLabel>
-                            <FormControl>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2">
+                    <FormField
+                      control={form.control}
+                      name="dateOfBirth"
+                      render={() => (
+                        <FormItem className="space-y-1 pt-2">
+                          <FormLabel className="text-sm">
+                            Date of Birth
+                            <span className="text-red-500"> *</span>
+                          </FormLabel>
+                          <FormControl>
+                            <div className="w-full">
                               <DatePicker
                                 selected={birthdate}
                                 onChange={handleBirthdateChange}
                                 dateFormat="MM/dd/yyyy"
                                 placeholderText="mm/dd/yyyy"
-                                className="rounded-md h-10 text-sm py-2 border border-gray-300 px-3"
+                                className="rounded-md h-10 text-sm py-2 border border-gray-300 px-3 w-full block"
                               />
-                            </FormControl>
-                            <FormMessage className="text-sm" />
-                          </FormItem>
-                        )}
+                            </div>
+                          </FormControl>
+                          <FormMessage className="text-sm" />
+                        </FormItem>
+                      )}
+                    />
+                    <FormItem className="space-y-1 pt-2">
+                      <FormLabel className="text-sm">Age</FormLabel>
+                      <Input
+                        value={age}
+                        readOnly
+                        placeholder="Auto-computed"
+                        className="rounded-md h-10 text-sm py-2 bg-gray-100"
                       />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      <FormField
-                        control={form.control}
-                        name="gender"
-                        render={({ field }) => (
-                          <FormItem className="space-y-1">
-                            <FormLabel className="text-sm">
-                              Gender <span className="text-red-500"> *</span>
-                            </FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              defaultValue={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger className="rounded-md h-10 text-sm">
-                                  <SelectValue placeholder="Select gender" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="male">Male</SelectItem>
-                                <SelectItem value="female">Female</SelectItem>
-                                <SelectItem value="other">Other</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage className="text-sm" />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="civilStatus"
-                        render={({ field }) => (
-                          <FormItem className="space-y-1">
-                            <FormLabel className="text-sm">
-                              Civil Status{" "}
-                              <span className="text-red-500"> *</span>
-                            </FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              defaultValue={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger className="rounded-md h-10 text-sm">
-                                  <SelectValue placeholder="Select civil status" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="single">Single</SelectItem>
-                                <SelectItem value="married">Married</SelectItem>
-                                <SelectItem value="divorced">
-                                  Divorced
-                                </SelectItem>
-                                <SelectItem value="widowed">Widowed</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage className="text-sm" />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      <FormField
-                        control={form.control}
-                        name="personalEmail"
-                        render={({ field }) => (
-                          <FormItem className="space-y-1">
-                            <FormLabel className="text-sm">
-                              Personal Email{" "}
-                              <span className="text-red-500"> *</span>
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                type="email"
-                                placeholder="email@example.com"
-                                {...field}
-                                className="rounded-md h-10 text-sm py-2"
-                              />
-                            </FormControl>
-                            <FormMessage className="text-sm" />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="contactNumber"
-                        render={({ field }) => (
-                          <FormItem className="space-y-1">
-                            <FormLabel className="text-sm">
-                              Contact Number{" "}
-                              <span className="text-red-500"> *</span>
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Contact Number"
-                                {...field}
-                                className="rounded-md h-10 text-sm py-2"
-                              />
-                            </FormControl>
-                            <FormMessage className="text-sm" />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    {/* Address Fields */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      <FormField
-                        control={form.control}
-                        name="streetAddress"
-                        render={({ field }) => (
-                          <FormItem className="space-y-1">
-                            <FormLabel className="text-sm">
-                              Street Address{" "}
-                              <span className="text-red-500"> *</span>
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="House/Building Number, Street"
-                                {...field}
-                                className="rounded-md h-10 text-sm py-2"
-                              />
-                            </FormControl>
-                            <FormMessage className="text-sm" />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="barangay"
-                        render={({ field }) => (
-                          <FormItem className="space-y-1">
-                            <FormLabel className="text-sm">
-                              Barangay <span className="text-red-500"> *</span>
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Barangay"
-                                {...field}
-                                className="rounded-md h-10 text-sm py-2"
-                              />
-                            </FormControl>
-                            <FormMessage className="text-sm" />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      <FormField
-                        control={form.control}
-                        name="cityMunicipality"
-                        render={({ field }) => (
-                          <FormItem className="space-y-1">
-                            <FormLabel className="text-sm">
-                              City/Municipality{" "}
-                              <span className="text-red-500"> *</span>
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="City/Municipality"
-                                {...field}
-                                className="rounded-md h-10 text-sm py-2"
-                              />
-                            </FormControl>
-                            <FormMessage className="text-sm" />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="province"
-                        render={({ field }) => (
-                          <FormItem className="space-y-1">
-                            <FormLabel className="text-sm">
-                              Province <span className="text-red-500"> *</span>
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Province"
-                                {...field}
-                                className="rounded-md h-10 text-sm py-2"
-                              />
-                            </FormControl>
-                            <FormMessage className="text-sm" />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
+                    </FormItem>
                     <FormField
                       control={form.control}
-                      name="zipCode"
+                      name="gender"
                       render={({ field }) => (
-                        <FormItem className="space-y-1">
+                        <FormItem className="space-y-1 pt-2">
                           <FormLabel className="text-sm">
-                            ZIP Code <span className="text-red-500"> *</span>
+                            Gender<span className="text-red-500"> *</span>
                           </FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="ZIP Code"
-                              {...field}
-                              className="rounded-md h-10 text-sm py-2 w-1/2"
-                            />
-                          </FormControl>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="rounded-md h-10 text-sm">
+                                <SelectValue placeholder="Select gender" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="male">Male</SelectItem>
+                              <SelectItem value="female">Female</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage className="text-sm" />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2">
+                    <FormField
+                      control={form.control}
+                      name="taxStatus"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1 pt-2">
+                          <FormLabel className="text-sm">
+                            Tax Status<span className="text-red-500"> *</span>
+                          </FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="rounded-md h-10 text-sm">
+                                <SelectValue placeholder="Select tax status" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="single">Single</SelectItem>
+                              <SelectItem value="married">Married</SelectItem>
+                              <SelectItem value="head">
+                                Head of Family
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
                           <FormMessage className="text-sm" />
                         </FormItem>
                       )}
@@ -633,193 +518,682 @@ export default function EditProfileForm({
                   </div>
                 </div>
 
-                {/* Government Benefits Section */}
+                {/* Employment Details Section */}
                 <div>
                   <h3 className="text-sm font-bold flex items-center mb-2">
                     <span className="bg-blue-100 text-blue-800 p-1 rounded-md mr-2 text-sm">
                       02
                     </span>
-                    Government Benefits
+                    Employment Details
                   </h3>
                   <Separator className="mb-2" />
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      <FormField
-                        control={form.control}
-                        name="pagibigNo"
-                        render={({ field }) => (
-                          <FormItem className="space-y-1">
-                            <FormLabel className="text-sm">
-                              PAGIBIG No.{" "}
-                              <span className="text-red-500"> *</span>
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="PAGIBIG Number"
-                                {...field}
-                                className="rounded-md h-10 text-sm py-2"
-                              />
-                            </FormControl>
-                            <FormMessage className="text-sm" />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="philhealthNo"
-                        render={({ field }) => (
-                          <FormItem className="space-y-1">
-                            <FormLabel className="text-sm">
-                              PhilHealth No.{" "}
-                              <span className="text-red-500"> *</span>
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="PhilHealth Number"
-                                {...field}
-                                className="rounded-md h-10 text-sm py-2"
-                              />
-                            </FormControl>
-                            <FormMessage className="text-sm" />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      <FormField
-                        control={form.control}
-                        name="sssNo"
-                        render={({ field }) => (
-                          <FormItem className="space-y-1">
-                            <FormLabel className="text-sm">
-                              SSS No. <span className="text-red-500"> *</span>
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="SSS Number"
-                                {...field}
-                                className="rounded-md h-10 text-sm py-2"
-                              />
-                            </FormControl>
-                            <FormMessage className="text-sm" />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="tinNo"
-                        render={({ field }) => (
-                          <FormItem className="space-y-1">
-                            <FormLabel className="text-sm">
-                              TIN No.<span className="text-red-500"> *</span>
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="TIN Number"
-                                {...field}
-                                className="rounded-md h-10 text-sm py-2"
-                              />
-                            </FormControl>
-                            <FormMessage className="text-sm" />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Emergency Contact Section */}
-                <div>
-                  <h3 className="text-sm font-bold flex items-center mb-2">
-                    <span className="bg-blue-100 text-blue-800 p-1 rounded-md mr-2 text-sm">
-                      03
-                    </span>
-                    Emergency Contact
-                  </h3>
-                  <Separator className="mb-2" />
-                  <div className="space-y-2">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                     <FormField
                       control={form.control}
-                      name="emergencyContactPerson"
+                      name="department"
                       render={({ field }) => (
-                        <FormItem className="space-y-1">
+                        <FormItem className="space-y-1 pt-2">
                           <FormLabel className="text-sm">
-                            Emergency Contact Person{" "}
-                            <span className="text-red-500"> *</span>
+                            Department<span className="text-red-500"> *</span>
                           </FormLabel>
                           <FormControl>
                             <Input
-                              placeholder="Emergency Contact Person"
+                              placeholder="Department"
                               {...field}
-                              className="rounded-md h-10 text-sm py-2 w-1/2"
+                              className="rounded-md h-10 text-sm py-2"
                             />
                           </FormControl>
                           <FormMessage className="text-sm" />
                         </FormItem>
                       )}
                     />
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      <FormField
-                        control={form.control}
-                        name="emergencyContactNumber"
-                        render={({ field }) => (
-                          <FormItem className="space-y-1">
-                            <FormLabel className="text-sm">
-                              Emergency Contact Number{" "}
-                              <span className="text-red-500"> *</span>
-                            </FormLabel>
+                    <FormField
+                      control={form.control}
+                      name="jobPosition"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1 pt-2">
+                          <FormLabel className="text-sm">
+                            Job Position<span className="text-red-500"> *</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Job Position"
+                              {...field}
+                              className="rounded-md h-10 text-sm py-2"
+                            />
+                          </FormControl>
+                          <FormMessage className="text-sm" />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="employmentStatus"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1 pt-2">
+                          <FormLabel className="text-sm">
+                            Employment Status
+                            <span className="text-red-500"> *</span>
+                          </FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
                             <FormControl>
-                              <Input
-                                placeholder="Emergency Contact Number"
-                                {...field}
-                                className="rounded-md h-10 text-sm py-2"
-                              />
+                              <SelectTrigger className="rounded-md h-10 text-sm">
+                                <SelectValue placeholder="Select status" />
+                              </SelectTrigger>
                             </FormControl>
-                            <FormMessage className="text-sm" />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="relationship"
-                        render={({ field }) => (
-                          <FormItem className="space-y-1">
-                            <FormLabel className="text-sm">
-                              Relationship{" "}
-                              <span className="text-red-500"> *</span>
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Relationship"
-                                {...field}
-                                className="rounded-md h-10 text-sm py-2"
-                              />
-                            </FormControl>
-                            <FormMessage className="text-sm" />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+                            <SelectContent>
+                              <SelectItem value="regular">Regular</SelectItem>
+                              <SelectItem value="probationary">
+                                Probationary
+                              </SelectItem>
+                              <SelectItem value="contractual">
+                                Contractual
+                              </SelectItem>
+                              <SelectItem value="part-time">
+                                Part-time
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage className="text-sm" />
+                        </FormItem>
+                      )}
+                    />
                   </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2">
+                    <FormField
+                      control={form.control}
+                      name="dateHired"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1 pt-2">
+                          <FormLabel className="text-sm">
+                            Date Hired<span className="text-red-500"> *</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="date"
+                              {...field}
+                              className="rounded-md h-10 text-sm py-2"
+                            />
+                          </FormControl>
+                          <FormMessage className="text-sm" />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="probationaryDate"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1 pt-2">
+                          <FormLabel className="text-sm">
+                            Probationary Date
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="date"
+                              {...field}
+                              className="rounded-md h-10 text-sm py-2"
+                            />
+                          </FormControl>
+                          <FormMessage className="text-sm" />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="regularizationDate"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1 pt-2">
+                          <FormLabel className="text-sm">
+                            Regularization Date
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="date"
+                              {...field}
+                              className="rounded-md h-10 text-sm py-2"
+                            />
+                          </FormControl>
+                          <FormMessage className="text-sm" />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                    <FormField
+                      control={form.control}
+                      name="tinNo"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1 pt-2">
+                          <FormLabel className="text-sm">
+                            TIN No.<span className="text-red-500"> *</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Tax Identification Number"
+                              {...field}
+                              className="rounded-md h-10 text-sm py-2"
+                            />
+                          </FormControl>
+                          <FormMessage className="text-sm" />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="sssNo"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1 pt-2">
+                          <FormLabel className="text-sm">
+                            SSS No.<span className="text-red-500"> *</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Social Security Number"
+                              {...field}
+                              className="rounded-md h-10 text-sm py-2"
+                            />
+                          </FormControl>
+                          <FormMessage className="text-sm" />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                    <FormField
+                      control={form.control}
+                      name="philhealthNo"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1 pt-2">
+                          <FormLabel className="text-sm">
+                            PhilHealth No.
+                            <span className="text-red-500"> *</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="PhilHealth Number"
+                              {...field}
+                              className="rounded-md h-10 text-sm py-2"
+                            />
+                          </FormControl>
+                          <FormMessage className="text-sm" />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="pagibigNo"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1 pt-2">
+                          <FormLabel className="text-sm">
+                            HDMF No. (Pag-ibig)
+                            <span className="text-red-500"> *</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Pag-ibig Number"
+                              {...field}
+                              className="rounded-md h-10 text-sm py-2"
+                            />
+                          </FormControl>
+                          <FormMessage className="text-sm" />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                    <FormField
+                      control={form.control}
+                      name="hmoAccountNumber"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1 pt-2">
+                          <FormLabel className="text-sm">
+                            HMO Account No.
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              placeholder="HMO Account Number"
+                              {...field}
+                              className="rounded-md h-10 text-sm py-2"
+                            />
+                          </FormControl>
+                          <FormMessage className="text-sm" />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="bankAccountNumber"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1 pt-2">
+                          <FormLabel className="text-sm">
+                            Bank Account No.
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              placeholder="Bank Account Number"
+                              {...field}
+                              className="rounded-md h-10 text-sm py-2"
+                            />
+                          </FormControl>
+                          <FormMessage className="text-sm" />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                {/* Contact Details Section */}
+                <div>
+                  <h3 className="text-sm font-bold flex items-center mb-2">
+                    <span className="bg-blue-100 text-blue-800 p-1 rounded-md mr-2 text-sm">
+                      03
+                    </span>
+                    Contact Details
+                  </h3>
+                  <Separator className="mb-2" />
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    <FormField
+                      control={form.control}
+                      name="mobileNumber"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1 pt-2">
+                          <FormLabel className="text-sm">
+                            Mobile Number
+                            <span className="text-red-500"> *</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              placeholder="Mobile Number"
+                              {...field}
+                              className="rounded-md h-10 text-sm py-2"
+                            />
+                          </FormControl>
+                          <FormMessage className="text-sm" />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="emailAddress"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1 pt-2">
+                          <FormLabel className="text-sm">
+                            Email Address
+                            <span className="text-red-500"> *</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="email"
+                              placeholder="Email Address"
+                              {...field}
+                              className="rounded-md h-10 text-sm py-2"
+                            />
+                          </FormControl>
+                          <FormMessage className="text-sm" />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="phoneAddress"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1 pt-2">
+                          <FormLabel className="text-sm">
+                            Phone Address
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Phone Address"
+                              {...field}
+                              className="rounded-md h-10 text-sm py-2"
+                            />
+                          </FormControl>
+                          <FormMessage className="text-sm" />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                {/* Present Address Section */}
+                <div>
+                  <h3 className="text-sm font-bold flex items-center mb-2">
+                    <span className="bg-blue-100 text-blue-800 p-1 rounded-md mr-2 text-sm">
+                      04
+                    </span>
+                    Present Address
+                  </h3>
+                  <Separator className="mb-2" />
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    <FormField
+                      control={form.control}
+                      name="presentHouseNo"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1 pt-2">
+                          <FormLabel className="text-sm">
+                            House No.<span className="text-red-500"> *</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="House Number"
+                              {...field}
+                              className="rounded-md h-10 text-sm py-2"
+                            />
+                          </FormControl>
+                          <FormMessage className="text-sm" />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="presentStreet"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1 pt-2">
+                          <FormLabel className="text-sm">
+                            Street<span className="text-red-500"> *</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Street"
+                              {...field}
+                              className="rounded-md h-10 text-sm py-2"
+                            />
+                          </FormControl>
+                          <FormMessage className="text-sm" />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="presentBarangay"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1 pt-2">
+                          <FormLabel className="text-sm">
+                            Barangay<span className="text-red-500"> *</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Barangay"
+                              {...field}
+                              className="rounded-md h-10 text-sm py-2"
+                            />
+                          </FormControl>
+                          <FormMessage className="text-sm" />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2">
+                    <FormField
+                      control={form.control}
+                      name="presentTown"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1 pt-2">
+                          <FormLabel className="text-sm">
+                            Town<span className="text-red-500"> *</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Town"
+                              {...field}
+                              className="rounded-md h-10 text-sm py-2"
+                            />
+                          </FormControl>
+                          <FormMessage className="text-sm" />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="presentCity"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1 pt-2">
+                          <FormLabel className="text-sm">
+                            City<span className="text-red-500"> *</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="City"
+                              {...field}
+                              className="rounded-md h-10 text-sm py-2"
+                            />
+                          </FormControl>
+                          <FormMessage className="text-sm" />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="presentProvince"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1 pt-2">
+                          <FormLabel className="text-sm">
+                            Province<span className="text-red-500"> *</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Province"
+                              {...field}
+                              className="rounded-md h-10 text-sm py-2"
+                            />
+                          </FormControl>
+                          <FormMessage className="text-sm" />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                {/* Home Address Section */}
+                <div>
+                  <h3 className="text-sm font-bold flex items-center mb-2">
+                    <span className="bg-blue-100 text-blue-800 p-1 rounded-md mr-2 text-sm">
+                      05
+                    </span>
+                    Home Address
+                  </h3>
+                  <Separator className="mb-2" />
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    <FormField
+                      control={form.control}
+                      name="homeHouseNo"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1 pt-2">
+                          <FormLabel className="text-sm">House No.</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="House Number"
+                              {...field}
+                              className="rounded-md h-10 text-sm py-2"
+                            />
+                          </FormControl>
+                          <FormMessage className="text-sm" />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="homeStreet"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1 pt-2">
+                          <FormLabel className="text-sm">Street</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Street"
+                              {...field}
+                              className="rounded-md h-10 text-sm py-2"
+                            />
+                          </FormControl>
+                          <FormMessage className="text-sm" />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="homeBarangay"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1 pt-2">
+                          <FormLabel className="text-sm">Barangay</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Barangay"
+                              {...field}
+                              className="rounded-md h-10 text-sm py-2"
+                            />
+                          </FormControl>
+                          <FormMessage className="text-sm" />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2">
+                    <FormField
+                      control={form.control}
+                      name="homeTown"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1 pt-2">
+                          <FormLabel className="text-sm">Town</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Town"
+                              {...field}
+                              className="rounded-md h-10 text-sm py-2"
+                            />
+                          </FormControl>
+                          <FormMessage className="text-sm" />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="homeCity"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1 pt-2">
+                          <FormLabel className="text-sm">City</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="City"
+                              {...field}
+                              className="rounded-md h-10 text-sm py-2"
+                            />
+                          </FormControl>
+                          <FormMessage className="text-sm" />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="homeProvince"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1 pt-2">
+                          <FormLabel className="text-sm">Province</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Province"
+                              {...field}
+                              className="rounded-md h-10 text-sm py-2"
+                            />
+                          </FormControl>
+                          <FormMessage className="text-sm" />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+                {/* Employer's Data Section */}
+                <div>
+                  <h3 className="text-sm font-bold flex items-center mb-2">
+                    <span className="bg-blue-100 text-blue-800 p-1 rounded-md mr-2 text-sm">
+                      06
+                    </span>
+                    Employer's Data
+                  </h3>
+                  <Separator className="mb-2" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <FormItem className="space-y-1 pt-2">
+                      <FormLabel className="text-sm">Company Name</FormLabel>
+                      <Input
+                        value="ABC Corporation"
+                        readOnly
+                        className="rounded-md h-10 text-sm py-2 bg-gray-100"
+                      />
+                    </FormItem>
+                    <FormItem className="space-y-1 pt-2">
+                      <FormLabel className="text-sm">Social Security</FormLabel>
+                      <Input
+                        value="123-4567-890"
+                        readOnly
+                        className="rounded-md h-10 text-sm py-2 bg-gray-100"
+                      />
+                    </FormItem>
+                    <FormItem className="space-y-1 pt-2">
+                      <FormLabel className="text-sm">Phil. Health</FormLabel>
+                      <Input
+                        value="12-345678901-2"
+                        readOnly
+                        className="rounded-md h-10 text-sm py-2 bg-gray-100"
+                      />
+                    </FormItem>
+                    <FormItem className="space-y-1 pt-2">
+                      <FormLabel className="text-sm">Pag-ibig</FormLabel>
+                      <Input
+                        value="1234-5678-9012"
+                        readOnly
+                        className="rounded-md h-10 text-sm py-2 bg-gray-100"
+                      />
+                    </FormItem>
+                    <FormItem className="space-y-1 pt-2">
+                      <FormLabel className="text-sm">
+                        Tax Identification
+                      </FormLabel>
+                      <Input
+                        value="123-456-789-000"
+                        readOnly
+                        className="rounded-md h-10 text-sm py-2 bg-gray-100"
+                      />
+                    </FormItem>
+                    <FormItem className="space-y-1 pt-2">
+                      <FormLabel className="text-sm">
+                        Revenue District Code
+                      </FormLabel>
+                      <Input
+                        value="045"
+                        readOnly
+                        className="rounded-md h-10 text-sm py-2 bg-gray-100"
+                      />
+                    </FormItem>
+                  </div>
+                </div>
+
+                {/* Form submission buttons */}
+                <div className="flex justify-end gap-2 mt-6">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="text-sm h-10"
+                    onClick={onCancel}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="text-sm h-10 bg-blue-600 hover:bg-blue-700"
+                  >
+                    Save Changes
+                  </Button>
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="px-3 py-2 bg-gray-50 flex justify-end space-x-2 mr-4 my-8">
-              <Button
-                type="button"
-                variant="destructive"
-                onClick={onCancel}
-                className="rounded-md text-sm h-10 py-2 px-4"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                className="rounded-md text-sm h-10 py-2 px-4"
-              >
-                Save Changes
-              </Button>
-            </CardFooter>
           </form>
         </Form>
       </Card>
