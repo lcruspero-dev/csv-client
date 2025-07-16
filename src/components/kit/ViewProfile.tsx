@@ -24,12 +24,29 @@ interface UserType {
   token: string;
 }
 
-const InfoItem = ({ label, value }: { label: string; value?: string }) => (
-  <div className="py-1">
-    <p className="text-sm font-medium text-gray-500">{label}</p>
-    <p className="text-sm font-medium text-gray-900">{value?.trim() || "—"}</p>
-  </div>
-);
+const InfoItem = ({
+  label,
+  value,
+}: {
+  label: string;
+  value?: string | number | null | undefined;
+}) => {
+  // Handle all cases where we should show "—"
+  const displayValue =
+    value === null ||
+    value === undefined ||
+    value === "" ||
+    (typeof value === "string" && value.trim() === "")
+      ? "—"
+      : String(value).trim();
+
+  return (
+    <div className="py-1">
+      <p className="text-sm font-medium text-gray-500">{label}</p>
+      <p className="text-sm font-medium text-gray-900">{displayValue}</p>
+    </div>
+  );
+};
 
 // Utility function to format date as mm/dd/yyyy
 const formatDate = (dateString?: string): string => {
@@ -76,7 +93,7 @@ export default function ViewProfile({
     : null;
 
   return (
-    <div className="flex flex-col md:flex-row gap-3">
+    <div className="flex flex-col md:flex-row gap-3 mb-4">
       {/* Profile Photo Card */}
       <Card className="w-full md:w-1/3 lg:w-1/4 bg-white shadow-md rounded-lg overflow-hidden">
         <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3">
@@ -125,91 +142,158 @@ export default function ViewProfile({
       {/* Profile Details Card */}
       <Card className="w-full md:w-2/3 lg:w-3/4 bg-white shadow-md rounded-lg overflow-hidden">
         <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3">
-          <CardTitle className="text-sm font-bold">My Profile</CardTitle>
+          <CardTitle className="text-sm font-bold">Employee Profile</CardTitle>
           <CardDescription className="text-blue-100 text-sm">
-            Your personal information
+            Complete employee information
           </CardDescription>
         </CardHeader>
         <CardContent className="p-3">
           <div className="space-y-4">
-            {/* Personal Information Section */}
+            {/* Personal Data Section */}
             <div>
               <h3 className="text-sm font-bold flex items-center mb-2">
                 <span className="bg-blue-100 text-blue-800 p-1 rounded-md mr-2 text-sm text-bold">
                   01
                 </span>
-                Personal Information
+                Personal Data
               </h3>
               <Separator className="mb-1" />
               <div className="grid grid-cols-1 md:grid-cols-3 gap-x-2 gap-y-0 text-sm">
                 <InfoItem label="First Name" value={userData?.firstName} />
-                <InfoItem label="Last Name" value={userData?.lastName} />
                 <InfoItem label="Middle Name" value={userData?.middleName} />
-                <InfoItem label="Gender" value={userData?.gender} />
-                <InfoItem label="Date of Birth" value={formattedDateOfBirth} />
+                <InfoItem label="Last Name" value={userData?.lastName} />
+                <InfoItem label="Birth Date" value={formattedDateOfBirth} />
                 <InfoItem label="Age" value={computedAge} />
-                <InfoItem label="Civil Status" value={userData?.civilStatus} />
-                <InfoItem
-                  label="Personal Email"
-                  value={userData?.personalEmail}
-                />
-                <InfoItem
-                  label="Contact Number"
-                  value={userData?.contactNumber}
-                />
-                <InfoItem
-                  label="Street Address"
-                  value={userData?.streetAddress}
-                />
-                <InfoItem label="Barangay" value={userData?.barangay} />
-                <InfoItem
-                  label="City/Municipality"
-                  value={userData?.cityMunicipality}
-                />
-                <InfoItem label="Province" value={userData?.province} />
-                <InfoItem label="ZIP Code" value={userData?.zipCode} />
+                <InfoItem label="Gender" value={userData?.gender} />
+                <InfoItem label="Tax Status" value={userData?.taxStatus} />
               </div>
             </div>
 
-            {/* Government Benefits Section */}
+            {/* Employment Details Section */}
             <div>
               <h3 className="text-sm font-bold flex items-center mb-2">
                 <span className="bg-blue-100 text-blue-800 p-1 rounded-md mr-2 text-sm">
                   02
                 </span>
-                Government Benefits
+                Employment Details
               </h3>
               <Separator className="mb-1" />
               <div className="grid grid-cols-1 md:grid-cols-3 gap-x-2 gap-y-0">
-                <InfoItem label="PAGIBIG No." value={userData?.pagibigNo} />
+                <InfoItem label="Department" value={userData?.department} />
+                <InfoItem label="Job Position" value={userData?.jobPosition} />
                 <InfoItem
-                  label="PhilHealth No."
-                  value={userData?.philhealthNo}
+                  label="Employment Status"
+                  value={userData?.employmentStatus}
                 />
-                <InfoItem label="SSS No." value={userData?.sssNo} />
-                <InfoItem label="TIN No." value={userData?.tinNo} />
+                <InfoItem
+                  label="Date Hired"
+                  value={formatDate(userData?.dateHired)}
+                />
+                <InfoItem
+                  label="Probationary Date"
+                  value={formatDate(userData?.probationaryDate)}
+                />
+                <InfoItem
+                  label="Regularization Date"
+                  value={formatDate(userData?.regularizationDate)}
+                />
+                <InfoItem label="TIN" value={userData?.tinNo} />
+                <InfoItem label="SSS" value={userData?.sssNo} />
+                <InfoItem label="PHILHEALTH" value={userData?.philhealthNo} />
+                <InfoItem
+                  label="HDMF (PAGIBIG No.)"
+                  value={userData?.pagibigNo}
+                />
+                <InfoItem
+                  label="HMO Account Number"
+                  value={userData?.hmoAccountNumber}
+                />
+                <InfoItem
+                  label="Bank Account Number"
+                  value={userData?.bankAccountNumber}
+                />
               </div>
             </div>
 
-            {/* Emergency Contact Section */}
+            {/* Contact Details Section */}
             <div>
               <h3 className="text-sm font-bold flex items-center mb-2">
                 <span className="bg-blue-100 text-blue-800 p-1 rounded-md mr-2 text-sm">
                   03
                 </span>
-                Emergency Contact
+                Contact Details
               </h3>
               <Separator className="mb-1" />
               <div className="grid grid-cols-1 md:grid-cols-3 gap-x-2 gap-y-0">
                 <InfoItem
-                  label="Emergency Contact Person"
-                  value={userData?.emergencyContactPerson}
+                  label="Mobile Number"
+                  value={userData?.mobileNumber}
                 />
-                <InfoItem label="Relationship" value={userData?.relationship} />
                 <InfoItem
-                  label="Emergency Contact Number"
-                  value={userData?.emergencyContactNumber}
+                  label="Email Address"
+                  value={userData?.emailAddress}
                 />
+                <InfoItem
+                  label="Phone Address"
+                  value={userData?.phoneAddress}
+                />
+              </div>
+            </div>
+
+            {/* Present Address Section */}
+            <div>
+              <h3 className="text-sm font-bold flex items-center mb-2">
+                <span className="bg-blue-100 text-blue-800 p-1 rounded-md mr-2 text-sm">
+                  04
+                </span>
+                Present Address
+              </h3>
+              <Separator className="mb-1" />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-x-2 gap-y-0">
+                <InfoItem label="House #" value={userData?.presentHouseNo} />
+                <InfoItem label="Street" value={userData?.presentStreet} />
+                <InfoItem label="Barangay" value={userData?.presentBarangay} />
+                <InfoItem label="Town" value={userData?.presentTown} />
+                <InfoItem label="City" value={userData?.presentCity} />
+                <InfoItem label="Province" value={userData?.presentProvince} />
+              </div>
+            </div>
+
+            {/* Home Address Section */}
+            <div>
+              <h3 className="text-sm font-bold flex items-center mb-2">
+                <span className="bg-blue-100 text-blue-800 p-1 rounded-md mr-2 text-sm">
+                  05
+                </span>
+                Home Address
+              </h3>
+              <Separator className="mb-1" />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-x-2 gap-y-0">
+                <InfoItem label="House #" value={userData?.homeHouseNo} />
+                <InfoItem label="Street" value={userData?.homeStreet} />
+                <InfoItem label="Barangay" value={userData?.homeBarangay} />
+                <InfoItem label="Town" value={userData?.homeTown} />
+                <InfoItem label="City" value={userData?.homeCity} />
+                <InfoItem label="Province" value={userData?.homeProvince} />
+              </div>
+            </div>
+
+            {/* Employer's Data Section */}
+            <div>
+              <h3 className="text-sm font-bold flex items-center mb-2">
+                <span className="bg-blue-100 text-blue-800 p-1 rounded-md mr-2 text-sm">
+                  06
+                </span>
+                Employer's Data
+              </h3>
+              <Separator className="mb-1" />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-x-2 gap-y-0">
+                <InfoItem label="Company Name" value="CSV NOW OPC" />
+                <InfoItem label="Social Security" value="80-0368897-1-000" />
+                <InfoItem label="Phil. Health" value="012000049916" />
+                <InfoItem label="Pag-ibig" value="211077860009" />
+                <InfoItem label="Tax Identification" value="647-243-779" />
+                <InfoItem label="Revenue District Code" value="081" />
               </div>
             </div>
           </div>

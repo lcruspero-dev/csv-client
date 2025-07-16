@@ -1123,7 +1123,7 @@ export default function EditProfileForm({
                     <FormItem className="space-y-1 pt-2">
                       <FormLabel className="text-sm">Company Name</FormLabel>
                       <Input
-                        value="ABC Corporation"
+                        value="CSV NOW OPC"
                         readOnly
                         className="rounded-md h-10 text-sm py-2 bg-gray-100"
                       />
@@ -1131,7 +1131,7 @@ export default function EditProfileForm({
                     <FormItem className="space-y-1 pt-2">
                       <FormLabel className="text-sm">Social Security</FormLabel>
                       <Input
-                        value="123-4567-890"
+                        value="80-0368897-1-000"
                         readOnly
                         className="rounded-md h-10 text-sm py-2 bg-gray-100"
                       />
@@ -1139,7 +1139,7 @@ export default function EditProfileForm({
                     <FormItem className="space-y-1 pt-2">
                       <FormLabel className="text-sm">Phil. Health</FormLabel>
                       <Input
-                        value="12-345678901-2"
+                        value="012000049916"
                         readOnly
                         className="rounded-md h-10 text-sm py-2 bg-gray-100"
                       />
@@ -1147,7 +1147,7 @@ export default function EditProfileForm({
                     <FormItem className="space-y-1 pt-2">
                       <FormLabel className="text-sm">Pag-ibig</FormLabel>
                       <Input
-                        value="1234-5678-9012"
+                        value="211077860009"
                         readOnly
                         className="rounded-md h-10 text-sm py-2 bg-gray-100"
                       />
@@ -1157,7 +1157,7 @@ export default function EditProfileForm({
                         Tax Identification
                       </FormLabel>
                       <Input
-                        value="123-456-789-000"
+                        value="647-243-779"
                         readOnly
                         className="rounded-md h-10 text-sm py-2 bg-gray-100"
                       />
@@ -1167,7 +1167,7 @@ export default function EditProfileForm({
                         Revenue District Code
                       </FormLabel>
                       <Input
-                        value="045"
+                        value="081"
                         readOnly
                         className="rounded-md h-10 text-sm py-2 bg-gray-100"
                       />
