@@ -142,7 +142,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
           protected: true,
         },
         {
-          title: "Manage Users",
+          title: "Reset Password",
           path: "/resetuserpassword",
           icon: <Users className="h-5 w-5" />,
         },
