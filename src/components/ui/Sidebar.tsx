@@ -142,6 +142,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
           protected: true,
         },
         {
+          title: "Manage Employees",
+          path: "/manageemployees",
+          icon: <Users className="h-5 w-5" />,
+        },
+        {
           title: "Reset Password",
           path: "/resetuserpassword",
           icon: <Users className="h-5 w-5" />,
@@ -288,7 +293,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       {/* Desktop Sidebar */}
       <div
         className={cn(
-          "hidden md:flex flex-col transition-all duration-300 ease-in-out h-screen sticky top-0 bg-white border-r shadow-sm",
+          "hidden md:flex flex-col transition-all duration-300 ease-in-out h-[89vh] sticky top-0 bg-white border-r shadow-sm",
           isOpen ? "w-64" : "w-20",
           isMounted ? "opacity-100" : "opacity-0"
         )}

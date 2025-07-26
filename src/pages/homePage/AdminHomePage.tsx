@@ -43,7 +43,7 @@ const AdminHome = () => {
   return (
     <>
       <SurveyModal />
-      <div className="flex min-h-screen bg-gradient-to-b from-[#eef4ff] to-white">
+      <div className="flex min-h-[50vh] bg-gradient-to-b from-[#eef4ff] to-white">
         {/* Sidebar - now properly handling mobile visibility */}
         <div className={`${isMobile ? "fixed" : "relative"} z-20`}>
           <Sidebar isOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
@@ -59,7 +59,7 @@ const AdminHome = () => {
 
         {/* Main content */}
         <div
-          className={`flex-1 transition-all duration-300 ease-in-out min-h-screen ${
+          className={`flex-1 transition-all duration-300 ease-in-out min-h-[50vh] ${
             sidebarOpen && !isMobile ? "md:ml-[10px]" : "md:ml-[72px]"
           }`}
         >

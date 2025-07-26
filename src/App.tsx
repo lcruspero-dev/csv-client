@@ -12,6 +12,7 @@ import Login from "./pages/authentication/Login";
 import Registration from "./pages/authentication/Registration";
 import CreateCategory from "./pages/createCategory/CreateCatergory";
 import ProfilePage from "./pages/editProfile/ProfilePage";
+import ManageEmployees from "./pages/employeeData/manageEmployee";
 import ExportData from "./pages/exportData/ExportData";
 import ExportDataTime from "./pages/exportData/ExportDataTime";
 import ExportMemoData from "./pages/exportData/ExportMemoData";
@@ -75,6 +76,7 @@ function App() {
                 element={<ChangePassword />}
               />
               <Route path="profile/edit" element={<ProfilePage />} />
+              <Route path="/manageemployees" element={<ManageEmployees />} />
               <Route
                 path="/schedule-and-attendance"
                 element={
