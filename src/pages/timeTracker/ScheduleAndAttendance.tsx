@@ -621,7 +621,7 @@ const ScheduleAndAttendance: React.FC = () => {
         );
 
         if (existingEntryIndex !== -1) {
-          // If an entry exists, update it
+          // If an entry exists, update it with all properties
           updatedSchedule[existingEntryIndex] = {
             ...updatedSchedule[existingEntryIndex],
             shiftType: {
@@ -629,11 +629,14 @@ const ScheduleAndAttendance: React.FC = () => {
               ...(hasShiftTime(selectedShiftType) && {
                 startTime: selectedStartTime,
                 endTime: selectedEndTime,
+                break1: selectedBreak1,
+                break2: selectedBreak2,
+                lunch: selectedLunch,
               }),
             },
           };
         } else {
-          // If no entry exists, create a new one
+          // If no entry exists, create a new one with all properties
           const newEntry: ScheduleEntry = {
             date: currentFormattedDate,
             shiftType: {
@@ -641,6 +644,9 @@ const ScheduleAndAttendance: React.FC = () => {
               ...(hasShiftTime(selectedShiftType) && {
                 startTime: selectedStartTime,
                 endTime: selectedEndTime,
+                break1: selectedBreak1,
+                break2: selectedBreak2,
+                lunch: selectedLunch,
               }),
             },
             _id: Date.now().toString() + i, // Generate a unique ID (temporary)
@@ -656,7 +662,6 @@ const ScheduleAndAttendance: React.FC = () => {
 
         try {
           // Call the API to update the schedule for each repeated day
-          // Following the schema format for the backend
           await ScheduleAndAttendanceAPI.updateScheduleEntry(
             selectedEmployee.id,
             currentScheduleData
