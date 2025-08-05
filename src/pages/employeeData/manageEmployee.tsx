@@ -2,6 +2,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { UserAPI, UserProfileAPI } from "@/API/endpoint";
 import UserDetails from "@/components/kit/UserDetails";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -69,6 +79,11 @@ const ManageEmployees: React.FC = () => {
     value: number;
   } | null>(null);
   const [filter, setFilter] = useState<"all" | "active" | "inactive">("active");
+  const [confirmDeactivateOpen, setConfirmDeactivateOpen] = useState(false);
+  const [userToDeactivate, setUserToDeactivate] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   // Load data when filter changes
   useEffect(() => {
@@ -177,18 +192,7 @@ const ManageEmployees: React.FC = () => {
     }
   };
 
-  const handleStatusToggle = async (userId: string, currentStatus: string) => {
-    if (!userId) {
-      toast({
-        title: "Error",
-        description: "Invalid employee ID",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const newStatus = currentStatus === "active" ? "inactive" : "active";
-
+  const performStatusChange = async (userId: string, newStatus: string) => {
     try {
       if (newStatus === "inactive") {
         await UserAPI.setUserToInactive(userId);
@@ -225,7 +229,35 @@ const ManageEmployees: React.FC = () => {
         description: error.message,
         variant: "destructive",
       });
+    } finally {
+      setConfirmDeactivateOpen(false);
+      setUserToDeactivate(null);
     }
+  };
+
+  const handleStatusToggle = async (
+    userId: string,
+    currentStatus: string,
+    userName: string
+  ) => {
+    if (!userId) {
+      toast({
+        title: "Error",
+        description: "Invalid employee ID",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // If activating, proceed directly
+    if (currentStatus === "inactive") {
+      await performStatusChange(userId, "active");
+      return;
+    }
+
+    // If deactivating, show confirmation
+    setUserToDeactivate({ id: userId, name: userName });
+    setConfirmDeactivateOpen(true);
   };
 
   const viewUserDetails = async (userId: string) => {
@@ -445,7 +477,11 @@ const ManageEmployees: React.FC = () => {
                             id={`user-status-${user._id}`}
                             checked={user.status === "active"}
                             onCheckedChange={() =>
-                              handleStatusToggle(user._id, user.status)
+                              handleStatusToggle(
+                                user._id,
+                                user.status,
+                                user.name
+                              )
                             }
                             className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-gray-300"
                           />
@@ -489,6 +525,34 @@ const ManageEmployees: React.FC = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Deactivation Confirmation Dialog */}
+      <AlertDialog
+        open={confirmDeactivateOpen}
+        onOpenChange={setConfirmDeactivateOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Deactivation</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to deactivate {userToDeactivate?.name}? They
+              will no longer be able to access the system.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (userToDeactivate) {
+                  performStatusChange(userToDeactivate.id, "inactive");
+                }
+              }}
+            >
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

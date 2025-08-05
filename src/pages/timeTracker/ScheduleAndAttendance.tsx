@@ -848,7 +848,7 @@ const ScheduleAndAttendance: React.FC = () => {
       <Card className="w-full">
         <CardHeader>
           {/* <div className="flex items-center justify-between"> */}
-          <div>
+          <div className="mb-3">
             <CardTitle>Employee Schedule & Attendance</CardTitle>
             <CardDescription>
               Manage employee shifts and track attendance
@@ -1332,7 +1332,7 @@ const ScheduleAndAttendance: React.FC = () => {
 
                     <div className="grid grid-cols-3 gap-4">
                       <div>
-                        <Label htmlFor="break1">Break 1</Label>
+                        <Label htmlFor="break1">1st Break</Label>
                         <input
                           id="break1"
                           type="time"
@@ -1356,7 +1356,7 @@ const ScheduleAndAttendance: React.FC = () => {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="break2">Break 2</Label>
+                        <Label htmlFor="break2">2nd Break</Label>
                         <input
                           id="break2"
                           type="time"

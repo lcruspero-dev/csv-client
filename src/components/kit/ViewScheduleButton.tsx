@@ -153,12 +153,12 @@ export const ViewScheduleButton: React.FC = () => {
     return (
       <div className="text-xs text-gray-600 mt-1 space-y-0.5">
         {schedule.break1 && (
-          <div>Break 1: {formatTimeToAMPM(schedule.break1)}</div>
-        )}
-        {schedule.break2 && (
-          <div>Break 2: {formatTimeToAMPM(schedule.break2)}</div>
+          <div>1st Break: {formatTimeToAMPM(schedule.break1)}</div>
         )}
         {schedule.lunch && <div>Lunch: {formatTimeToAMPM(schedule.lunch)}</div>}
+        {schedule.break2 && (
+          <div>2nd Break: {formatTimeToAMPM(schedule.break2)}</div>
+        )}
       </div>
     );
   };
@@ -243,10 +243,10 @@ export const ViewScheduleButton: React.FC = () => {
                       <TableRow>
                         <TableHead>Date</TableHead>
                         <TableHead>Day</TableHead>
-                        <TableHead>Shift</TableHead>
-                        <TableHead>Start Time</TableHead>
-                        <TableHead>End Time</TableHead>
-                        <TableHead>Break Times</TableHead>
+                        <TableHead>Shift type</TableHead>
+                        <TableHead>Shift start</TableHead>
+                        <TableHead>Shift end</TableHead>
+                        <TableHead>Break times</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -291,14 +291,8 @@ export const ViewScheduleButton: React.FC = () => {
                                 <>
                                   {schedule.break1 && (
                                     <div>
-                                      Break 1:{" "}
+                                      1st break:{" "}
                                       {formatTimeToAMPM(schedule.break1)}
-                                    </div>
-                                  )}
-                                  {schedule.break2 && (
-                                    <div>
-                                      Break 2:{" "}
-                                      {formatTimeToAMPM(schedule.break2)}
                                     </div>
                                   )}
                                   {schedule.lunch && (
@@ -306,6 +300,13 @@ export const ViewScheduleButton: React.FC = () => {
                                       Lunch: {formatTimeToAMPM(schedule.lunch)}
                                     </div>
                                   )}
+                                  {schedule.break2 && (
+                                    <div>
+                                      2nd break:{" "}
+                                      {formatTimeToAMPM(schedule.break2)}
+                                    </div>
+                                  )}
+
                                   {!schedule.break1 &&
                                     !schedule.break2 &&
                                     !schedule.lunch &&
