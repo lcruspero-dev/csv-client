@@ -267,11 +267,43 @@ const ManageEmployees: React.FC = () => {
       setSelectedUserProfile(response.data);
       setModalOpen(true);
     } catch (error: any) {
-      toast({
-        title: "Failed to Load Profile",
-        description: error.message,
-        variant: "destructive",
-      });
+      if (error.message === "User profile not found") {
+        // Create an empty profile object with just the userId
+        setSelectedUserProfile({
+          userId,
+          firstName: "",
+          lastName: "",
+          middleName: "",
+          streetAddress: "",
+          barangay: "",
+          cityMunicipality: "",
+          province: "",
+          zipCode: "",
+          personalEmail: "",
+          contactNumber: "",
+          dateOfBirth: "",
+          emergencyContactPerson: "",
+          emergencyContactNumber: "",
+          relationship: "",
+          civilStatus: "",
+          gender: "",
+          pagibigNo: "",
+          philhealthNo: "",
+          sssNo: "",
+          tinNo: "",
+          _id: "",
+          createdAt: "",
+          updatedAt: "",
+          __v: 0,
+        } as UserProfile);
+        setModalOpen(true);
+      } else {
+        toast({
+          title: "Failed to Load Profile",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoadingProfile(false);
     }
@@ -518,9 +550,7 @@ const ManageEmployees: React.FC = () => {
           {selectedUserProfile && (
             <UserDetails
               userData={selectedUserProfile}
-              onEdit={() => {
-                // Handle edit functionality here
-              }}
+              isNewProfile={!selectedUserProfile._id}
             />
           )}
         </DialogContent>
