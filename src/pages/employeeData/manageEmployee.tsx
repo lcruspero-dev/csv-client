@@ -551,6 +551,7 @@ const ManageEmployees: React.FC = () => {
             <UserDetails
               userData={selectedUserProfile}
               isNewProfile={!selectedUserProfile._id}
+              userId={selectedUserProfile.userId}
             />
           )}
         </DialogContent>

@@ -22,12 +22,64 @@ import { useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
+interface UserProfileData {
+  userId?: string;
+  _id?: string;
+  firstName: string;
+  lastName: string;
+  middleName: string;
+  dateOfBirth: string;
+  gender: string;
+  civilStatus?: string;
+  taxStatus?: string;
+  department?: string;
+  jobPosition?: string;
+  employmentStatus?: string;
+  dateHired?: string;
+  probationaryDate?: string;
+  regularizationDate?: string;
+  tinNo?: string;
+  sssNo?: string;
+  philhealthNo?: string;
+  pagibigNo?: string;
+  hmoAccountNumber?: string;
+  bankAccountNumber?: string;
+  mobileNumber?: string;
+  contactNumber?: string;
+  emailAddress?: string;
+  personalEmail?: string;
+  phoneAddress?: string;
+  presentHouseNo?: string;
+  presentStreet?: string;
+  presentBarangay?: string;
+  presentTown?: string;
+  presentCity?: string;
+  presentProvince?: string;
+  homeHouseNo?: string;
+  homeStreet?: string;
+  homeBarangay?: string;
+  homeTown?: string;
+  homeCity?: string;
+  homeProvince?: string;
+  streetAddress?: string;
+  barangay?: string;
+  cityMunicipality?: string;
+  province?: string;
+  zipCode?: string;
+  emergencyContactPerson?: string;
+  emergencyContactNumber?: string;
+  relationship?: string;
+  avatar?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  __v?: number;
+}
+
 interface ViewProfileProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  userData?: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onSave?: (updatedData: any) => void;
+  userData?: UserProfileData;
+  onSave?: (updatedData: UserProfileData) => void;
   isNewProfile?: boolean;
+  userId?: string;
 }
 
 const InfoItem = ({
@@ -142,24 +194,58 @@ const calculateAge = (dateOfBirth?: string): string => {
 };
 
 export default function ViewProfile({
-  userData = {},
+  userData = {
+    firstName: "",
+    lastName: "",
+    middleName: "",
+    dateOfBirth: "",
+    gender: "",
+    taxStatus: "",
+    department: "",
+    jobPosition: "",
+    employmentStatus: "",
+    dateHired: "",
+    probationaryDate: "",
+    regularizationDate: "",
+    tinNo: "",
+    sssNo: "",
+    philhealthNo: "",
+    pagibigNo: "",
+    hmoAccountNumber: "",
+    bankAccountNumber: "",
+    mobileNumber: "",
+    emailAddress: "",
+    phoneAddress: "",
+    presentHouseNo: "",
+    presentStreet: "",
+    presentBarangay: "",
+    presentTown: "",
+    presentCity: "",
+    presentProvince: "",
+    homeHouseNo: "",
+    homeStreet: "",
+    homeBarangay: "",
+    homeTown: "",
+    homeCity: "",
+    homeProvince: "",
+    avatar: "",
+  },
   onSave,
   isNewProfile = false,
+  userId,
 }: ViewProfileProps) {
   const [isEditing, setIsEditing] = useState(isNewProfile);
   const [avatar, setAvatar] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
-  const [localUserData, setLocalUserData] = useState({
-    // Personal Data
+  const [localUserData, setLocalUserData] = useState<UserProfileData>({
     firstName: userData?.firstName || "",
     lastName: userData?.lastName || "",
     middleName: userData?.middleName || "",
     dateOfBirth: userData?.dateOfBirth || "",
     gender: userData?.gender || "",
     taxStatus: userData?.taxStatus || "",
-
-    // Employment Details
     department: userData?.department || "",
     jobPosition: userData?.jobPosition || "",
     employmentStatus: userData?.employmentStatus || "",
@@ -172,21 +258,15 @@ export default function ViewProfile({
     pagibigNo: userData?.pagibigNo || "",
     hmoAccountNumber: userData?.hmoAccountNumber || "",
     bankAccountNumber: userData?.bankAccountNumber || "",
-
-    // Contact Details
     mobileNumber: userData?.mobileNumber || "",
     emailAddress: userData?.emailAddress || "",
     phoneAddress: userData?.phoneAddress || "",
-
-    // Present Address
     presentHouseNo: userData?.presentHouseNo || "",
     presentStreet: userData?.presentStreet || "",
     presentBarangay: userData?.presentBarangay || "",
     presentTown: userData?.presentTown || "",
     presentCity: userData?.presentCity || "",
     presentProvince: userData?.presentProvince || "",
-
-    // Home Address
     homeHouseNo: userData?.homeHouseNo || "",
     homeStreet: userData?.homeStreet || "",
     homeBarangay: userData?.homeBarangay || "",
@@ -194,6 +274,7 @@ export default function ViewProfile({
     homeCity: userData?.homeCity || "",
     homeProvince: userData?.homeProvince || "",
     avatar: userData?.avatar || "",
+    userId: userData?.userId || userId || "",
   });
 
   const [birthDate, setBirthDate] = useState<Date | null>(
@@ -227,42 +308,9 @@ export default function ViewProfile({
 
   const handleCancel = () => {
     setIsEditing(false);
-    // Reset to original data
     setLocalUserData({
-      firstName: userData?.firstName || "",
-      lastName: userData?.lastName || "",
-      middleName: userData?.middleName || "",
-      dateOfBirth: userData?.dateOfBirth || "",
-      gender: userData?.gender || "",
-      taxStatus: userData?.taxStatus || "",
-      department: userData?.department || "",
-      jobPosition: userData?.jobPosition || "",
-      employmentStatus: userData?.employmentStatus || "",
-      dateHired: userData?.dateHired || "",
-      probationaryDate: userData?.probationaryDate || "",
-      regularizationDate: userData?.regularizationDate || "",
-      tinNo: userData?.tinNo || "",
-      sssNo: userData?.sssNo || "",
-      philhealthNo: userData?.philhealthNo || "",
-      pagibigNo: userData?.pagibigNo || "",
-      hmoAccountNumber: userData?.hmoAccountNumber || "",
-      bankAccountNumber: userData?.bankAccountNumber || "",
-      mobileNumber: userData?.mobileNumber || "",
-      emailAddress: userData?.emailAddress || "",
-      phoneAddress: userData?.phoneAddress || "",
-      presentHouseNo: userData?.presentHouseNo || "",
-      presentStreet: userData?.presentStreet || "",
-      presentBarangay: userData?.presentBarangay || "",
-      presentTown: userData?.presentTown || "",
-      presentCity: userData?.presentCity || "",
-      presentProvince: userData?.presentProvince || "",
-      homeHouseNo: userData?.homeHouseNo || "",
-      homeStreet: userData?.homeStreet || "",
-      homeBarangay: userData?.homeBarangay || "",
-      homeTown: userData?.homeTown || "",
-      homeCity: userData?.homeCity || "",
-      homeProvince: userData?.homeProvince || "",
-      avatar: userData?.avatar || "",
+      ...userData,
+      userId: userData?.userId || userId || "",
     });
     setBirthDate(userData?.dateOfBirth ? new Date(userData.dateOfBirth) : null);
     setAvatar(null);
@@ -270,8 +318,9 @@ export default function ViewProfile({
   };
 
   const handleSave = async () => {
+    setIsSaving(true);
     try {
-      let avatarFilename = userData?.avatar;
+      let avatarFilename = userData?.avatar || "";
 
       if (avatar) {
         const validImageTypes = [
@@ -312,30 +361,37 @@ export default function ViewProfile({
         );
 
         if (!uploadResponse.ok) {
-          toast({
-            variant: "destructive",
-            title: "Upload failed",
-            description: "Failed to upload avatar",
-          });
-          return;
+          throw new Error("Failed to upload avatar");
         }
 
         const uploadResult = await uploadResponse.json();
         avatarFilename = uploadResult.filename;
       }
 
-      const profileData = { ...localUserData, avatar: avatarFilename };
-      const response = await UserProfileAPI.createProfile(profileData);
+      const targetUserId = userId || userData?.userId;
+      if (!targetUserId) {
+        throw new Error("No user ID found for profile update");
+      }
+
+      const profileData = {
+        ...localUserData,
+        avatar: avatarFilename,
+      };
+
+      const response = await UserProfileAPI.adminUpdateUserProfile(
+        targetUserId,
+        profileData
+      );
 
       toast({
         title: "Success",
-        description: "Profile updated successfully",
+        description: "Profile saved successfully",
       });
 
       setIsEditing(false);
       if (onSave) onSave(response.data);
     } catch (error) {
-      console.error("Error updating profile:", error);
+      console.error("Error saving profile:", error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -344,6 +400,8 @@ export default function ViewProfile({
             ? error.message
             : "An unexpected error occurred",
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -488,6 +546,7 @@ export default function ViewProfile({
                 size="sm"
                 className="text-white text-sm"
                 onClick={handleCancel}
+                disabled={isSaving}
               >
                 Cancel
               </Button>
@@ -496,8 +555,9 @@ export default function ViewProfile({
                 size="sm"
                 className="text-white text-sm px-5"
                 onClick={handleSave}
+                disabled={isSaving}
               >
-                Save
+                {isSaving ? "Saving..." : "Save"}
               </Button>
             </div>
           )}

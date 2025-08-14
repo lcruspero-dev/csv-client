@@ -139,7 +139,6 @@ export const UserAPI = {
     apiHelper(`/api/users/update-login-limit/${id}`, "PUT", body),
 };
 
-
 export const NteAPI = {
   createNte: (body: object) => apiHelper("/api/ntes", "POST", body),
   getNtes: () => apiHelper("/api/ntes", "GET"),
@@ -157,6 +156,8 @@ export const UserProfileAPI = {
   deleteProfile: () => apiHelper("/api/userprofiles", "DELETE"),
   getProfileById: (id: any) => apiHelper(`/api/userprofiles/${id}`, "GET"),
   getAllUserAvatar: () => apiHelper(`/api/userprofiles/avatar/all`, "GET"),
+  adminUpdateUserProfile: (id: any, body: object) =>
+    apiHelper(`/api/userprofiles/admin-update-user-profile/${id}`, "PUT", body),
 };
 
 export const ScheduleAndAttendanceAPI = {
