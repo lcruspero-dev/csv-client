@@ -20,7 +20,7 @@ const Snowflakes = () => {
   return (
     <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
       {[...Array(60)].map((_, i) => {
-        const size = Math.random() * 15 + 10;
+        const size = Math.random() * 20 + 10;
         const animationDuration = Math.random() * 15 + 15;
         const delay = Math.random() * 5;
         const left = Math.random() * 100;
@@ -85,8 +85,7 @@ const Header: React.FC = () => {
         const response = await UserProfileAPI.getProfile();
         if (response.data?.avatar) {
           setAvatarUrl(
-            `${import.meta.env.VITE_UPLOADFILES_URL}/avatars/${
-              response.data.avatar
+            `${import.meta.env.VITE_UPLOADFILES_URL}/avatars/${response.data.avatar
             }`
           );
         }
@@ -118,7 +117,7 @@ const Header: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="bg-gradient-to-b from-[#5a95ff] to-[#bdd5ff] relative z-10">
+      <div className="bg-gradient-to-b from-[#5466FE] to-[#A343F7] relative z-10">
         <Snowflakes />
         <div className="container p-5 relative z-10">
           <div className="flex flex-row justify-between">
@@ -134,7 +133,7 @@ const Header: React.FC = () => {
   }
 
   return (
-    <div className="bg-gradient-to-b from-[#5a95ff] to-[#bdd5ff] relative z-10">
+    <div className="bg-gradient-to-b from-[#C949FC] to-[#A343F7] relative z-10">
       <Snowflakes />
       <div className="container p-4 relative z-10">
         <div className="flex flex-row justify-between">
@@ -200,14 +199,14 @@ const Header: React.FC = () => {
                     {(user.isAdmin ||
                       user.role === "TM" ||
                       user.role === "TL") && (
-                      <DropdownMenuItem
-                        onClick={() => navigate("/schedule-and-attendance")}
-                        className="cursor-pointer"
-                      >
-                        <NotebookPenIcon className="mr-2 h-4 w-4" />
-                        <span>Shift & Attendance</span>
-                      </DropdownMenuItem>
-                    )}
+                        <DropdownMenuItem
+                          onClick={() => navigate("/schedule-and-attendance")}
+                          className="cursor-pointer"
+                        >
+                          <NotebookPenIcon className="mr-2 h-4 w-4" />
+                          <span>Shift & Attendance</span>
+                        </DropdownMenuItem>
+                      )}
                     <DropdownMenuItem
                       onClick={handleChangePassword}
                       className="cursor-pointer"

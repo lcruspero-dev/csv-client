@@ -34,9 +34,9 @@ const InfoItem = ({
   // Handle all cases where we should show "—"
   const displayValue =
     value === null ||
-    value === undefined ||
-    value === "" ||
-    (typeof value === "string" && value.trim() === "")
+      value === undefined ||
+      value === "" ||
+      (typeof value === "string" && value.trim() === "")
       ? "—"
       : String(value).trim();
 
